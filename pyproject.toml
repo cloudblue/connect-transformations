@@ -1,0 +1,69 @@
+[tool.poetry]
+name = "connect-transformations"
+version = "26.6"
+description = "This extension is used to add standard transformations for for CloudBlue Connect."
+authors = ["CloudBlue LLC"]
+license = "Apache Software License 2.0"
+packages = [
+    { include = "connect_transformations" }
+]
+readme = "./README.md"
+
+[tool.poetry.plugins."connect.eaas.ext"]
+"webapp" = "connect_transformations.webapp:TransformationsWebApplication"
+"tfnapp" = "connect_transformations.transformations:StandardTransformationsApplication"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4"
+connect-eaas-core = ">=27.4,<28"
+
+[tool.poetry.dev-dependencies]
+pytest = ">=6.1.2,<8"
+pytest-cov = ">=2.10.1,<5"
+pytest-mock = "^3.3.1"
+mock = { version = "^4.0.3", markers = "python_version < '3.8'" }
+coverage = {extras = ["toml"], version = ">=5.3,<7"}
+flake8 = ">=3.8,<6"
+flake8-bugbear = ">=20,<23"
+flake8-cognitive-complexity = "^0.1"
+flake8-commas = "~2.0"
+flake8-future-import = "~0.4"
+flake8-broken-line = ">=0.3,<0.7"
+flake8-comprehensions = "^3.3.1"
+flake8-debugger = "^4.0.0"
+flake8-eradicate = "^1.0.0"
+flake8-string-format = "^0.3.0"
+pytest-asyncio = "^0.15.1"
+connect-devops-testing-library = "24.*"
+
+[tool.poetry.group.dev.dependencies]
+flake8-isort = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = "tests"
+addopts = "--cov=connect_transformations --cov-report=term-missing --cov-report=html --cov-report=xml"
+
+[tool.coverage.run]
+relative_files = true
+branch = true
+
+[tool.coverage.report]
+omit = [
+    "*__init__.py",
+]
+
+[tool.isort]
+src_paths = "*"
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+group_by_package = true
+multi_line_output = 3
+force_grid_wrap = 4
+combine_as_imports = true
+use_parentheses = true
+include_trailing_comma = true
+line_length = 100
+lines_after_imports = 2

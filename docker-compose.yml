@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  eaas_transformations_dev:
+    container_name: eaas_transformations_dev
+    build:
+      context: .
+    working_dir: /extension
+    command: cextrun -d -n
+    volumes: 
+      - .:/extension
+    env_file:
+      - .eaas_transformations_dev.env
+
+  eaas_transformations_bash:
+    container_name: eaas_transformations_bash
+    build:
+      context: .
+    working_dir: /extension
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/extension
+    env_file:
+      - .eaas_transformations_dev.env
+
+  eaas_transformations_test:
+    container_name: eaas_transformations_test
+    build:
+      context: .
+    working_dir: /extension
+    command: extension-test
+    volumes:
+      - .:/extension
+    env_file:
+      - .eaas_transformations_dev.env
