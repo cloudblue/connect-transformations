@@ -5,7 +5,7 @@ from connect.eaas.core.extension import TransformationsApplicationBase
 class StandardTransformationsApplication(TransformationsApplicationBase):
 
     @transformation(
-        name='Copy row transformation 2',
+        name='Copy row transformation',
         description='The transformation function that copy content from one column to another',
         edit_dialog_ui='/static/transformations/copy.html',
     )

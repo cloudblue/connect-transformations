@@ -3,99 +3,121 @@ Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
 */
 import {
-  getSettings,
-  getTfns,
   validate,
 } from './utils';
 
 import {
   hideComponent,
-  prepareSettings,
-  prepareTransformations,
-  renderSettings,
-  renderTransformations,
   showComponent,
 } from './components';
 
 
-export const index = async () => {
-  hideComponent('app');
-  showComponent('loader');
-  const tfns = await getTfns();
-  const transformations = prepareTransformations(tfns);
-  hideComponent('loader');
-  showComponent('app');
-  renderTransformations(transformations);
-};
-
-export const settings = async (app) => {
-  if (!app) return;
-  hideComponent('app');
-  showComponent('loader');
-  const data = await getSettings();
-  const dataSettings = prepareSettings(data);
-  renderSettings(dataSettings);
-  hideComponent('loader');
-  showComponent('app');
-};
-
-export const tfnMultiplierSettings = (app) => {
-  if (!app) return;
-  app.listen('config', (config) => {
-    // eslint-disable-next-line no-console
-    console.log('settings', config);
-    const { context: { available_columns: columns } } = config;
-
-    const select = document.getElementById('columns');
-    const input = document.getElementById('copy');
-    columns.forEach((column) => {
-      const { id, name } = column;
-      const option = document.createElement('option');
-      option.value = id;
-      option.text = name;
-      select.appendChild(option);
-    });
-
-    app.listen('save', async () => {
-      const inputColumn = columns.find((column) => column.id === select.value);
-      try {
-        const overview = await validate({ settings: [
-          {
-            from: inputColumn.name,
-            to: input.value,
-          },
-        ],
-        columns: {
-          input: [inputColumn],
-          output: [],
-        } });
-        app.emit('save', { data: { ...{ settings: [
-          {
-            from: inputColumn.name,
-            to: input.value,
-          },
-        ],
-        columns: {
-          input: [inputColumn],
-          output: [{
-            name: input.value,
-            type: inputColumn.type,
-            description: '',
-          }],
-        } },
-        ...overview },
-        status: 'ok' });
-      } catch (e) {
-        window.alert(e);
+export const createRow = (parent, index, options, input, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${column.name}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      window.alert('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
       }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+export const copy = (app) => {
+  if (!app) return;
+
+  hideComponent('loader');
+  showComponent('app');
+
+  let rowIndex = 0;
+  let columns = [];
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      columns: { input: inputColumns, output: outputColumns },
+    } = config;
+
+    columns = availableColumns;
+
+    const content = document.getElementById('content');
+    if (!inputColumns || !inputColumns.length) {
+      createRow(content, rowIndex, columns);
+    } else {
+      inputColumns.forEach((inputColumn, i) => {
+        rowIndex = i;
+        createRow(content, rowIndex, columns, inputColumn, outputColumns[i]);
+      });
+    }
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createRow(content, rowIndex, columns);
     });
   });
-  hideComponent('app');
-  showComponent('loader');
-  // here you can
-  // const columns = [];
-  // const transformations = prepareTransformations(tfns);
-  hideComponent('loader');
-  showComponent('app');
-  // renderTransformations(transformations);
+
+  app.listen('save', async () => {
+    const data = {
+      settings: [],
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = columns.find((column) => column.id === inputId);
+      const outputColumn = {
+        name: outputName,
+        type: inputColumn.type,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.push(setting);
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+    }
+
+    try {
+      const overview = await validate(data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
 };
