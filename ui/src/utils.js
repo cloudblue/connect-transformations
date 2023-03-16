@@ -5,7 +5,7 @@ All rights reserved.
 */
 // API calls to the backend
 /* eslint-disable import/prefer-default-export */
-export const validate = (data) => fetch('/api/validate/transform_1_copy_row', {
+export const validate = (data) => fetch('/api/validate/copy_columns', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
