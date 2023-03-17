@@ -6,7 +6,7 @@
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
-def test_transform_1_copy_row(mocker):
+def test_copy_columns(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -17,7 +17,7 @@ def test_transform_1_copy_row(mocker):
             ],
         },
     }
-    assert app.transform_1_copy_row(
+    assert app.copy_columns(
         {
             'ColumnA': 'ContentColumnA',
             'ColumnB': 'ContentColumnB',

@@ -6,8 +6,8 @@
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -16,7 +16,7 @@ All rights reserved.
 */
 // API calls to the backend
 /* eslint-disable import/prefer-default-export */
-const validate = (data) => fetch('/api/validate/transform_1_copy_row', {
+const validate = (data) => fetch('/api/validate/copy_columns', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

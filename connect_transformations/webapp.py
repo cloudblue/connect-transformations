@@ -6,8 +6,7 @@ from fastapi.responses import JSONResponse
 @web_app(router)
 class TransformationsWebApplication(WebApplicationBase):
 
-    def validate_transform_1_copy_row(self, data):
-
+    def validate_copy_columns(self, data):
         if (
             'settings' not in data
             or not type(data['settings']) == list
@@ -50,11 +49,21 @@ class TransformationsWebApplication(WebApplicationBase):
         }
 
     @router.post(
-        '/validate/transform_1_copy_row',
-        summary='Validate transform_1_copy_row settings',
+        '/validate/{transformation_function}',
+        summary='Validate settings',
     )
     def validate_tfn_settings(
         self,
+        transformation_function: str,
         data: dict,
     ):
-        return self.validate_transform_1_copy_row(data)
+        try:
+            method = getattr(self, f'validate_{transformation_function}')
+            return method(data)
+        except AttributeError:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': f'The validation method {transformation_function} does not exist',
+                },
+            )

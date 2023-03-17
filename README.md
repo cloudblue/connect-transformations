@@ -4,7 +4,7 @@ This extension is used to extend the transformation suit for connect.
 
 Available transformations:
 
-* `transform_1_copy_row`: Copy content from one column to another.
+* `copy_columns`: Copy content from one column to another.
 
 ## License
 
