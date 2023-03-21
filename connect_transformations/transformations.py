@@ -5,11 +5,12 @@
 #
 import asyncio
 
+import httpx
 from cachetools import LRUCache
 from connect.eaas.core.decorators import transformation
 from connect.eaas.core.extension import TransformationsApplicationBase
 
-from connect_transformations.exceptions import SubscriptionLookup
+from connect_transformations.exceptions import CurrencyConversion, SubscriptionLookup
 
 
 class StandardTransformationsApplication(TransformationsApplicationBase):
@@ -18,6 +19,7 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         super().__init__(self, *args, **kwargs)
         self._cache = LRUCache(128)
         self._cache_lock = asyncio.Lock()
+        self._transport = httpx.AsyncHTTPTransport(retries=3)
 
     @transformation(
         name='Copy Column(s)',
@@ -66,9 +68,9 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         return result
 
     @transformation(
-        name='Lookup subscription data',
+        name='Lookup CloudBlue Subscription Data',
         description=(
-            'The transformation function that retreive the subscription data from one column'
+            'Transformation function that retreive the subscription data from one column'
             'specifying the id, the external id or a parameter value'
         ),
         edit_dialog_ui='/static/transformations/lookup_subscription.html',
@@ -96,3 +98,32 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
             f'{prefix}.subscription.id': subscription['id'],
             f'{prefix}.subscription.external_id': subscription['external_id'],
         }
+
+    @transformation(
+        name='Convert Currency',
+        description='Transformation function that converts from one currency to another',
+        edit_dialog_ui='/static/transformations/currency_conversion.html',
+    )
+    async def currency_conversion(
+        self,
+        row,
+    ):
+        trfn_settings = self.transformation_request['transformation']['settings']
+        value = row[trfn_settings['from']['column']]
+        currency = trfn_settings['from']['currency']
+        currency_to = trfn_settings['to']['currency']
+
+        try:
+            url = (
+                'https://api.exchangerate.host/convert?'
+                f'from={currency}&to={currency_to}&amount={value}'
+            )
+            async with httpx.AsyncClient(transport=self._transport) as client:
+                response = await client.get(url)
+        except httpx.RequestError as exc:
+            raise CurrencyConversion(f'An error occurred while requesting {url}: {exc}')
+        data = response.json()
+        if not data['success']:
+            raise CurrencyConversion(f'Unexpected response calling {url}')
+
+        return {trfn_settings['to']['column']: data['result']}
