@@ -9,3 +9,7 @@ class BaseTransformationException(Exception):
 
 class SubscriptionLookup(BaseException):
     """Exception that happens when the subscription lookup fails"""
+
+
+class CurrencyConversion(BaseException):
+    """Exception that happens when the conversion call fails"""
