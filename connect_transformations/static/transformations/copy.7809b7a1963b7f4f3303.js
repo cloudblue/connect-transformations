@@ -6,8 +6,8 @@
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(164);
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -16,12 +16,19 @@ All rights reserved.
 */
 // API calls to the backend
 /* eslint-disable import/prefer-default-export */
-const validate = (data) => fetch('/api/validate/copy_columns', {
+const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 }).then((response) => response.json());
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
@@ -31,13 +38,13 @@ All rights reserved.
 */
 
 // render UI components - show/hide
-const showComponent = (id) => {
+const components_showComponent = (id) => {
   if (!id) return;
   const element = document.getElementById(id);
   element.classList.remove('hidden');
 };
 
-const hideComponent = (id) => {
+const components_hideComponent = (id) => {
   if (!id) return;
   const element = document.getElementById(id);
   element.classList.add('hidden');
@@ -53,7 +60,7 @@ All rights reserved.
 
 
 
-const createRow = (parent, index, options, input, output) => {
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -93,8 +100,8 @@ const createRow = (parent, index, options, input, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -103,22 +110,27 @@ const copy = (app) => {
     const {
       context: { available_columns: availableColumns },
       columns: { input: inputColumns, output: outputColumns },
+      settings,
     } = config;
 
     columns = availableColumns;
 
     const content = document.getElementById('content');
-    if (!inputColumns || !inputColumns.length) {
-      createRow(content, rowIndex, columns);
+    if (!settings) {
+      createCopyRow(content, rowIndex, columns);
     } else {
-      inputColumns.forEach((inputColumn, i) => {
+      // eslint-disable-next-line no-console
+      console.log(settings);
+      settings.forEach((setting, i) => {
+        const inputColumn = inputColumns.find((column) => column.name === setting.from);
+        const outputColumn = outputColumns.find((column) => column.name === setting.to);
         rowIndex = i;
-        createRow(content, rowIndex, columns, inputColumn, outputColumns[i]);
+        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
       });
     }
     document.getElementById('add').addEventListener('click', () => {
       rowIndex += 1;
-      createRow(content, rowIndex, columns);
+      createCopyRow(content, rowIndex, columns);
     });
   });
 
@@ -152,7 +164,91 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await validate(data);
+      const overview = await utils_validate('copy_columns', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
+};
+
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
+
+const lookupSubscription = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  app.listen('config', async (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+    const criteria = await getLookupSubscriptionCriteria();
+
+    hideComponent('loader');
+    showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      document.getElementById('criteria').appendChild(option);
+    });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('criteria').value = settings.lookup_type;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      document.getElementById('prefix').value = settings.prefix;
+    }
+  });
+
+  app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    const column = columns.find((c) => c.id === columnId);
+
+    const data = {
+      settings: {
+        lookup_type: criteria,
+        from: column.name,
+        prefix,
+      },
+      columns: {
+        input: [column],
+        output: [
+          'product.id',
+          'product.name',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
+    };
+
+    try {
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }

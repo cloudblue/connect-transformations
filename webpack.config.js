@@ -10,7 +10,7 @@ const ESLintPlugin = require('eslint-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const generateHtmlPlugin = (title) => {
-  const moduleName = title.toLowerCase();
+  const moduleName = title.toLowerCase().replace(/\s/g, '_');
 
   return new htmlWebpackPlugin({
     title,
@@ -28,12 +28,13 @@ const populateHtmlPlugins = (pagesArray) => {
   return res;
 }
 
-const pages = populateHtmlPlugins(["Transformations/Copy"]);
+const pages = populateHtmlPlugins(["Transformations/Copy", "Transformations/Lookup Subscription"]);
 
 module.exports = {
   mode: 'production',
   entry: {
     ['transformations/copy']: __dirname + "/ui/src/pages/transformations/copy.js",
+    ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
   },
   output: {
     filename: '[name].[contenthash].js',
@@ -62,7 +63,7 @@ module.exports = {
       ],
     }),
     new MiniCssExtractPlugin({
-      filename: "index.css",
+      filename: "[name].[contenthash].css",
       chunkFilename: "[id].css",
     }),
     new ESLintPlugin(),

@@ -6,6 +6,13 @@ body {
     font-family: "Roboto", sans-serif;
 }
 
+.subtitle {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    margin-bottom: 16px;
+}
+
 .hidden {
     display: none !important;
 }
@@ -147,7 +154,6 @@ select {
     padding: 8px;
     border: none;
     border-bottom: 1px solid rgb(var(--pure-material-primary-rgb, 33, 150, 243));
-    ;
     margin-right: 16px;
 }
 
