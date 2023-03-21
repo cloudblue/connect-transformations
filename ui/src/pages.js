@@ -3,6 +3,7 @@ Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
 */
 import {
+  getLookupSubscriptionCriteria,
   validate,
 } from './utils';
 
@@ -12,7 +13,7 @@ import {
 } from './components';
 
 
-export const createRow = (parent, index, options, input, output) => {
+export const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -62,22 +63,27 @@ export const copy = (app) => {
     const {
       context: { available_columns: availableColumns },
       columns: { input: inputColumns, output: outputColumns },
+      settings,
     } = config;
 
     columns = availableColumns;
 
     const content = document.getElementById('content');
-    if (!inputColumns || !inputColumns.length) {
-      createRow(content, rowIndex, columns);
+    if (!settings) {
+      createCopyRow(content, rowIndex, columns);
     } else {
-      inputColumns.forEach((inputColumn, i) => {
+      // eslint-disable-next-line no-console
+      console.log(settings);
+      settings.forEach((setting, i) => {
+        const inputColumn = inputColumns.find((column) => column.name === setting.from);
+        const outputColumn = outputColumns.find((column) => column.name === setting.to);
         rowIndex = i;
-        createRow(content, rowIndex, columns, inputColumn, outputColumns[i]);
+        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
       });
     }
     document.getElementById('add').addEventListener('click', () => {
       rowIndex += 1;
-      createRow(content, rowIndex, columns);
+      createCopyRow(content, rowIndex, columns);
     });
   });
 
@@ -111,7 +117,91 @@ export const copy = (app) => {
     }
 
     try {
-      const overview = await validate(data);
+      const overview = await validate('copy_columns', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
+};
+
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
+
+export const lookupSubscription = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  app.listen('config', async (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+    const criteria = await getLookupSubscriptionCriteria();
+
+    hideComponent('loader');
+    showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      document.getElementById('criteria').appendChild(option);
+    });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('criteria').value = settings.lookup_type;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      document.getElementById('prefix').value = settings.prefix;
+    }
+  });
+
+  app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    const column = columns.find((c) => c.id === columnId);
+
+    const data = {
+      settings: {
+        lookup_type: criteria,
+        from: column.name,
+        prefix,
+      },
+      columns: {
+        input: [column],
+        output: [
+          'product.id',
+          'product.name',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
+    };
+
+    try {
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
