@@ -72,8 +72,6 @@ export const copy = (app) => {
     if (!settings) {
       createCopyRow(content, rowIndex, columns);
     } else {
-      // eslint-disable-next-line no-console
-      console.log(settings);
       settings.forEach((setting, i) => {
         const inputColumn = inputColumns.find((column) => column.name === setting.from);
         const outputColumn = outputColumns.find((column) => column.name === setting.to);
@@ -128,86 +126,97 @@ export const copy = (app) => {
   });
 };
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
+export const convert = (app) => {
+  if (!app) {
+    return;
+  }
 
-export const lookupSubscription = (app) => {
-  if (!app) return;
+  hideComponent('loader');
+  showComponent('app');
 
   let columns = [];
+  const currencies = [{ USD: 'United States Dollars' }, { EUR: 'Euro' }];
 
-  app.listen('config', async (config) => {
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns },
-      settings,
     } = config;
 
     columns = availableColumns;
-    const criteria = await getLookupSubscriptionCriteria();
 
-    hideComponent('loader');
-    showComponent('app');
+    const inputColumnSelect = document.getElementById('input-column');
+    columns.forEach(column => {
+      const option = `<option value="${column.id}">${column.name}</option>`;
 
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
+      inputColumnSelect.innerHTML += option;
     });
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
-    });
+    const createCurrencyColumnOptions = elemId => {
+      const fromCurrencyColumnSelect = document.getElementById(elemId);
+      currencies.forEach(item => {
+        const currency = Object.keys(item)[0];
+        const currencyFullName = item[currency];
 
-    if (settings) {
-      document.getElementById('criteria').value = settings.lookup_type;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      document.getElementById('prefix').value = settings.prefix;
-    }
-  });
+        const option = `
+        <option value="${currency}">
+            <span>${currency} • </span>
+            <span class="convert-currency__currency_full-name">${currencyFullName}</span>
+        </option>
+      `;
 
-  app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
-
-    const data = {
-      settings: {
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-      },
-      columns: {
-        input: [column],
-        output: [
-          'product.id',
-          'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
-      },
+        fromCurrencyColumnSelect.innerHTML += option;
+      });
     };
 
-    try {
-      const overview = await validate('lookup_subscription', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+    createCurrencyColumnOptions('from-currency');
+    createCurrencyColumnOptions('to-currency');
+
+    app.listen('save', async () => {
+      const data = {
+        settings: [],
+        columns: {
+          input: [],
+          output: [],
+        },
+      };
+
+      const formElements = document.forms.convertCurrency.elements;
+
+      const inputColumnValue = formElements.inputColumn.value;
+      const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+      const outputColumnValue = formElements.outputColumn.value;
+      const outputColumn = {
+        name: outputColumnValue,
+        type: inputColumn.type,
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings.push({
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      });
+
+      try {
+        const overview = await validate(data, '/api/validate/currency_conversion');
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+      } catch (e) {
+        window.alert(e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      window.alert(e);
-    }
+    });
   });
 };
