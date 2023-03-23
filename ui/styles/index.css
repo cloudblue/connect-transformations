@@ -4,7 +4,6 @@ All rights reserved.
 */
 :root {
     --body-text: #212121;
-    --assistive-text: #707070;
 }
 
 body {
@@ -200,6 +199,10 @@ button.delete-button {
 
 .convert-currency select {
     margin-right: 0;
+}
+
+.convert-currency label {
+    font-weight: 700;
 }
 
 
