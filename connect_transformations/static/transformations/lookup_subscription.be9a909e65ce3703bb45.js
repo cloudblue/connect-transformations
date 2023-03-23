@@ -31,6 +31,10 @@ const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/crit
   },
 }).then((response) => response.json());
 
+
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -119,8 +123,6 @@ const copy = (app) => {
     if (!settings) {
       createCopyRow(content, rowIndex, columns);
     } else {
-      // eslint-disable-next-line no-console
-      console.log(settings);
       settings.forEach((setting, i) => {
         const inputColumn = inputColumns.find((column) => column.name === setting.from);
         const outputColumn = outputColumns.find((column) => column.name === setting.to);
@@ -255,6 +257,122 @@ const lookupSubscription = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
+    }
+  });
+};
+
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
+
+  let columns = [];
+  let currencies = {};
+
+  const createCurrencyColumnOptions = (elemId, selectedOption) => {
+    const fromCurrencyColumnSelect = document.getElementById(elemId);
+
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+
+      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
+
+      fromCurrencyColumnSelect.innerHTML += option;
+    });
+  };
+
+  app.listen('config', async config => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    }
+
+    currencies = await getCurrencies();
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+
+    hideComponent('loader');
+    showComponent('app');
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
+
+    const formElements = document.forms.convertCurrency.elements;
+
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      window.alert('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: inputColumn.type,
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      };
+
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        window.alert(e);
+      }
     }
   });
 };

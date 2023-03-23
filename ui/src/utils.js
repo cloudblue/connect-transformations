@@ -21,5 +21,5 @@ export const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscripti
 }).then((response) => response.json());
 
 
-export const getCurrencies = () => fetch('/currency_conversion/currencies').then(response => response.json());
+export const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
