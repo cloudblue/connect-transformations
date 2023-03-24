@@ -28,12 +28,13 @@ const populateHtmlPlugins = (pagesArray) => {
   return res;
 }
 
-const pages = populateHtmlPlugins(["Transformations/Copy", "Transformations/Lookup Subscription"]);
+const pages = populateHtmlPlugins(["Transformations/Copy", "Transformations/Lookup Subscription", "Transformations/Currency Conversion"]);
 
 module.exports = {
   mode: 'production',
   entry: {
     ['transformations/copy']: __dirname + "/ui/src/pages/transformations/copy.js",
+    ['transformations/currency_conversion']: __dirname + "/ui/src/pages/transformations/currency_conversion.js",
     ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
   },
   output: {

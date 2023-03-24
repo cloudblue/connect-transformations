@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 244:
+/***/ 953:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -30,6 +30,10 @@ const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscriptio
     'Content-Type': 'application/json',
   },
 }).then((response) => response.json());
+
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
@@ -100,8 +104,8 @@ const createCopyRow = (parent, index, options, input, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  components_hideComponent('loader');
-  components_showComponent('app');
+  hideComponent('loader');
+  showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -119,8 +123,6 @@ const copy = (app) => {
     if (!settings) {
       createCopyRow(content, rowIndex, columns);
     } else {
-      // eslint-disable-next-line no-console
-      console.log(settings);
       settings.forEach((setting, i) => {
         const inputColumn = inputColumns.find((column) => column.name === setting.from);
         const outputColumn = outputColumns.find((column) => column.name === setting.to);
@@ -164,7 +166,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await utils_validate('copy_columns', data);
+      const overview = await validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -259,7 +261,123 @@ const lookupSubscription = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
+
+  let columns = [];
+  let currencies = {};
+
+  const createCurrencyColumnOptions = (elemId, selectedOption) => {
+    const fromCurrencyColumnSelect = document.getElementById(elemId);
+
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+
+      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
+
+      fromCurrencyColumnSelect.innerHTML += option;
+    });
+  };
+
+  app.listen('config', async config => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    }
+
+    currencies = await getCurrencies();
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+
+    components_hideComponent('loader');
+    components_showComponent('app');
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
+
+    const formElements = document.forms.convertCurrency.elements;
+
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      window.alert('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: inputColumn.type,
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      };
+
+      try {
+        const overview = await utils_validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        window.alert(e);
+      }
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -271,7 +389,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(copy);
+  .then(convert);
 
 
 /***/ })
@@ -363,7 +481,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			61: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -413,7 +531,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

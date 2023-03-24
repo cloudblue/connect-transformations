@@ -2,6 +2,10 @@
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
 */
+:root {
+    --body-text: #212121;
+}
+
 body {
     font-family: "Roboto", sans-serif;
 }
@@ -166,3 +170,39 @@ input {
 button.delete-button {
     margin-left: 16px;
 }
+
+.convert-currency {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    font-size: 14px;
+    color: var(--body-text);
+    width: 466px;
+}
+
+.convert-currency__input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.convert-currency__column {
+    margin-bottom: 24px;
+}
+
+.convert-currency__input {
+    width: 220px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.convert-currency select {
+    margin-right: 0;
+}
+
+.convert-currency label {
+    font-weight: 700;
+}
+
+
