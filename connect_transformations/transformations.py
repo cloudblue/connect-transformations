@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import asyncio
+import re
 
 import httpx
 from cachetools import LRUCache
@@ -16,14 +17,18 @@ from connect_transformations.exceptions import CurrencyConversion, SubscriptionL
 class StandardTransformationsApplication(TransformationsApplicationBase):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._cache = LRUCache(128)
         self._cache_lock = asyncio.Lock()
-        self._transport = httpx.AsyncHTTPTransport(retries=3)
+        self._ssl_context = httpx.create_ssl_context()
 
     @transformation(
         name='Copy Column(s)',
-        description='The transformation function that copy content from one column to another',
+        description=(
+            'This transformation function allows you to copy values from Input to Output columns, '
+            'which might be handy if you\'d like to change column name in the output data or '
+            'create a copy of values in table.'
+        ),
         edit_dialog_ui='/static/transformations/copy.html',
     )
     def copy_columns(
@@ -70,8 +75,8 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
     @transformation(
         name='Lookup CloudBlue Subscription Data',
         description=(
-            'Transformation function that retreive the subscription data from one column'
-            'specifying the id, the external id or a parameter value'
+            'This transformation function allows to search for the corresponding CloudBlue '
+            'Subscription data.'
         ),
         edit_dialog_ui='/static/transformations/lookup_subscription.html',
     )
@@ -101,7 +106,10 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
 
     @transformation(
         name='Convert Currency',
-        description='Transformation function that converts from one currency to another',
+        description=(
+            'This transformation function allows you to make rate convertions using the '
+            'https://exchangerate.host API.'
+        ),
         edit_dialog_ui='/static/transformations/currency_conversion.html',
     )
     async def currency_conversion(
@@ -114,16 +122,53 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         currency_to = trfn_settings['to']['currency']
 
         try:
-            url = (
-                'https://api.exchangerate.host/convert?'
-                f'from={currency}&to={currency_to}&amount={value}'
-            )
-            async with httpx.AsyncClient(transport=self._transport) as client:
-                response = await client.get(url)
+            params = {
+                'from': currency,
+                'to': currency_to,
+                'amount': value,
+            }
+            async with httpx.AsyncClient(
+                verify=self._ssl_context,
+                transport=httpx.AsyncHTTPTransport(retries=3),
+            ) as client:
+                response = await client.get(
+                    'https://api.exchangerate.host/convert',
+                    params=params,
+                )
+                data = response.json()
+                if response.status_code != 200 or not data['success']:
+                    raise CurrencyConversion(
+                        'Unexpected response calling https://api.exchangerate.host/convert'
+                        f' with params {params}',
+                    )
         except httpx.RequestError as exc:
-            raise CurrencyConversion(f'An error occurred while requesting {url}: {exc}')
-        data = response.json()
-        if not data['success']:
-            raise CurrencyConversion(f'Unexpected response calling {url}')
-
+            raise CurrencyConversion(
+                'An error occurred while requesting https://api.exchangerate.host/convert with '
+                f'params {params}: {exc}',
+            )
         return {trfn_settings['to']['column']: data['result']}
+
+    @transformation(
+        name='Split Column',
+        description=(
+            'This transformation function allows you to split "compoud" values stored in a certain '
+            'column into individual columns using regular expressions.'
+        ),
+        edit_dialog_ui='/static/transformations/split_column.html',
+    )
+    async def split_column(
+        self,
+        row,
+    ):
+        trfn_settings = self.transformation_request['transformation']['settings']
+        row_value = row[trfn_settings['from']]
+        pattern = trfn_settings['regex']['pattern']
+        groups = trfn_settings['regex']['groups']
+
+        result = {}
+        match = re.match(pattern, row_value)
+        for key in groups.keys():
+            value = groups[key]
+            result[value] = match.group(key)
+
+        return result

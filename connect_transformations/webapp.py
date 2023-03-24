@@ -3,6 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+import re
+
 import httpx
 from connect.eaas.core.decorators import router, web_app
 from connect.eaas.core.extension import WebApplicationBase
@@ -17,7 +19,7 @@ class TransformationsWebApplication(WebApplicationBase):
     def validate_copy_columns(self, data):
         if (
             'settings' not in data
-            or not type(data['settings']) == list
+            or not isinstance(data['settings'], list)
             or 'columns' not in data
             or 'input' not in data['columns']
         ):
@@ -59,7 +61,7 @@ class TransformationsWebApplication(WebApplicationBase):
     def validate_lookup_subscription(self, data):
         if (
             'settings' not in data
-            or not type(data['settings']) == dict
+            or not isinstance(data['settings'], dict)
             or 'columns' not in data
             or 'input' not in data['columns']
         ):
@@ -119,7 +121,7 @@ class TransformationsWebApplication(WebApplicationBase):
     def validate_currency_conversion(self, data):
         if (
             'settings' not in data
-            or not type(data['settings']) == dict
+            or not isinstance(data['settings'], dict)
             or 'columns' not in data
             or 'input' not in data['columns']
         ):
@@ -162,6 +164,81 @@ class TransformationsWebApplication(WebApplicationBase):
 
         return {
             'overview': overview,
+        }
+
+    def validate_split_column(self, data):
+        if (
+            'settings' not in data
+            or not isinstance(data['settings'], dict)
+            or 'columns' not in data
+            or 'input' not in data['columns']
+        ):
+            return JSONResponse(status_code=400, content={'error': 'Invalid input data'})
+
+        if (
+            'from' not in data['settings']
+            or 'regex' not in data['settings']
+            or 'pattern' not in data['settings']['regex']
+            or not isinstance(data['settings']['regex']['pattern'], str)
+            or 'groups' not in data['settings']['regex']
+            or not isinstance(data['settings']['regex']['groups'], dict)
+            or 'order' not in data['settings']['regex']
+            or not isinstance(data['settings']['regex']['order'], list)
+        ):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'The settings must have `from` and `regex` with `pattern`, `groups` and '
+                        '`order` fields'
+                    ),
+                },
+            )
+
+        input_columns = data['columns']['input']
+        available_input_columns = [c['name'] for c in input_columns]
+        if data['settings']['from'] not in available_input_columns:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'The settings contains an invalid `from` column name'
+                        f' "{data["settings"]["from"]}" that does not exist on '
+                        'columns.input'
+                    ),
+                },
+            )
+
+        pattern = None
+        try:
+            pattern = re.compile(data['settings']['regex']['pattern'])
+        except re.error:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'The settings contains an invalid `regex` regular expression '
+                        f"{data['settings']['regex']['pattern']}"
+                    ),
+                },
+            )
+
+        extracted_groups = dict(pattern.groupindex).keys()
+        for key in data['settings']['regex']['groups'].keys():
+            if key not in extracted_groups:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        'error': (
+                            f'The settings `groups` contains a group name <{key}> that does not '
+                            'exists on `pattern` regular expression '
+                            f"{data['settings']['regex']['pattern']}"
+                        ),
+                    },
+                )
+
+        return {
+            'overview': "Regexp = '" + data['settings']['regex']['pattern'] + "'",
         }
 
     @router.post(
@@ -215,3 +292,44 @@ class TransformationsWebApplication(WebApplicationBase):
             return currencies
         except Exception:
             return {}
+
+    def _merge_groups(self, new_groups, new_order, past_groups):
+        if not past_groups:
+            return {'groups': new_groups, 'order': new_order}
+        groups = {}
+        for key in new_order:
+            groups[key] = past_groups.get(key, new_groups[key])
+        return {'groups': groups, 'order': new_order}
+
+    @router.post(
+        '/split_column/extract_groups',
+        summary='Get group names and order for a given regular expression',
+        response_model=dict,
+    )
+    async def get_groups(self, data: dict):
+        if 'pattern' not in data:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': 'The body does not contain `pattern` key',
+                },
+            )
+        if 'groups' in data and type(data['groups']) != dict:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': 'The `groups` key must be a valid dict',
+                },
+            )
+        try:
+            pattern = re.compile(data['pattern'])
+            new_order = list(dict(pattern.groupindex).keys())
+            new_groups = {key: key for key in dict(pattern.groupindex).keys()}
+            return self._merge_groups(new_groups, new_order, data.get('groups', None))
+        except re.error:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': 'Invalid regular expression',
+                },
+            )
