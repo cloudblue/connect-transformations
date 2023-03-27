@@ -215,7 +215,8 @@ async def test_currency_conversion_http_error(mocker):
         await app.currency_conversion({'Price': '22.5'})
     assert str(e.value) == (
         'An error occurred while requesting '
-        'https://api.exchangerate.host/convert?from=USD&to=EUR&amount=22.5: error'
+        'https://api.exchangerate.host/convert with params'
+        " {'from': 'USD', 'to': 'EUR', 'amount': '22.5'}: error"
     )
 
 
@@ -244,5 +245,61 @@ async def test_currency_conversion_unexpected_response(mocker, httpx_mock):
         await app.currency_conversion({'Price': '22.5'})
     assert str(e.value) == (
         'Unexpected response calling '
-        'https://api.exchangerate.host/convert?from=USD&to=EUR&amount=22.5'
+        'https://api.exchangerate.host/convert with params'
+        " {'from': 'USD', 'to': 'EUR', 'amount': '22.5'}"
     )
+
+
+@pytest.mark.asyncio
+async def test_currency_conversion_400_response(mocker, httpx_mock):
+    httpx_mock.add_response(
+        method='GET',
+        url='https://api.exchangerate.host/convert?from=USD&to=EUR&amount=22.5',
+        status_code=400,
+        json={},
+    )
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': {'column': 'Price', 'currency': 'USD'},
+                'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            },
+        },
+    }
+
+    with pytest.raises(CurrencyConversion) as e:
+        await app.currency_conversion({'Price': '22.5'})
+    assert str(e.value) == (
+        'Unexpected response calling '
+        'https://api.exchangerate.host/convert with params'
+        " {'from': 'USD', 'to': 'EUR', 'amount': '22.5'}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_split_column(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
+                    'groups': {
+                        'first_name': 'First Name',
+                        'last_name': 'Last Name',
+                    },
+                    'order': ['first_name', 'last_name'],
+                },
+            },
+        },
+    }
+    assert await app.split_column({
+        'column': 'Name Surname',
+    }) == {
+        'First Name': 'Name',
+        'Last Name': 'Surname',
+    }
