@@ -8,7 +8,7 @@ import re
 
 import httpx
 from cachetools import LRUCache
-from connect.eaas.core.decorators import transformation
+from connect.eaas.core.decorators import manual_transformation, transformation
 from connect.eaas.core.extension import TransformationsApplicationBase
 
 from connect_transformations.exceptions import CurrencyConversion, SubscriptionLookup
@@ -21,6 +21,21 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         self._cache = LRUCache(128)
         self._cache_lock = asyncio.Lock()
         self._ssl_context = httpx.create_ssl_context()
+
+    @transformation(
+        name='Manual transformation',
+        description=(
+            'This transformation function allows you the describe a manual'
+            ' procedure to be done.'
+        ),
+        edit_dialog_ui='/static/transformations/manual.html',
+    )
+    @manual_transformation()
+    def manual_transformation(
+        self,
+        row: dict,
+    ):
+        pass
 
     @transformation(
         name='Copy Column(s)',
