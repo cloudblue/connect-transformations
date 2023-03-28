@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 953:
+/***/ 642:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,7 +24,7 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscriptio
 }).then((response) => response.json());
 
 
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
@@ -228,8 +228,8 @@ const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -281,7 +281,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await utils_validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -347,8 +347,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -393,7 +393,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await utils_validate('currency_conversion', data);
+        const overview = await validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -443,7 +443,7 @@ const manual = (app) => {
         <td>${column.id.slice(-3)}</td>
         <td>${column.name}</td>
         <td>${column.type}</td>
-        <td>${column.description}</td>
+        <td>${column.description ? column.description : '-'}</td>
         <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
       `;
       inputColumnsEditElement.appendChild(inputColumnRow);
@@ -509,7 +509,7 @@ const manual = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -520,8 +520,9 @@ All rights reserved.
 
 
 
+
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -613,7 +614,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -663,7 +664,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

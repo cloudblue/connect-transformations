@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 642:
+/***/ 244:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,7 +24,7 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -135,8 +135,8 @@ const createManualOutputRow = (parent, index, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -197,7 +197,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await validate('copy_columns', data);
+      const overview = await utils_validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -228,8 +228,8 @@ const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -281,7 +281,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await utils_validate('lookup_subscription', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -443,7 +443,7 @@ const manual = (app) => {
         <td>${column.id.slice(-3)}</td>
         <td>${column.name}</td>
         <td>${column.type}</td>
-        <td>${column.description}</td>
+        <td>${column.description ? column.description : '-'}</td>
         <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
       `;
       inputColumnsEditElement.appendChild(inputColumnRow);
@@ -509,7 +509,7 @@ const manual = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -520,9 +520,8 @@ All rights reserved.
 
 
 
-
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(copy);
 
 
 /***/ })
@@ -614,7 +613,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			61: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -664,7 +663,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

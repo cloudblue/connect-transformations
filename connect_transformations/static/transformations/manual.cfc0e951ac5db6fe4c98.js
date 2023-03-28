@@ -2,39 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 244:
+/***/ 158:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-
-const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -135,8 +108,8 @@ const createManualOutputRow = (parent, index, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  components_hideComponent('loader');
-  components_showComponent('app');
+  hideComponent('loader');
+  showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -197,7 +170,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await utils_validate('copy_columns', data);
+      const overview = await validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -413,8 +386,8 @@ const manual = (app) => {
     return;
   }
 
-  hideComponent('app');
-  hideComponent('loader');
+  components_hideComponent('app');
+  components_hideComponent('loader');
 
   let availableColumns;
   let rowIndex = 0;
@@ -443,7 +416,7 @@ const manual = (app) => {
         <td>${column.id.slice(-3)}</td>
         <td>${column.name}</td>
         <td>${column.type}</td>
-        <td>${column.description}</td>
+        <td>${column.description ? column.description : '-'}</td>
         <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
       `;
       inputColumnsEditElement.appendChild(inputColumnRow);
@@ -465,8 +438,8 @@ const manual = (app) => {
       createManualOutputRow(outputColumnsElement, rowIndex);
     });
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
   });
 
   app.listen('save', () => {
@@ -509,7 +482,7 @@ const manual = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -520,8 +493,9 @@ All rights reserved.
 
 
 
+
 (0,dist/* default */.ZP)({ })
-  .then(copy);
+  .then(manual);
 
 
 /***/ })
@@ -613,7 +587,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			61: 0
+/******/ 			577: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -663,7 +637,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(158)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
