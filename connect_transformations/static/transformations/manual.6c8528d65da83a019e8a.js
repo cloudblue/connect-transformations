@@ -2,39 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 953:
+/***/ 158:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -77,6 +50,37 @@ const createCopyRow = (parent, index, options, input, output) => {
           </option>`).join(' ')}
       </select>
       <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      window.alert('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+const createManualOutputRow = (parent, index, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '450px';
+  item.innerHTML = `
+      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
     `;
   parent.appendChild(item);
@@ -316,8 +320,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -362,7 +366,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await utils_validate('currency_conversion', data);
+        const overview = await validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -377,7 +381,108 @@ const convert = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+const manual = (app) => {
+  if (!app) {
+    return;
+  }
+
+  components_hideComponent('app');
+  components_hideComponent('loader');
+
+  let availableColumns;
+  let rowIndex = 0;
+
+  const descriptionElement = document.getElementById('description-text');
+  const settingsElement = document.getElementById('settings-text');
+
+  app.listen('config', (config) => {
+    const {
+      columns: { input: inputColumns, output: outputColumns },
+      context: { available_columns }, // eslint-disable-line camelcase
+      overview,
+      settings,
+    } = config;
+
+    availableColumns = available_columns; // eslint-disable-line camelcase
+
+    descriptionElement.value = overview || '';
+    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
+
+    const inputColumnsEditElement = document.getElementById('edit-input-columns');
+    availableColumns.forEach((column) => {
+      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
+      const inputColumnRow = document.createElement('tr');
+      inputColumnRow.innerHTML = `
+        <td>${column.id.slice(-3)}</td>
+        <td>${column.name}</td>
+        <td>${column.type}</td>
+        <td>${column.description}</td>
+        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
+      `;
+      inputColumnsEditElement.appendChild(inputColumnRow);
+    });
+
+    const outputColumnsElement = document.getElementById('output-columns');
+
+    if (outputColumns.length > 0) {
+      outputColumns.forEach((outputColumn, index) => {
+        rowIndex = index;
+        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
+      });
+    } else {
+      createManualOutputRow(outputColumnsElement, rowIndex);
+    }
+
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createManualOutputRow(outputColumnsElement, rowIndex);
+    });
+
+    components_hideComponent('loader');
+    components_showComponent('app');
+  });
+
+  app.listen('save', () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
+
+    try {
+      data.overview = descriptionElement.value;
+      data.settings = JSON.parse(settingsElement.value);
+      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
+      inputColumns.forEach((inputColumn) => {
+        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
+        data.columns.input.push(availableColumn);
+      });
+
+      const outputColumnsElements = document.getElementsByClassName('output-column-name');
+      // eslint-disable-next-line no-restricted-syntax
+      for (const outputColumnElement of outputColumnsElements) {
+        const outputColumn = {
+          name: outputColumnElement.value,
+          type: 'string',
+          description: '',
+        };
+        data.columns.output.push(outputColumn);
+      }
+
+      app.emit('save', {
+        data,
+        status: 'ok',
+      });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -388,8 +493,9 @@ All rights reserved.
 
 
 
+
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(manual);
 
 
 /***/ })
@@ -481,7 +587,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			577: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -531,7 +637,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(158)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
