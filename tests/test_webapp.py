@@ -483,8 +483,7 @@ def test_validate_split_column(test_client_factory):
             'from': 'column',
             'regex': {
                 'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                'groups': {'first_name': 'First Name', 'last_name': 'Last Name'},
-                'order': ['first_name', 'last_name'],
+                'groups': [{'first_name': 'First Name'}, {'last_name': 'Last Name'}],
             },
         },
         'columns': {
@@ -548,7 +547,7 @@ def test_validate_split_column_invalid_format(test_client_factory, settings):
     data = response.json()
     assert data == {
         'error': (
-            'The settings must have `from` and `regex` with `pattern`, `groups` and `order` '
+            'The settings must have `from` and `regex` with `pattern` and `groups` '
             'fields'
         ),
     }
@@ -560,8 +559,7 @@ def test_validate_split_column_invalid_column(test_client_factory):
             'from': 'column',
             'regex': {
                 'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                'groups': {'first_name': 'First Name', 'last_name': 'Last Name'},
-                'order': ['first_name', 'last_name'],
+                'groups': [{'first_name': 'First Name'}, {'last_name': 'Last Name'}],
             },
         },
         'columns': {
@@ -590,8 +588,7 @@ def test_validate_split_column_invalid_to_field(test_client_factory):
             'from': 'column',
             'regex': {
                 'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                'groups': {'first_name': 'First Name', 'name': 'Name'},
-                'order': ['first_name', 'last_name'],
+                'groups': [{'first_name': 'First Name'}, {'name': 'Name'}],
             },
         },
         'columns': {
@@ -620,8 +617,7 @@ def test_validate_split_column_invalid_regex(test_client_factory):
             'from': 'column',
             'regex': {
                 'pattern': '(?P<first name>\\w+) (?P<last name>\\w+)',
-                'groups': {'first name': 'First Name', 'last name': 'Last Name'},
-                'order': ['first_name', 'last_name'],
+                'groups': [{'first name': 'First Name'}, {'last name': 'Last Name'}],
             },
         },
         'columns': {
@@ -656,8 +652,7 @@ def test_groups(
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        'groups': {'first_name': 'first_name', 'last_name': 'last_name'},
-        'order': ['first_name', 'last_name'],
+        'groups': [{'first_name': 'first_name'}, {'last_name': 'last_name'}],
     }
 
 
@@ -669,15 +664,14 @@ def test_groups_merge(
         '/api/split_column/extract_groups',
         json={
             'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-            'groups': {'first_name': 'First Name'},
+            'groups': [{'first_name': 'First Name'}],
         },
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        'groups': {'first_name': 'First Name', 'last_name': 'last_name'},
-        'order': ['first_name', 'last_name'],
+        'groups': [{'first_name': 'First Name'}, {'last_name': 'last_name'}],
     }
 
 
@@ -696,7 +690,7 @@ def test_groups_merge_invalid_groups(
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'The `groups` key must be a valid dict',
+        'error': 'The `groups` key must be a valid list',
     }
 
 

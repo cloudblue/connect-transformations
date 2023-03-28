@@ -275,14 +275,14 @@ Faker = ">=9.8.2,<10.0.0"
 
 [[package]]
 name = "connect-eaas-core"
-version = "27.8"
+version = "27.9"
 description = "Connect Eaas Core"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "connect_eaas_core-27.8-py3-none-any.whl", hash = "sha256:52d46aac6e786c637b184eb5d10489ef3033e8d1f0dbb5416bf782c73908d4fb"},
-    {file = "connect_eaas_core-27.8.tar.gz", hash = "sha256:eff4990e80da04516e51f2836aaa81c8c6d3456bf8d1a123ba6a9dacbd029bdb"},
+    {file = "connect_eaas_core-27.9-py3-none-any.whl", hash = "sha256:985899959c3a811b8d80093b88fb59c1592888aab7a945fc70d848666c1a3f4c"},
+    {file = "connect_eaas_core-27.9.tar.gz", hash = "sha256:07d12190935d3ac2f3e19758be7b43be9b53d7888ac88b14c2721dc940e44900"},
 ]
 
 [package.dependencies]
@@ -1324,14 +1324,14 @@ jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
 
 [[package]]
 name = "setuptools"
-version = "67.6.0"
+version = "67.6.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.6.0-py3-none-any.whl", hash = "sha256:b78aaa36f6b90a074c1fa651168723acbf45d14cb1196b6f02c0fd07f17623b2"},
-    {file = "setuptools-67.6.0.tar.gz", hash = "sha256:2ee892cd5f29f3373097f5a814697e397cf3ce313616df0af11231e2ad118077"},
+    {file = "setuptools-67.6.1-py3-none-any.whl", hash = "sha256:e728ca814a823bf7bf60162daf9db95b93d532948c4c0bea762ce62f60189078"},
+    {file = "setuptools-67.6.1.tar.gz", hash = "sha256:257de92a9d50a60b8e22abfcbb771571fde0dbf3ec234463212027a4eeecbe9a"},
 ]
 
 [package.extras]

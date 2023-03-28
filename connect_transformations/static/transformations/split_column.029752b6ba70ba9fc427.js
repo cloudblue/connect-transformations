@@ -2,12 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 953:
+/***/ 854:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -31,9 +31,18 @@ const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscriptio
   },
 }).then((response) => response.json());
 
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
@@ -347,8 +356,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -372,7 +381,7 @@ const convert = (app) => {
     } else {
       const outputColumn = {
         name: outputColumnValue,
-        type: inputColumn.type,
+        type: 'decimal',
         description: '',
       };
 
@@ -393,7 +402,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await utils_validate('currency_conversion', data);
+        const overview = await validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -509,7 +518,144 @@ const manual = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+function getCurrentGroups(parent) {
+  const descendents = parent.getElementsByTagName('input');
+  const currentGroups = [];
+  for (let i = 0; i < descendents.length; i += 1) {
+    const element = descendents[i];
+    const content = {};
+    content[element.id] = element.value;
+    currentGroups.push(content);
+  }
+
+  return currentGroups;
+}
+
+function buildGroups(groups) {
+  const parent = document.getElementById('output');
+  parent.innerHTML = '';
+  Object.values(groups).forEach(element => {
+    Object.keys(element).forEach(groupKey => {
+      const groupValue = element[groupKey];
+      const item = document.createElement('div');
+      item.style.width = '100%';
+      item.innerHTML = `
+      <input
+      type="text" id="${groupKey}"
+      placeholder="${groupKey} value"
+      style="width: 35%;" value="${groupValue}" ∂ƒ∂/>
+      `;
+      parent.appendChild(item);
+    });
+  });
+}
+
+const createGroupRows = async () => {
+  const parent = document.getElementById('output');
+  const groups = getCurrentGroups(parent);
+  const pattern = document.getElementById('pattern').value;
+  if (pattern) {
+    const body = { pattern, groups };
+    const response = await getGroups(body);
+    if (response.error) {
+      window.alert(response.error);
+    } else {
+      buildGroups(response.groups);
+    }
+  } else {
+    window.alert('The regular expression is empty');
+  }
+};
+
+const splitColumn = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    components_showComponent('loader');
+    components_hideComponent('app');
+
+    columns = availableColumns;
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('pattern').value = settings.regex.pattern;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      buildGroups(settings.regex.groups);
+    }
+
+    document.getElementById('refresh').addEventListener('click', () => {
+      createGroupRows();
+    });
+    components_hideComponent('loader');
+    components_showComponent('app');
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
+    components_showComponent('loader');
+    components_hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+
+    const selector = document.getElementById('output');
+    const options = selector.getElementsByTagName('input');
+    for (let i = 0; i < options.length; i += 1) {
+      const option = options[i];
+      data.columns.output.push({
+        name: option.value,
+        type: inputColumn.type,
+        description: '',
+      });
+    }
+
+    data.settings = {
+      from: selectedColumn,
+      regex: {
+        pattern: document.getElementById('pattern').value,
+        groups: getCurrentGroups(document.getElementById('output')),
+      },
+    };
+
+    try {
+      const overview = await utils_validate('split_column', data);
+      if (overview.error) {
+        components_hideComponent('loader');
+        components_showComponent('app');
+        throw new Error(overview.error);
+      }
+
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -520,8 +666,9 @@ All rights reserved.
 
 
 
+
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(splitColumn);
 
 
 /***/ })
@@ -613,7 +760,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			12: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -663,7 +810,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

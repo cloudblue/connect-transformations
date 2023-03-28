@@ -20,6 +20,15 @@ export const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscripti
   },
 }).then((response) => response.json());
 
-
 export const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+export const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
