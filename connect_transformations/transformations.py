@@ -163,14 +163,6 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
             )
         return {trfn_settings['to']['column']: data['result']}
 
-    @transformation(
-        name='Split Column',
-        description=(
-            'This transformation function allows you to split "compoud" values stored in a certain '
-            'column into individual columns using regular expressions.'
-        ),
-        edit_dialog_ui='/static/transformations/split_column.html',
-    )
     async def split_column(
         self,
         row,

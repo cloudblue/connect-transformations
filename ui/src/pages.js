@@ -393,7 +393,7 @@ export const manual = (app) => {
         <td>${column.id.slice(-3)}</td>
         <td>${column.name}</td>
         <td>${column.type}</td>
-        <td>${column.description}</td>
+        <td>${column.description ? column.description : '-'}</td>
         <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
       `;
       inputColumnsEditElement.appendChild(inputColumnRow);
