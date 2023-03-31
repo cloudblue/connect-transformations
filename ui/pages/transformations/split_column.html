@@ -1,0 +1,36 @@
+<!--
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>
+        <%= htmlWebpackPlugin.options.title %>
+    </title>
+</head>
+
+<body>
+    <div id="loader"></div>
+    <div id="app">
+        <div class="main-container" id="content">
+            <div class="input-group">
+                <label class="label" for="column">Input Column</label>
+                <select class="input" id="column"></select>
+            </div>
+            <div id="regex-column" class="input-group">
+                <label class="label" for="pattern">Regular Expression</label>
+                <input id="pattern", type="text" placeholder="Regular expression" />
+            </div>
+            <div id="output-column" class="input-group">
+                <label class="label" for="output">Output Columns</label>
+                <div id="output"></div>
+                <button type="button" id="refresh">Validate</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

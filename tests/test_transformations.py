@@ -54,6 +54,9 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
                 'from': 'ColumnA',
                 'prefix': 'PREFIX',
             },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
+            },
         },
     }
     assert await app.lookup_subscription({
@@ -80,6 +83,9 @@ async def test_lookup_subscription_cached(mocker):
                 'lookup_type': 'id',
                 'from': 'ColumnA',
                 'prefix': 'PREFIX',
+            },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
             },
         },
     }
@@ -123,6 +129,9 @@ async def test_lookup_subscription_not_found(
                 'from': 'ColumnA',
                 'prefix': 'PREFIX',
             },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
+            },
         },
     }
     with pytest.raises(SubscriptionLookup) as e:
@@ -153,6 +162,9 @@ async def test_lookup_subscription_found_too_many(
                 'from': 'ColumnA',
                 'prefix': 'PREFIX',
             },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
+            },
         },
     }
     with pytest.raises(SubscriptionLookup) as e:
@@ -162,6 +174,36 @@ async def test_lookup_subscription_found_too_many(
             },
         )
     assert str(e.value) == "Many results found for the filter {'id': 'SubscriptionID'}"
+
+
+@pytest.mark.asyncio
+async def test_lookup_subscription_null_value(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'lookup_type': 'id',
+                'from': 'ColumnA',
+                'prefix': 'PREFIX',
+            },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': True}],
+            },
+        },
+    }
+    assert await app.lookup_subscription({
+        'ColumnA': None,
+    }) == {
+        'PREFIX.product.id': None,
+        'PREFIX.product.name': None,
+        'PREFIX.marketplace.id': None,
+        'PREFIX.marketplace.name': None,
+        'PREFIX.vendor.id': None,
+        'PREFIX.vendor.name': None,
+        'PREFIX.subscription.id': None,
+        'PREFIX.subscription.external_id': None,
+    }
 
 
 @pytest.mark.asyncio
@@ -181,6 +223,9 @@ async def test_currency_conversion(mocker, httpx_mock):
             'settings': {
                 'from': {'column': 'Price', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            },
+            'columns': {
+                'input': [{'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -207,6 +252,9 @@ async def test_currency_conversion_http_error(mocker):
             'settings': {
                 'from': {'column': 'Price', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            },
+            'columns': {
+                'input': [{'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -238,6 +286,9 @@ async def test_currency_conversion_unexpected_response(mocker, httpx_mock):
                 'from': {'column': 'Price', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
             },
+            'columns': {
+                'input': [{'name': 'Price', 'nullable': False}],
+            },
         },
     }
 
@@ -266,6 +317,9 @@ async def test_currency_conversion_400_response(mocker, httpx_mock):
                 'from': {'column': 'Price', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
             },
+            'columns': {
+                'input': [{'name': 'Price', 'nullable': False}],
+            },
         },
     }
 
@@ -279,6 +333,56 @@ async def test_currency_conversion_400_response(mocker, httpx_mock):
 
 
 @pytest.mark.asyncio
+async def test_currency_conversion_null_value(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': {'column': 'Price', 'currency': 'USD'},
+                'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            },
+            'columns': {
+                'input': [{'name': 'Price', 'nullable': True}],
+            },
+        },
+    }
+
+    assert await app.currency_conversion(
+        {
+            'Price': None,
+        },
+    ) == {
+        'Price(Eur)': None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_currency_conversion_no_input_column_found(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': {'column': 'Price', 'currency': 'USD'},
+                'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            },
+            'columns': {
+                'input': [{'name': 'other'}],
+            },
+        },
+    }
+
+    assert await app.currency_conversion(
+        {
+            'Price': None,
+        },
+    ) == {
+        'Price(Eur)': None,
+    }
+
+
+@pytest.mark.asyncio
 async def test_split_column(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
@@ -288,11 +392,10 @@ async def test_split_column(mocker):
                 'from': 'column',
                 'regex': {
                     'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                    'groups': {
-                        'first_name': 'First Name',
-                        'last_name': 'Last Name',
-                    },
-                    'order': ['first_name', 'last_name'],
+                    'groups': [
+                        {'first_name': 'First Name'},
+                        {'last_name': 'Last Name'},
+                    ],
                 },
             },
         },
@@ -302,4 +405,84 @@ async def test_split_column(mocker):
     }) == {
         'First Name': 'Name',
         'Last Name': 'Surname',
+    }
+
+
+@pytest.mark.asyncio
+async def test_split_column_not_match_regex(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+) (?P<other_name>\\w+)',
+                    'groups': [
+                        {'first_name': 'First Name'},
+                        {'last_name': 'Last Name'},
+                        {'other_name': 'Other name'},
+                    ],
+                },
+            },
+        },
+    }
+    assert await app.split_column({
+        'column': 'Name Surname',
+    }) == {
+        'First Name': None,
+        'Last Name': None,
+        'Other name': None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_split_column_match_partially(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
+                    'groups': [
+                        {'first_name': 'First Name'},
+                        {'last_name': 'Last Name'},
+                    ],
+                },
+            },
+        },
+    }
+    assert await app.split_column({
+        'column': 'Name Surname Othername',
+    }) == {
+        'First Name': 'Name',
+        'Last Name': 'Surname',
+    }
+
+
+@pytest.mark.asyncio
+async def test_split_column_match_optional(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': '(?P<first_name>\\w+) (?:(?P<last_name>\\w+))?',
+                    'groups': [
+                        {'first_name': 'First Name'},
+                        {'last_name': 'Last Name'},
+                    ],
+                },
+            },
+        },
+    }
+    assert await app.split_column({
+        'column': 'Name ',
+    }) == {
+        'First Name': 'Name',
+        'Last Name': None,
     }

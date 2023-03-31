@@ -148,10 +148,9 @@ body {
 }
 
 .main-container {
+    width: 466px;
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
-    align-items: center;
 }
 
 select {
@@ -204,5 +203,3 @@ button.delete-button {
 .convert-currency label {
     font-weight: 700;
 }
-
-

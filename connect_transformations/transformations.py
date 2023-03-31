@@ -60,6 +60,12 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
 
         return result
 
+    def _is_input_column_nullable(self, column):
+        for input_column in self.transformation_request['transformation']['columns']['input']:
+            if input_column['name'] == column:
+                return input_column['nullable']
+        return True
+
     async def retrieve_subscription(self, key, value):
         result = None
 
@@ -104,9 +110,22 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         )
         lookup_type = trfn_settings['lookup_type']
         from_column = trfn_settings['from']
-
         prefix = trfn_settings['prefix']
-        subscription = await self.retrieve_subscription(lookup_type, row[from_column])
+        value = row[from_column]
+
+        if self._is_input_column_nullable(from_column) and not value:
+            return {
+                f'{prefix}.product.id': None,
+                f'{prefix}.product.name': None,
+                f'{prefix}.marketplace.id': None,
+                f'{prefix}.marketplace.name': None,
+                f'{prefix}.vendor.id': None,
+                f'{prefix}.vendor.name': None,
+                f'{prefix}.subscription.id': None,
+                f'{prefix}.subscription.external_id': None,
+            }
+
+        subscription = await self.retrieve_subscription(lookup_type, value)
 
         return {
             f'{prefix}.product.id': subscription['product']['id'],
@@ -136,6 +155,9 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
         currency = trfn_settings['from']['currency']
         currency_to = trfn_settings['to']['currency']
 
+        if self._is_input_column_nullable(trfn_settings['from']['column']) and not value:
+            return {trfn_settings['to']['column']: None}
+
         try:
             params = {
                 'from': currency,
@@ -163,6 +185,14 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
             )
         return {trfn_settings['to']['column']: data['result']}
 
+    @transformation(
+        name='Split Column',
+        description=(
+            'This transformation function allows you to split "compoud" values stored in a certain '
+            'column into individual columns using regular expressions.'
+        ),
+        edit_dialog_ui='/static/transformations/split_column.html',
+    )
     async def split_column(
         self,
         row,
@@ -174,8 +204,10 @@ class StandardTransformationsApplication(TransformationsApplicationBase):
 
         result = {}
         match = re.match(pattern, row_value)
-        for key in groups.keys():
-            value = groups[key]
-            result[value] = match.group(key)
+
+        for element in groups:
+            key = list(element.keys())[0]
+            value = element[key]
+            result[value] = match.group(key) if match else None
 
         return result

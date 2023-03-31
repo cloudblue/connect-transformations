@@ -181,16 +181,14 @@ class TransformationsWebApplication(WebApplicationBase):
             or 'pattern' not in data['settings']['regex']
             or not isinstance(data['settings']['regex']['pattern'], str)
             or 'groups' not in data['settings']['regex']
-            or not isinstance(data['settings']['regex']['groups'], dict)
-            or 'order' not in data['settings']['regex']
-            or not isinstance(data['settings']['regex']['order'], list)
+            or not isinstance(data['settings']['regex']['groups'], list)
         ):
             return JSONResponse(
                 status_code=400,
                 content={
                     'error': (
-                        'The settings must have `from` and `regex` with `pattern`, `groups` and '
-                        '`order` fields'
+                        'The settings must have `from` and `regex` with `pattern` and `groups` '
+                        'fields'
                     ),
                 },
             )
@@ -224,7 +222,8 @@ class TransformationsWebApplication(WebApplicationBase):
             )
 
         extracted_groups = dict(pattern.groupindex).keys()
-        for key in data['settings']['regex']['groups'].keys():
+        for element in data['settings']['regex']['groups']:
+            key = list(element.keys())[0]
             if key not in extracted_groups:
                 return JSONResponse(
                     status_code=400,
@@ -293,17 +292,22 @@ class TransformationsWebApplication(WebApplicationBase):
         except Exception:
             return {}
 
-    def _merge_groups(self, new_groups, new_order, past_groups):
+    def _merge_groups(self, new_groups, past_groups):
         if not past_groups:
-            return {'groups': new_groups, 'order': new_order}
-        groups = {}
-        for key in new_order:
-            groups[key] = past_groups.get(key, new_groups[key])
-        return {'groups': groups, 'order': new_order}
+            return {'groups': new_groups}
+
+        past_groups_dict = {}
+        for element in past_groups:
+            past_groups_dict.update(element)
+
+        for element in new_groups:
+            key = list(element.keys())[0]
+            if key in past_groups_dict:
+                element[key] = past_groups_dict[key]
 
     @router.post(
         '/split_column/extract_groups',
-        summary='Get group names and order for a given regular expression',
+        summary='Get group names for a given regular expression',
         response_model=dict,
     )
     async def get_groups(self, data: dict):
@@ -314,18 +318,18 @@ class TransformationsWebApplication(WebApplicationBase):
                     'error': 'The body does not contain `pattern` key',
                 },
             )
-        if 'groups' in data and type(data['groups']) != dict:
+        if 'groups' in data and not isinstance(data['groups'], list):
             return JSONResponse(
                 status_code=400,
                 content={
-                    'error': 'The `groups` key must be a valid dict',
+                    'error': 'The `groups` key must be a valid list',
                 },
             )
         try:
             pattern = re.compile(data['pattern'])
-            new_order = list(dict(pattern.groupindex).keys())
-            new_groups = {key: key for key in dict(pattern.groupindex).keys()}
-            return self._merge_groups(new_groups, new_order, data.get('groups', None))
+            new_groups = [{key: key} for key in dict(pattern.groupindex).keys()]
+            self._merge_groups(new_groups, data.get('groups', None))
+            return {'groups': new_groups}
         except re.error:
             return JSONResponse(
                 status_code=400,
