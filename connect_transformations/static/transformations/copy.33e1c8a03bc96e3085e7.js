@@ -2,12 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 953:
+/***/ 244:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(164);
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -31,7 +31,7 @@ const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscriptio
   },
 }).then((response) => response.json());
 
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
@@ -144,8 +144,8 @@ const createManualOutputRow = (parent, index, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -206,7 +206,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await validate('copy_columns', data);
+      const overview = await utils_validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -356,8 +356,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -402,7 +402,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await utils_validate('currency_conversion', data);
+        const overview = await validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -538,12 +538,12 @@ function buildGroups(groups) {
     Object.keys(element).forEach(groupKey => {
       const groupValue = element[groupKey];
       const item = document.createElement('div');
-      item.style.width = '100%';
+      item.style.width = '200px';
       item.innerHTML = `
       <input
-      type="text" id="${groupKey}"
+      type="text" class="output-input" id="${groupKey}"
       placeholder="${groupKey} value"
-      style="width: 35%;" value="${groupValue}" ∂ƒ∂/>
+      style="width: 100%;" value="${groupValue}"/>
       `;
       parent.appendChild(item);
     });
@@ -643,19 +643,22 @@ const splitColumn = (app) => {
     try {
       const overview = await validate('split_column', data);
       if (overview.error) {
-        hideComponent('loader');
-        showComponent('app');
         throw new Error(overview.error);
       }
 
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -667,7 +670,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(copy);
 
 
 /***/ })
@@ -759,7 +762,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			61: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -809,7 +812,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

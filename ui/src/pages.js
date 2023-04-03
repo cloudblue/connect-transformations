@@ -480,12 +480,12 @@ function buildGroups(groups) {
     Object.keys(element).forEach(groupKey => {
       const groupValue = element[groupKey];
       const item = document.createElement('div');
-      item.style.width = '100%';
+      item.style.width = '200px';
       item.innerHTML = `
       <input
-      type="text" id="${groupKey}"
+      type="text" class="output-input" id="${groupKey}"
       placeholder="${groupKey} value"
-      style="width: 35%;" value="${groupValue}" ∂ƒ∂/>
+      style="width: 100%;" value="${groupValue}"/>
       `;
       parent.appendChild(item);
     });
@@ -585,14 +585,17 @@ export const splitColumn = (app) => {
     try {
       const overview = await validate('split_column', data);
       if (overview.error) {
-        hideComponent('loader');
-        showComponent('app');
         throw new Error(overview.error);
       }
 
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
