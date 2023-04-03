@@ -1,4 +1,4 @@
-FROM cloudblueconnect/connect-extension-runner:27.13
+FROM cloudblueconnect/connect-extension-runner:27.16
 
 COPY pyproject.toml /install_temp/.
 COPY poetry.* /install_temp/.
