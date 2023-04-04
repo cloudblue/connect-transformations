@@ -7,13 +7,13 @@ class BaseTransformationException(Exception):
     """BaseException for transformation exceptions"""
 
 
-class SubscriptionLookup(BaseTransformationException):
+class SubscriptionLookupError(BaseTransformationException):
     """Exception that happens when the subscription lookup fails"""
 
 
-class CurrencyConversion(BaseTransformationException):
+class CurrencyConversionError(BaseTransformationException):
     """Exception that happens when the conversion call fails"""
 
 
-class SplitColumn(BaseTransformationException):
+class SplitColumnError(BaseTransformationException):
     """Exception that happens when the split column call fails"""

@@ -6,7 +6,7 @@
 from fastapi.responses import JSONResponse
 
 from connect_transformations.constants import SUBSCRIPTION_LOOKUP
-from connect_transformations.exceptions import SubscriptionLookup
+from connect_transformations.exceptions import SubscriptionLookupError
 
 
 async def retrieve_subscription(client, cache, cache_lock, key, value):
@@ -22,9 +22,9 @@ async def retrieve_subscription(client, cache, cache_lock, key, value):
         query = {key: value}
         results = await client('subscriptions').assets.filter(**query).count()
         if results == 0:
-            raise SubscriptionLookup(f'No result found for the filter {query}')
+            raise SubscriptionLookupError(f'No result found for the filter {query}')
         elif results > 1:
-            raise SubscriptionLookup(f'Many results found for the filter {query}')
+            raise SubscriptionLookupError(f'Many results found for the filter {query}')
         else:
             result = await client(
                 'subscriptions',
