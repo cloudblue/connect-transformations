@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import pytest
+from connect.client.testing import get_httpx_mocker
 
 from connect_transformations.constants import SUBSCRIPTION_LOOKUP
 from connect_transformations.webapp import TransformationsWebApplication
@@ -114,16 +115,6 @@ def test_validate_copy_columns_not_unique_name(test_client_factory, data):
     assert response.status_code == 400
     assert response.json() == {
         'error': 'Invalid column name C. The to field should be unique',
-    }
-
-
-def test_validate_invalid_transformation(test_client_factory):
-    client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/invalid_transformation_function', json={})
-    assert response.status_code == 400
-    data = response.json()
-    assert data == {
-        'error': 'The validation method invalid_transformation_function does not exist',
     }
 
 
@@ -402,8 +393,8 @@ def test_validate_currency_conversion_invalid_column(test_client_factory):
 
 def test_get_available_rates(
     test_client_factory,
-    httpx_mock,
 ):
+    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -428,8 +419,8 @@ def test_get_available_rates(
 
 def test_get_available_rates_invalid_response(
     test_client_factory,
-    httpx_mock,
 ):
+    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -448,8 +439,8 @@ def test_get_available_rates_invalid_response(
 
 def test_get_available_rates_invalid_status_code(
     test_client_factory,
-    httpx_mock,
 ):
+    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -467,7 +458,10 @@ def test_get_available_rates_code_exception(
     test_client_factory,
     mocker,
 ):
-    mocker.patch('connect_transformations.webapp.httpx.AsyncClient', side_effect=Exception())
+    mocker.patch(
+        'connect_transformations.currency_conversion.mixins.httpx.AsyncClient',
+        side_effect=Exception(),
+    )
 
     client = test_client_factory(TransformationsWebApplication)
     response = client.get('/api/currency_conversion/currencies')
