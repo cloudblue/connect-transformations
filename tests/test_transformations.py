@@ -486,3 +486,64 @@ async def test_split_column_match_optional(mocker):
         'First Name': 'Name',
         'Last Name': None,
     }
+
+
+def test_formula(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Price with Tax',
+                        'formula': '.(Price without Tax) + .(Tax)',
+                    },
+                    {
+                        'to': 'Tax value',
+                        'formula': '.(Tax) / .(Price without Tax)',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+    assert app.formula({
+        'Price without Tax': 100, 'Tax': 20,
+    }) == {
+        'Price with Tax': 120,
+        'Tax value': 0.2,
+    }
+
+
+def test_formula_invalid_row(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Tax value',
+                        'formula': '.(Tax) / .(Price without Tax)',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+
+    with pytest.raises(ValueError) as e:
+        app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
+
+    assert str(e.value) == 'string ("twenty") and number (100) cannot be divided'
