@@ -31,12 +31,13 @@ class SplitColumnTransformationMixin:
         groups = trfn_settings['regex']['groups']
 
         result = {}
-        match = re.match(pattern, row_value)
+        match = re.match(pattern, row_value) if row_value else None
+        pattern_groups = match.groups() if match else {}
 
-        for element in groups:
-            key = list(element.keys())[0]
-            value = element[key]
-            result[value] = match.group(key) if match else None
+        for key, column_value in groups.items():
+            index = int(key) - 1
+            value = pattern_groups[index] if len(pattern_groups) > index else None
+            result[column_value] = value
 
         return result
 
@@ -66,18 +67,22 @@ class SplitColumnWebAppMixin:
                     'error': 'The body does not contain `pattern` key',
                 },
             )
-        if 'groups' in data and not isinstance(data['groups'], list):
+        if 'groups' in data and not isinstance(data['groups'], dict):
             return JSONResponse(
                 status_code=400,
                 content={
-                    'error': 'The `groups` key must be a valid list',
+                    'error': 'The `groups` key must be a valid dict',
                 },
             )
         try:
             pattern = re.compile(data['pattern'])
-            new_groups = [{key: key} for key in dict(pattern.groupindex).keys()]
-            merge_groups(new_groups, data.get('groups', None))
-            return {'groups': new_groups}
+            named_groups = {str(v): k for k, v in dict(pattern.groupindex).items()}
+            for n in range(1, pattern.groups + 1):
+                n = str(n)
+                if n not in named_groups:
+                    named_groups[n] = f'group_{n}'
+            merge_groups(named_groups, data.get('groups', None))
+            return {'groups': named_groups}
         except re.error:
             return JSONResponse(
                 status_code=400,

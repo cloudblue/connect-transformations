@@ -275,14 +275,14 @@ Faker = ">=9.8.2,<10.0.0"
 
 [[package]]
 name = "connect-eaas-core"
-version = "27.11"
+version = "27.13"
 description = "Connect Eaas Core"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4"
 files = [
-    {file = "connect_eaas_core-27.11-py3-none-any.whl", hash = "sha256:27863e5631ac776d6aac301cdc8c1c48299b6aee3f78a81995ee9572dd1de6a2"},
-    {file = "connect_eaas_core-27.11.tar.gz", hash = "sha256:4d5006fb87f2160a7a478f41162b6614c9fcbd1aa17c55549d71c7f5e656bf37"},
+    {file = "connect_eaas_core-27.13-py3-none-any.whl", hash = "sha256:c41368e01bb32415c716b0b5977280292fc50ebac4c425264a22360d6dc6ef2d"},
+    {file = "connect_eaas_core-27.13.tar.gz", hash = "sha256:7cfe1553fc99718998652b41af34d6c000c4fda89d5f2bf86bf1c280f0ce14da"},
 ]
 
 [package.dependencies]

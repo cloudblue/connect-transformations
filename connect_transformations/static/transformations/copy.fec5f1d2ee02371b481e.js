@@ -6,8 +6,8 @@
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -520,12 +520,10 @@ const manual = (app) => {
 
 function getCurrentGroups(parent) {
   const descendents = parent.getElementsByTagName('input');
-  const currentGroups = [];
+  const currentGroups = {};
   for (let i = 0; i < descendents.length; i += 1) {
     const element = descendents[i];
-    const content = {};
-    content[element.id] = element.value;
-    currentGroups.push(content);
+    currentGroups[element.id] = element.value;
   }
 
   return currentGroups;
@@ -534,19 +532,17 @@ function getCurrentGroups(parent) {
 function buildGroups(groups) {
   const parent = document.getElementById('output');
   parent.innerHTML = '';
-  Object.values(groups).forEach(element => {
-    Object.keys(element).forEach(groupKey => {
-      const groupValue = element[groupKey];
-      const item = document.createElement('div');
-      item.style.width = '200px';
-      item.innerHTML = `
-      <input
-      type="text" class="output-input" id="${groupKey}"
-      placeholder="${groupKey} value"
-      style="width: 100%;" value="${groupValue}"/>
-      `;
-      parent.appendChild(item);
-    });
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.style.width = '200px';
+    item.innerHTML = `
+    <input
+    type="text" class="output-input" id="${groupKey}"
+    placeholder="${groupKey} value"
+    style="width: 100%;" value="${groupValue}"/>
+    `;
+    parent.appendChild(item);
   });
 }
 

@@ -17,18 +17,20 @@ async def test_split_column(mocker):
             'settings': {
                 'from': 'column',
                 'regex': {
-                    'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                    'groups': [
-                        {'first_name': 'First Name'},
-                        {'last_name': 'Last Name'},
-                    ],
+                    'pattern': r'(\w+) (?P<first_name>\w+) (?P<last_name>\w+)',
+                    'groups': {
+                        '1': 'group_1',
+                        '2': 'First Name',
+                        '3': 'Last Name',
+                    },
                 },
             },
         },
     }
     assert await app.split_column({
-        'column': 'Name Surname',
+        'column': 'X Name Surname',
     }) == {
+        'group_1': 'X',
         'First Name': 'Name',
         'Last Name': 'Surname',
     }
@@ -43,12 +45,12 @@ async def test_split_column_not_match_regex(mocker):
             'settings': {
                 'from': 'column',
                 'regex': {
-                    'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+) (?P<other_name>\\w+)',
-                    'groups': [
-                        {'first_name': 'First Name'},
-                        {'last_name': 'Last Name'},
-                        {'other_name': 'Other name'},
-                    ],
+                    'pattern': '(\\w+) (?P<first_name>\\w+) (?P<last_name>\\w+)',
+                    'groups': {
+                        '1': 'group_1',
+                        '2': 'First Name',
+                        '3': 'Last Name',
+                    },
                 },
             },
         },
@@ -58,7 +60,7 @@ async def test_split_column_not_match_regex(mocker):
     }) == {
         'First Name': None,
         'Last Name': None,
-        'Other name': None,
+        'group_1': None,
     }
 
 
@@ -72,10 +74,10 @@ async def test_split_column_match_partially(mocker):
                 'from': 'column',
                 'regex': {
                     'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                    'groups': [
-                        {'first_name': 'First Name'},
-                        {'last_name': 'Last Name'},
-                    ],
+                    'groups': {
+                        '1': 'First Name',
+                        '2': 'Last Name',
+                    },
                 },
             },
         },
@@ -98,10 +100,10 @@ async def test_split_column_match_optional(mocker):
                 'from': 'column',
                 'regex': {
                     'pattern': '(?P<first_name>\\w+) (?:(?P<last_name>\\w+))?',
-                    'groups': [
-                        {'first_name': 'First Name'},
-                        {'last_name': 'Last Name'},
-                    ],
+                    'groups': {
+                        '1': 'First Name',
+                        '2': 'Last Name',
+                    },
                 },
             },
         },
