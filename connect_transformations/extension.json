@@ -3,7 +3,6 @@
     "description": "This extension is used to offer standard transformations for CloudBlue Connect.",
     "version": "26.7",
     "audience": ["distributor", "vendor", "reseller"],
-    "readme_url": "https://example.com/README.md",
-    "changelog_url": "https://example.com/CHANGELOG.md",
-    "icon": "bar_chart"
+    "readme_url": "https://github.com/cloudblue/connect-transformations/blob/master/README.md",
+    "changelog_url": "https://github.com/cloudblue/connect-transformations/blob/master/CHANGELOG.md"
 }

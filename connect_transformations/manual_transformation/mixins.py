@@ -20,5 +20,5 @@ class ManualTransformationMixin:
     def manual_transformation(
         self,
         row: dict,
-    ):
+    ):  # pragma: no cover
         pass

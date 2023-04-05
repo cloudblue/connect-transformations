@@ -3,15 +3,47 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from decimal import Decimal
+
 import httpx
 from connect.eaas.core.decorators import router, transformation
 
 from connect_transformations.currency_conversion.utils import validate_currency_conversion
-from connect_transformations.exceptions import CurrencyConversion
+from connect_transformations.exceptions import CurrencyConversionError
 from connect_transformations.utils import is_input_column_nullable
 
 
 class CurrencyConverterTransformationMixin:
+
+    async def _generate_current_exchange_rate(self, currency_from, currency_to):
+        if not self.current_exchange_rate:
+            async with self._current_exchange_rate_lock:
+                if not self.current_exchange_rate:
+                    try:
+                        url = 'https://api.exchangerate.host/latest'
+                        params = {
+                            'symbols': currency_to,
+                            'base': currency_from,
+                        }
+                        with httpx.Client(
+                            transport=httpx.HTTPTransport(retries=3),
+                        ) as client:
+                            response = client.get(
+                                url,
+                                params=params,
+                            )
+                            data = response.json()
+                            if response.status_code != 200 or not data['success']:
+                                raise CurrencyConversionError(
+                                    f'Unexpected response calling {url}'
+                                    f' with params {params}',
+                                )
+                            self.current_exchange_rate = Decimal(data['rates'][currency_to])
+                    except httpx.RequestError as exc:
+                        raise CurrencyConversionError(
+                            f'An error occurred while requesting {url} with '
+                            f'params {params}: {exc}',
+                        )
 
     @transformation(
         name='Convert Currency',
@@ -30,38 +62,24 @@ class CurrencyConverterTransformationMixin:
         currency = trfn_settings['from']['currency']
         currency_to = trfn_settings['to']['currency']
 
+        await self._generate_current_exchange_rate(
+            currency,
+            currency_to,
+        )
+
         if is_input_column_nullable(
             self.transformation_request['transformation']['columns']['input'],
             trfn_settings['from']['column'],
         ) and not value:
             return {trfn_settings['to']['column']: None}
 
-        try:
-            params = {
-                'from': currency,
-                'to': currency_to,
-                'amount': value,
-            }
-            async with httpx.AsyncClient(
-                verify=self._ssl_context,
-                transport=httpx.AsyncHTTPTransport(retries=3),
-            ) as client:
-                response = await client.get(
-                    'https://api.exchangerate.host/convert',
-                    params=params,
-                )
-                data = response.json()
-                if response.status_code != 200 or not data['success']:
-                    raise CurrencyConversion(
-                        'Unexpected response calling https://api.exchangerate.host/convert'
-                        f' with params {params}',
-                    )
-        except httpx.RequestError as exc:
-            raise CurrencyConversion(
-                'An error occurred while requesting https://api.exchangerate.host/convert with '
-                f'params {params}: {exc}',
-            )
-        return {trfn_settings['to']['column']: data['result']}
+        return {
+            trfn_settings['to']['column']: (
+                Decimal(value) * self.current_exchange_rate
+            ).quantize(
+                Decimal('.00001'),
+            ),
+        }
 
 
 class CurrencyConversionWebAppMixin:

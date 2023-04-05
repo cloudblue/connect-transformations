@@ -55,6 +55,7 @@ branch = true
 [tool.coverage.report]
 omit = [
     "*__init__.py",
+    "pragma: no cover",
 ]
 
 [tool.isort]
