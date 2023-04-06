@@ -2,48 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 854:
+/***/ 158:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -422,8 +386,8 @@ const manual = (app) => {
     return;
   }
 
-  hideComponent('app');
-  hideComponent('loader');
+  components_hideComponent('app');
+  components_hideComponent('loader');
 
   let availableColumns;
   let rowIndex = 0;
@@ -474,8 +438,8 @@ const manual = (app) => {
       createManualOutputRow(outputColumnsElement, rowIndex);
     });
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
   });
 
   app.listen('save', () => {
@@ -520,12 +484,10 @@ const manual = (app) => {
 
 function getCurrentGroups(parent) {
   const descendents = parent.getElementsByTagName('input');
-  const currentGroups = [];
+  const currentGroups = {};
   for (let i = 0; i < descendents.length; i += 1) {
     const element = descendents[i];
-    const content = {};
-    content[element.id] = element.value;
-    currentGroups.push(content);
+    currentGroups[element.id] = element.value;
   }
 
   return currentGroups;
@@ -534,19 +496,17 @@ function getCurrentGroups(parent) {
 function buildGroups(groups) {
   const parent = document.getElementById('output');
   parent.innerHTML = '';
-  Object.values(groups).forEach(element => {
-    Object.keys(element).forEach(groupKey => {
-      const groupValue = element[groupKey];
-      const item = document.createElement('div');
-      item.style.width = '200px';
-      item.innerHTML = `
-      <input
-      type="text" class="output-input" id="${groupKey}"
-      placeholder="${groupKey} value"
-      style="width: 100%;" value="${groupValue}"/>
-      `;
-      parent.appendChild(item);
-    });
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.style.width = '200px';
+    item.innerHTML = `
+    <input
+    type="text" class="output-input" id="${groupKey}"
+    placeholder="${groupKey} value"
+    style="width: 100%;" value="${groupValue}"/>
+    `;
+    parent.appendChild(item);
   });
 }
 
@@ -578,8 +538,8 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     columns = availableColumns;
 
@@ -600,8 +560,8 @@ const splitColumn = (app) => {
     document.getElementById('refresh').addEventListener('click', () => {
       createGroupRows();
     });
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -613,8 +573,8 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
@@ -641,7 +601,7 @@ const splitColumn = (app) => {
     };
 
     try {
-      const overview = await utils_validate('split_column', data);
+      const overview = await validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -652,13 +612,13 @@ const splitColumn = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
-      components_showComponent('app');
-      components_hideComponent('loader');
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -671,7 +631,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(manual);
 
 
 /***/ })
@@ -763,7 +723,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			577: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -813,7 +773,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(158)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
