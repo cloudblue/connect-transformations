@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 854:
+/***/ 244:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -36,7 +36,7 @@ const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').t
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
  (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -144,8 +144,8 @@ const createManualOutputRow = (parent, index, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -206,7 +206,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await validate('copy_columns', data);
+      const overview = await utils_validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -578,8 +578,8 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     columns = availableColumns;
 
@@ -600,8 +600,8 @@ const splitColumn = (app) => {
     document.getElementById('refresh').addEventListener('click', () => {
       createGroupRows();
     });
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -613,8 +613,8 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
@@ -641,7 +641,7 @@ const splitColumn = (app) => {
     };
 
     try {
-      const overview = await utils_validate('split_column', data);
+      const overview = await validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -652,13 +652,117 @@ const splitColumn = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
-      components_showComponent('app');
-      components_hideComponent('loader');
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+const createFormulaRow = (parent, index, output, formula) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <input type="text" placeholder="Output column" style="width: 35%;" ${output ? `value="${output}"` : ''} />
+      <input type="text" placeholder="Formula" style="width: 35%;" ${formula ? `value="${formula}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      window.alert('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+const formula = (app) => {
+  if (!app) return;
+
+  hideComponent('loader');
+  showComponent('app');
+
+  let rowIndex = 0;
+  let columns = [];
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+
+    const content = document.getElementById('content');
+    if (settings && settings.expressions) {
+      settings.expressions.forEach((expression, i) => {
+        rowIndex = i;
+        createFormulaRow(content, rowIndex, expression.to, expression.formula);
+      });
+    } else {
+      createFormulaRow(content, rowIndex);
+    }
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createFormulaRow(content, rowIndex);
+    });
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: { expressions: [] },
+      columns: {
+        input: columns,
+        output: [],
+      },
+    };
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const to = line.getElementsByTagName('input')[0].value;
+      const jqFormula = line.getElementsByTagName('input')[1].value;
+
+      const outputColumn = {
+        name: to,
+        description: '',
+        type: 'string',
+        nullable: true,
+      };
+      const expression = {
+        to,
+        formula: jqFormula,
+      };
+      data.settings.expressions.push(expression);
+      data.columns.output.push(outputColumn);
+    }
+
+    try {
+      const overview = await validate('formula', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -669,9 +773,8 @@ All rights reserved.
 
 
 
-
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(copy);
 
 
 /***/ })
@@ -763,7 +866,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			61: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -813,7 +916,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

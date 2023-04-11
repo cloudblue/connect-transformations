@@ -828,7 +828,7 @@ def test_validate_formula_invalid_expression(
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'Each expression must have `to` and `formula` fields.',
+        'error': 'Each expression must have not empty `to` and `formula` fields.',
     }
 
 

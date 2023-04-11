@@ -25,12 +25,20 @@ class FormulaTransformationMixin:
         self,
         row: dict,
     ):
+
         trfn_settings = self.transformation_request['transformation']['settings']
-        row_striped = {strip_column_name(column): row[column] for column in row}
+        input_columns = self.transformation_request['transformation']['columns']['input']
+        columns_types = {column['name']: column.get('type') for column in input_columns}
+
+        row_stripped = {}
+        for column in row:
+            if columns_types[column] == 'datetime':
+                row_stripped[strip_column_name(column)] = str(row[column])
+            else:
+                row_stripped[strip_column_name(column)] = row[column]
+
         result = {}
-
         for expression in trfn_settings['expressions']:
-
             columns = re.findall(r'\.\(.*?\)', expression['formula'])
             formula_to_compile = expression['formula']
             for column in columns:
@@ -39,7 +47,7 @@ class FormulaTransformationMixin:
                     f'.{strip_column_name(column[2:-1])}',
                 )
 
-            result[expression['to']] = jq.compile(formula_to_compile).input(row_striped).first()
+            result[expression['to']] = jq.compile(formula_to_compile).input(row_stripped).first()
 
         return result
 

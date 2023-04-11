@@ -42,11 +42,15 @@ def validate_formula(data):  # noqa: CCR001
     for expression in data['settings']['expressions']:
         if (
             'to' not in expression
+            or not expression['to']
             or not isinstance(expression['to'], str)
+            or not expression['formula']
             or 'formula' not in expression
             or not isinstance(expression['formula'], str)
         ):
-            return error_response('Each expression must have `to` and `formula` fields.')
+            return error_response(
+                'Each expression must have not empty `to` and `formula` fields.',
+            )
 
     input_columns = data['columns']['input']
     available_input_columns = [c['name'] for c in input_columns]

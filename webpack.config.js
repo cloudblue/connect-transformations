@@ -34,6 +34,7 @@ const pages = populateHtmlPlugins([
   "Transformations/Currency Conversion",
   "Transformations/Manual",
   "Transformations/Split Column",
+  "Transformations/Formula",
 ]);
 
 module.exports = {
@@ -41,6 +42,7 @@ module.exports = {
   entry: {
     ['transformations/copy']: __dirname + "/ui/src/pages/transformations/copy.js",
     ['transformations/currency_conversion']: __dirname + "/ui/src/pages/transformations/currency_conversion.js",
+    ['transformations/formula']: __dirname + "/ui/src/pages/transformations/formula.js",
     ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
     ['transformations/manual']: __dirname + "/ui/src/pages/transformations/manual.js",
     ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",  
