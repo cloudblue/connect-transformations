@@ -20,6 +20,13 @@ export const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscripti
   },
 }).then((response) => response.json());
 
+export const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
 export const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 /* The data should contain pattern (and optionally groups) keys.

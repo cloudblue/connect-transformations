@@ -31,6 +31,13 @@ const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscriptio
   },
 }).then((response) => response.json());
 
+const utils_getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
 const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 /* The data should contain pattern (and optionally groups) keys.
@@ -230,10 +237,11 @@ const lookupSubscription = (app) => {
 
   app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
@@ -244,6 +252,9 @@ const lookupSubscription = (app) => {
       const option = document.createElement('option');
       option.value = key;
       option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
       document.getElementById('criteria').appendChild(option);
     });
 
@@ -254,25 +265,68 @@ const lookupSubscription = (app) => {
       document.getElementById('column').appendChild(option);
     });
 
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      Object.values(parameters).forEach((element) => {
+        Object.keys(element).forEach((key) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.text = element[key];
+          document.getElementById('parameter').appendChild(option);
+        });
+      });
+    }
+
     if (settings) {
       document.getElementById('criteria').value = settings.lookup_type;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
       document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('leave_empty').checked = true;
     }
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
   app.listen('save', async () => {
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
     const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
     const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
     const data = {
       settings: {
         lookup_type: criteria,
         from: column.name,
+        parameter,
         prefix,
+        action_if_not_found: actionIfNotFound,
       },
       columns: {
         input: [column],

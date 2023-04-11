@@ -23,6 +23,10 @@ All rights reserved.
                 <label class="label" for="criteria">Criteria</label>
                 <select class="input" id="criteria"></select>
             </div>
+            <div class="input-group" id="param_name_group">
+                <label class="label" for="parameter">Parameter Name</label>
+                <select class="input" id="parameter"></select>
+            </div>
             <div class="input-group">
                 <label class="label" for="column">Input Column</label>
                 <select class="input" id="column"></select>
@@ -30,6 +34,15 @@ All rights reserved.
             <div class="input-group">
                 <label class="label" for="prefix">Prefix</label>
                 <input class="input" id="prefix" type="text" placeholder="Prefix" />
+            </div>
+            <div class="input-group">
+                <p class="radio-buttons">What To Do If Subscription Not Found:</p>
+                <div class="radio-buttons">
+                    <input type="radio" id="leave_empty" name="if_not_found" value="leave_empty"/>
+                    <label class="label" for="leave_empty">Leave Empty</label>
+                    <input type="radio" id="fail" name="if_not_found" value="Fail"/>
+                    <label class="label" for="fail">Fail</label>
+                </div>
             </div>
         </div>
         </main-card>

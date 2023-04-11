@@ -24,3 +24,11 @@ input.input {
     color: #212121;
     width: 100%;
 }
+
+input[type="radio"] {
+    margin-left:10px;
+}
+
+.radio-buttons {
+    width: 100%;
+}
