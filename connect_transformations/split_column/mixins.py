@@ -16,8 +16,9 @@ class SplitColumnTransformationMixin:
     @transformation(
         name='Split Column',
         description=(
-            'This transformation function allows you to split "compoud" values stored in a certain '
-            'column into individual columns using regular expressions.'
+            'This transformation function allows you to copy values from Input to Output columns,'
+            ' which might be handy if you’d like to change column name in the output data for for'
+            ' some other reason create a copy of values in table.'
         ),
         edit_dialog_ui='/static/transformations/split_column.html',
     )

@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 642:
+/***/ 854:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,7 +24,14 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const utils_getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -36,7 +43,7 @@ const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').t
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
  (to display in order on the UI) */
-const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -230,20 +237,24 @@ const lookupSubscription = (app) => {
 
   app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
       option.value = key;
       option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
       document.getElementById('criteria').appendChild(option);
     });
 
@@ -254,25 +265,68 @@ const lookupSubscription = (app) => {
       document.getElementById('column').appendChild(option);
     });
 
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      Object.values(parameters).forEach((element) => {
+        Object.keys(element).forEach((key) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.text = element[key];
+          document.getElementById('parameter').appendChild(option);
+        });
+      });
+    }
+
     if (settings) {
       document.getElementById('criteria').value = settings.lookup_type;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
       document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('leave_empty').checked = true;
     }
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
   app.listen('save', async () => {
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
     const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
     const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
     const data = {
       settings: {
         lookup_type: criteria,
         from: column.name,
+        parameter,
         prefix,
+        action_if_not_found: actionIfNotFound,
       },
       columns: {
         input: [column],
@@ -290,7 +344,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await utils_validate('lookup_subscription', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -574,8 +628,8 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    showComponent('loader');
-    hideComponent('app');
+    components_showComponent('loader');
+    components_hideComponent('app');
 
     columns = availableColumns;
 
@@ -596,8 +650,8 @@ const splitColumn = (app) => {
     document.getElementById('refresh').addEventListener('click', () => {
       createGroupRows();
     });
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -609,8 +663,8 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
-    showComponent('loader');
-    hideComponent('app');
+    components_showComponent('loader');
+    components_hideComponent('app');
 
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
@@ -637,7 +691,7 @@ const splitColumn = (app) => {
     };
 
     try {
-      const overview = await validate('split_column', data);
+      const overview = await utils_validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -648,13 +702,13 @@ const splitColumn = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
-      showComponent('app');
-      hideComponent('loader');
+      components_showComponent('app');
+      components_hideComponent('loader');
     }
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -667,7 +721,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(splitColumn);
 
 
 /***/ })
@@ -759,7 +813,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			12: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -809,7 +863,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

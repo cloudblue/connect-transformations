@@ -15,7 +15,7 @@ readme = "./README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-connect-eaas-core = ">=27.11,<28"
+connect-eaas-core = ">=27.13,<28"
 cachetools = "^5.3.0"
 
 [tool.poetry.dev-dependencies]
