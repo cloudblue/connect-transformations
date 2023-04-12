@@ -19,7 +19,7 @@ def error_response(error):
 
 
 def strip_column_name(value):
-    return ''.join([c for c in value if c.isalnum()])
+    return ''.join([c for c in value if (c.isalnum() or c == '_')])
 
 
 def validate_formula(data):  # noqa: CCR001
@@ -52,20 +52,31 @@ def validate_formula(data):  # noqa: CCR001
                 'Each expression must have not empty `to` and `formula` fields.',
             )
 
-    input_columns = data['columns']['input']
-    available_input_columns = [c['name'] for c in input_columns]
     output_columns = []
+    available_columns = [col['name'] for col in data['columns']['input']]
+
     for expression in data['settings']['expressions']:
-        if (
-            expression['to'] in available_input_columns
+        if(
+            expression['to'] in available_columns
             or expression['to'] in output_columns
         ):
             return error_response('Each `output column` must be unique.')
 
-        columns = re.findall(r'\.\(.*?\)', expression['formula'])
-        formula_to_compile = expression['formula']
+        formula_to_compile = str(expression['formula'])
+
+        columns = re.findall(r'\.[a-zA-Z]\w*', expression['formula'])
         for column in columns:
-            if column[2:-1] not in available_input_columns:
+            if column[1:] not in available_columns:
+                return error_response(
+                    (
+                        f'Settings contains formula `{expression["formula"]}` '
+                        'with column that does not exist on columns.input.'
+                    ),
+                )
+
+        columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
+        for column in columns:
+            if column[2:-1] not in available_columns:
                 return error_response(
                     (
                         f'Settings contains formula `{expression["formula"]}` '
@@ -88,7 +99,33 @@ def validate_formula(data):  # noqa: CCR001
 
     overview = ''
     for expression in data['settings']['expressions']:
-        overview += f'Output column = {expression["to"]}, Formula = {expression["formula"]}\n'
-    return {
-        'overview': overview,
-    }
+        overview += f'{expression["to"]} = {expression["formula"]}\n'
+
+    return {'overview': overview}
+
+
+def extract_input(data):
+    if 'expressions' not in data or not isinstance(data['expressions'], list):
+        return JSONResponse(
+            status_code=400,
+            content={
+                'error': 'The body does not contain `expressions` list',
+            },
+        )
+    if 'columns' not in data or not isinstance(data['columns'], list):
+        return JSONResponse(
+            status_code=400,
+            content={
+                'error': 'The body does not contain `columns` list',
+            },
+        )
+
+    input_columns = set()
+    for expression in data['expressions']:
+        columns = re.findall(r'\.[a-zA-Z]\w*', expression['formula'])
+        input_columns.update([column[1:] for column in columns])
+
+        columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
+        input_columns.update([column[2:-1] for column in columns])
+
+    return [column for column in data['columns'] if column['name'] in input_columns]

@@ -3,6 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+import datetime
+
 import httpx
 import pytest
 
@@ -503,21 +505,29 @@ def test_formula(mocker):
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
                     },
+                    {
+                        'to': 'Copy date',
+                        'formula': '.Created',
+                    },
                 ],
             },
             'columns': {
                 'input': [
                     {'name': 'Price without Tax', 'nullable': False},
                     {'name': 'Tax', 'nullable': False},
+                    {'name': 'Created', 'nullable': False, 'type': 'datetime'},
                 ],
             },
         },
     }
+
+    date = datetime.datetime.now()
     assert app.formula({
-        'Price without Tax': 100, 'Tax': 20,
+        'Price without Tax': 100, 'Tax': 20, 'Created': date,
     }) == {
         'Price with Tax': 120,
         'Tax value': 0.2,
+        'Copy date': str(date),
     }
 
 

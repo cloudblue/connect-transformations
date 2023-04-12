@@ -5,6 +5,7 @@ All rights reserved.
 import {
   getCurrencies,
   getGroups,
+  getJQInput,
   getLookupSubscriptionCriteria,
   validate,
 } from './utils';
@@ -606,9 +607,12 @@ export const createFormulaRow = (parent, index, output, formula) => {
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
   item.innerHTML = `
-      <input type="text" placeholder="Output column" style="width: 35%;" ${output ? `value="${output}"` : ''} />
-      <input type="text" placeholder="Formula" style="width: 35%;" ${formula ? `value="${formula}"` : ''} />
+      <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
+      <div class="input-group">
+          <label class="label" for="formula-${index}">Formula:</label>
+          <textarea id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+      </div>
     `;
   parent.appendChild(item);
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
@@ -676,7 +680,7 @@ export const formula = (app) => {
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
       const to = line.getElementsByTagName('input')[0].value;
-      const jqFormula = line.getElementsByTagName('input')[1].value;
+      const jqFormula = line.getElementsByTagName('textarea')[0].value;
 
       const outputColumn = {
         name: to,
@@ -696,6 +700,16 @@ export const formula = (app) => {
       const overview = await validate('formula', data);
       if (overview.error) {
         throw new Error(overview.error);
+      } else {
+        const inputColumns = await getJQInput({
+          expressions: data.settings.expressions,
+          columns,
+        });
+        if (inputColumns.error) {
+          throw new Error(inputColumns.error);
+        } else {
+          data.columns.input = inputColumns;
+        }
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {

@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 642:
+/***/ 953:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,19 +24,30 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
   },
 }).then((response) => response.json());
 
-const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
  (to display in order on the UI) */
 const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const utils_getJQInput = (data) => fetch('/api/formula/extract_input', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -237,8 +248,8 @@ const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -290,7 +301,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await utils_validate('lookup_subscription', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -356,8 +367,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -402,7 +413,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await validate('currency_conversion', data);
+        const overview = await utils_validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -664,9 +675,12 @@ const createFormulaRow = (parent, index, output, formula) => {
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
   item.innerHTML = `
-      <input type="text" placeholder="Output column" style="width: 35%;" ${output ? `value="${output}"` : ''} />
-      <input type="text" placeholder="Formula" style="width: 35%;" ${formula ? `value="${formula}"` : ''} />
+      <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
+      <div class="input-group">
+          <label class="label" for="formula-${index}">Formula:</label>
+          <textarea id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+      </div>
     `;
   parent.appendChild(item);
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
@@ -734,7 +748,7 @@ const formula = (app) => {
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
       const to = line.getElementsByTagName('input')[0].value;
-      const jqFormula = line.getElementsByTagName('input')[1].value;
+      const jqFormula = line.getElementsByTagName('textarea')[0].value;
 
       const outputColumn = {
         name: to,
@@ -754,6 +768,16 @@ const formula = (app) => {
       const overview = await validate('formula', data);
       if (overview.error) {
         throw new Error(overview.error);
+      } else {
+        const inputColumns = await getJQInput({
+          expressions: data.settings.expressions,
+          columns,
+        });
+        if (inputColumns.error) {
+          throw new Error(inputColumns.error);
+        } else {
+          data.columns.input = inputColumns;
+        }
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
@@ -762,7 +786,7 @@ const formula = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -773,9 +797,8 @@ All rights reserved.
 
 
 
-
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(convert);
 
 
 /***/ })
@@ -867,7 +890,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -917,7 +940,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

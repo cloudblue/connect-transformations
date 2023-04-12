@@ -8,7 +8,7 @@ import re
 import jq
 from connect.eaas.core.decorators import router, transformation
 
-from connect_transformations.formula.utils import strip_column_name, validate_formula
+from connect_transformations.formula.utils import extract_input, strip_column_name, validate_formula
 
 
 class FormulaTransformationMixin:
@@ -59,7 +59,17 @@ class FormulaWebAppMixin:
         summary='Validate formula settings',
     )
     def validate_formula_settings(
-            self,
-            data: dict,
+        self,
+        data: dict,
     ):
         return validate_formula(data)
+
+    @router.post(
+        '/formula/extract_input',
+        summary='Extract input columns',
+    )
+    def extract_formula_input(
+        self,
+        data: dict,
+    ):
+        return extract_input(data)
