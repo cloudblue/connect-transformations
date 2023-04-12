@@ -15,7 +15,7 @@ class CopyColumnTransformationMixin:
         description=(
             'This transformation function allows you to copy values from Input to Output columns, '
             'which might be handy if you\'d like to change column name in the output data or '
-            'create a copy of values in table.'
+            'create a copy of values in a table.'
         ),
         edit_dialog_ui='/static/transformations/copy.html',
     )

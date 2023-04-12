@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 854:
+/***/ 642:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,7 +24,14 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -36,7 +43,7 @@ const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').t
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
  (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -241,20 +248,24 @@ const lookupSubscription = (app) => {
 
   app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
       option.value = key;
       option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
       document.getElementById('criteria').appendChild(option);
     });
 
@@ -265,25 +276,68 @@ const lookupSubscription = (app) => {
       document.getElementById('column').appendChild(option);
     });
 
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      Object.values(parameters).forEach((element) => {
+        Object.keys(element).forEach((key) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.text = element[key];
+          document.getElementById('parameter').appendChild(option);
+        });
+      });
+    }
+
     if (settings) {
       document.getElementById('criteria').value = settings.lookup_type;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
       document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('leave_empty').checked = true;
     }
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
   app.listen('save', async () => {
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
     const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
     const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
     const data = {
       settings: {
         lookup_type: criteria,
         from: column.name,
+        parameter,
         prefix,
+        action_if_not_found: actionIfNotFound,
       },
       columns: {
         input: [column],
@@ -301,7 +355,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await utils_validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -531,12 +585,10 @@ const manual = (app) => {
 
 function getCurrentGroups(parent) {
   const descendents = parent.getElementsByTagName('input');
-  const currentGroups = [];
+  const currentGroups = {};
   for (let i = 0; i < descendents.length; i += 1) {
     const element = descendents[i];
-    const content = {};
-    content[element.id] = element.value;
-    currentGroups.push(content);
+    currentGroups[element.id] = element.value;
   }
 
   return currentGroups;
@@ -545,19 +597,17 @@ function getCurrentGroups(parent) {
 function buildGroups(groups) {
   const parent = document.getElementById('output');
   parent.innerHTML = '';
-  Object.values(groups).forEach(element => {
-    Object.keys(element).forEach(groupKey => {
-      const groupValue = element[groupKey];
-      const item = document.createElement('div');
-      item.style.width = '200px';
-      item.innerHTML = `
-      <input
-      type="text" class="output-input" id="${groupKey}"
-      placeholder="${groupKey} value"
-      style="width: 100%;" value="${groupValue}"/>
-      `;
-      parent.appendChild(item);
-    });
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.style.width = '200px';
+    item.innerHTML = `
+    <input
+    type="text" class="output-input" id="${groupKey}"
+    placeholder="${groupKey} value"
+    style="width: 100%;" value="${groupValue}"/>
+    `;
+    parent.appendChild(item);
   });
 }
 
@@ -589,8 +639,8 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     columns = availableColumns;
 
@@ -611,8 +661,8 @@ const splitColumn = (app) => {
     document.getElementById('refresh').addEventListener('click', () => {
       createGroupRows();
     });
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -624,8 +674,8 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
-    components_showComponent('loader');
-    components_hideComponent('app');
+    showComponent('loader');
+    hideComponent('app');
 
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
@@ -652,7 +702,7 @@ const splitColumn = (app) => {
     };
 
     try {
-      const overview = await utils_validate('split_column', data);
+      const overview = await validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -663,8 +713,8 @@ const splitColumn = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
-      components_showComponent('app');
-      components_hideComponent('loader');
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
@@ -786,7 +836,7 @@ const formula = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -799,7 +849,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -891,7 +941,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -941,7 +991,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

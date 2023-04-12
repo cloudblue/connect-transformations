@@ -5,7 +5,6 @@
 #
 import asyncio
 
-import httpx
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
 
@@ -31,4 +30,5 @@ class StandardTransformationsApplication(
         super().__init__(*args, **kwargs)
         self._cache = LRUCache(128)
         self._cache_lock = asyncio.Lock()
-        self._ssl_context = httpx.create_ssl_context()
+        self._current_exchange_rate_lock = asyncio.Lock()
+        self.current_exchange_rate = None

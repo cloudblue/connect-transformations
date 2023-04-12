@@ -23,7 +23,7 @@ def validate_split_column(data):
         or 'pattern' not in data['settings']['regex']
         or not isinstance(data['settings']['regex']['pattern'], str)
         or 'groups' not in data['settings']['regex']
-        or not isinstance(data['settings']['regex']['groups'], list)
+        or not isinstance(data['settings']['regex']['groups'], dict)
     ):
         return JSONResponse(
             status_code=400,
@@ -63,35 +63,26 @@ def validate_split_column(data):
             },
         )
 
-    extracted_groups = dict(pattern.groupindex).keys()
-    for element in data['settings']['regex']['groups']:
-        key = list(element.keys())[0]
-        if key not in extracted_groups:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    'error': (
-                        f'The settings `groups` contains a group name <{key}> that does not '
-                        'exists on `pattern` regular expression '
-                        f"{data['settings']['regex']['pattern']}"
-                    ),
-                },
-            )
+    if pattern.groups != len(data['settings']['regex']['groups']):
+        return JSONResponse(
+            status_code=400,
+            content={
+                'error': (
+                    'The settings `groups` contains a different number of elements that are'
+                    ' defined in the regular expression '
+                    f"{data['settings']['regex']['pattern']}"
+                ),
+            },
+        )
 
     return {
         'overview': "Regexp = '" + data['settings']['regex']['pattern'] + "'",
     }
 
 
-def merge_groups(new_groups, past_groups):
+def merge_groups(new_groups: dict, past_groups: dict):
     if not past_groups:
         return {'groups': new_groups}
-
-    past_groups_dict = {}
-    for element in past_groups:
-        past_groups_dict.update(element)
-
-    for element in new_groups:
-        key = list(element.keys())[0]
-        if key in past_groups_dict:
-            element[key] = past_groups_dict[key]
+    for key in new_groups.keys():
+        if key in past_groups:
+            new_groups[key] = past_groups[key]
