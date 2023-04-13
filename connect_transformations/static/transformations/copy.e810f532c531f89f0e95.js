@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 642:
+/***/ 244:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -24,14 +24,14 @@ const utils_validate = (functionName, data) => fetch(`/api/validate/${functionNa
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
   },
 }).then((response) => response.json());
 
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+const utils_getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -151,8 +151,8 @@ const createManualOutputRow = (parent, index, output) => {
 const copy = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -213,7 +213,7 @@ const copy = (app) => {
     }
 
     try {
-      const overview = await validate('copy_columns', data);
+      const overview = await utils_validate('copy_columns', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -245,8 +245,8 @@ const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -344,7 +344,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await utils_validate('lookup_subscription', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -363,16 +363,21 @@ const convert = (app) => {
   let columns = [];
   let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption) => {
-    const fromCurrencyColumnSelect = document.getElementById(elemId);
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
     Object.keys(currencies).forEach(currency => {
       const currencyFullName = currencies[currency];
       const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
-
-      fromCurrencyColumnSelect.innerHTML += option;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
     });
   };
 
@@ -398,20 +403,34 @@ const convert = (app) => {
     let selectedToCurrency;
     let selectedFromCurrency;
 
+    currencies = await getCurrencies();
+
     if (settings) {
       outputColumnInput.value = settings.to.column;
 
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
 
-    currencies = await getCurrencies();
-
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
     hideComponent('loader');
     showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
@@ -708,7 +727,7 @@ const splitColumn = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -719,9 +738,8 @@ All rights reserved.
 
 
 
-
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(copy);
 
 
 /***/ })
@@ -813,7 +831,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			61: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -863,7 +881,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(244)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

@@ -2,12 +2,55 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 158:
+/***/ 642:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -202,8 +245,8 @@ const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -301,7 +344,7 @@ const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await utils_validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -320,16 +363,21 @@ const convert = (app) => {
   let columns = [];
   let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption) => {
-    const fromCurrencyColumnSelect = document.getElementById(elemId);
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
     Object.keys(currencies).forEach(currency => {
       const currencyFullName = currencies[currency];
       const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
-
-      fromCurrencyColumnSelect.innerHTML += option;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
     });
   };
 
@@ -355,20 +403,34 @@ const convert = (app) => {
     let selectedToCurrency;
     let selectedFromCurrency;
 
+    currencies = await getCurrencies();
+
     if (settings) {
       outputColumnInput.value = settings.to.column;
 
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
 
-    currencies = await getCurrencies();
-
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
     hideComponent('loader');
     showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
@@ -433,8 +495,8 @@ const manual = (app) => {
     return;
   }
 
-  components_hideComponent('app');
-  components_hideComponent('loader');
+  hideComponent('app');
+  hideComponent('loader');
 
   let availableColumns;
   let rowIndex = 0;
@@ -485,8 +547,8 @@ const manual = (app) => {
       createManualOutputRow(outputColumnsElement, rowIndex);
     });
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', () => {
@@ -665,7 +727,7 @@ const splitColumn = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -678,7 +740,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -770,7 +832,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -820,7 +882,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(158)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
