@@ -363,16 +363,21 @@ const convert = (app) => {
   let columns = [];
   let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption) => {
-    const fromCurrencyColumnSelect = document.getElementById(elemId);
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
     Object.keys(currencies).forEach(currency => {
       const currencyFullName = currencies[currency];
       const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
-
-      fromCurrencyColumnSelect.innerHTML += option;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
     });
   };
 
@@ -398,20 +403,34 @@ const convert = (app) => {
     let selectedToCurrency;
     let selectedFromCurrency;
 
+    currencies = await getCurrencies();
+
     if (settings) {
       outputColumnInput.value = settings.to.column;
 
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
 
-    currencies = await getCurrencies();
-
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
     hideComponent('loader');
     showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
