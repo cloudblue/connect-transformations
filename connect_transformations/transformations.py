@@ -10,6 +10,7 @@ from connect.eaas.core.extension import TransformationsApplicationBase
 
 from connect_transformations.copy_columns.mixins import CopyColumnTransformationMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConverterTransformationMixin
+from connect_transformations.formula.mixins import FormulaTransformationMixin
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionTransformationMixin
 from connect_transformations.manual_transformation.mixins import ManualTransformationMixin
 from connect_transformations.split_column.mixins import SplitColumnTransformationMixin
@@ -20,6 +21,7 @@ class StandardTransformationsApplication(
     ManualTransformationMixin,
     CopyColumnTransformationMixin,
     CurrencyConverterTransformationMixin,
+    FormulaTransformationMixin,
     LookupSubscriptionTransformationMixin,
     SplitColumnTransformationMixin,
 ):

@@ -39,3 +39,14 @@ export const getGroups = (data) => fetch('/api/split_column/extract_groups', {
   },
   body: JSON.stringify(data),
 }).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+export const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());

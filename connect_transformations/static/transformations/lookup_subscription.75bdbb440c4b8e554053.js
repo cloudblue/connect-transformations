@@ -1,23 +1,97 @@
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ 642:
+/***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
+
+
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
 */
-import {
-  getCurrencies,
-  getGroups,
-  getJQInput,
-  getLookupSubscriptionCriteria,
-  getLookupSubscriptionParameters,
-  validate,
-} from './utils';
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
 
-import {
-  hideComponent,
-  showComponent,
-} from './components';
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
 
 
-export const createCopyRow = (parent, index, options, input, output) => {
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const utils_getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const components_showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const components_hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+
+
+
+
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -54,7 +128,7 @@ export const createCopyRow = (parent, index, options, input, output) => {
   }
 };
 
-export const createManualOutputRow = (parent, index, output) => {
+const createManualOutputRow = (parent, index, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -85,7 +159,7 @@ export const createManualOutputRow = (parent, index, output) => {
   }
 };
 
-export const copy = (app) => {
+const copy = (app) => {
   if (!app) return;
 
   hideComponent('loader');
@@ -167,7 +241,7 @@ const createOutputColumnForLookup = (prefix, name) => ({
   description: '',
 });
 
-export const lookupSubscription = (app) => {
+const lookupSubscription = (app) => {
   if (!app) return;
 
   let columns = [];
@@ -182,8 +256,8 @@ export const lookupSubscription = (app) => {
     columns = availableColumns;
     const criteria = await getLookupSubscriptionCriteria();
 
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
 
     Object.keys(criteria).forEach((key) => {
       const option = document.createElement('option');
@@ -281,7 +355,7 @@ export const lookupSubscription = (app) => {
     };
 
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await utils_validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -292,7 +366,7 @@ export const lookupSubscription = (app) => {
   });
 };
 
-export const convert = (app) => {
+const convert = (app) => {
   if (!app) {
     return;
   }
@@ -300,21 +374,16 @@ export const convert = (app) => {
   let columns = [];
   let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
-    const selectCurrencyColumnSelect = document.getElementById(elemId);
-    selectCurrencyColumnSelect.innerHTML = '';
+  const createCurrencyColumnOptions = (elemId, selectedOption) => {
+    const fromCurrencyColumnSelect = document.getElementById(elemId);
 
     Object.keys(currencies).forEach(currency => {
       const currencyFullName = currencies[currency];
       const isSelected = selectedOption && currency === selectedOption;
-      const isDisabled = disabledOption && currency === disabledOption;
 
-      const option = document.createElement('option');
-      option.value = currency;
-      option.text = `${currency} • ${currencyFullName}`;
-      option.selected = isSelected;
-      option.disabled = isDisabled;
-      selectCurrencyColumnSelect.appendChild(option);
+      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
+
+      fromCurrencyColumnSelect.innerHTML += option;
     });
   };
 
@@ -340,34 +409,20 @@ export const convert = (app) => {
     let selectedToCurrency;
     let selectedFromCurrency;
 
-    currencies = await getCurrencies();
-
     if (settings) {
       outputColumnInput.value = settings.to.column;
 
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
-    } else {
-      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
-      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
 
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
+    currencies = await getCurrencies();
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency);
 
     hideComponent('loader');
     showComponent('app');
-
-    const fromCurrency = document.getElementById('from-currency');
-    const toCurrency = document.getElementById('to-currency');
-
-    fromCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
-    });
-
-    toCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
-    });
   });
 
   app.listen('save', async () => {
@@ -427,7 +482,7 @@ export const convert = (app) => {
   });
 };
 
-export const manual = (app) => {
+const manual = (app) => {
   if (!app) {
     return;
   }
@@ -556,7 +611,7 @@ function buildGroups(groups) {
   });
 }
 
-export const createGroupRows = async () => {
+const createGroupRows = async () => {
   const parent = document.getElementById('output');
   const groups = getCurrentGroups(parent);
   const pattern = document.getElementById('pattern').value;
@@ -573,7 +628,7 @@ export const createGroupRows = async () => {
   }
 };
 
-export const splitColumn = (app) => {
+const splitColumn = (app) => {
   if (!app) return;
 
   let columns = [];
@@ -664,7 +719,7 @@ export const splitColumn = (app) => {
   });
 };
 
-export const createFormulaRow = (parent, index, output, formula) => {
+const createFormulaRow = (parent, index, output, formula) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -699,7 +754,7 @@ export const createFormulaRow = (parent, index, output, formula) => {
   }
 };
 
-export const formula = (app) => {
+const formula = (app) => {
   if (!app) return;
 
   hideComponent('loader');
@@ -780,3 +835,164 @@ export const formula = (app) => {
     }
   });
 };
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+
+
+
+
+
+
+(0,dist/* default */.ZP)({ })
+  .then(lookupSubscription);
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			228: 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = self["webpackChunkeaas_e2e_transformations_mock"] = self["webpackChunkeaas_e2e_transformations_mock"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(642)))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
