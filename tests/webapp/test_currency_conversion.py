@@ -81,6 +81,33 @@ def test_validate_currency_conversion_invalid_format(test_client_factory, settin
     }
 
 
+def test_validate_currency_conversion_equal_currencies(test_client_factory):
+    data = {
+        'settings': {
+            'from': {'column': 'columnA', 'currency': 'USD'},
+            'to': {'column': 'columnB', 'currency': 'USD'},
+        },
+        'columns': {
+            'input': [
+                {'name': 'columnA'},
+            ],
+            'output': [
+                {'name': 'columnB'},
+            ],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/validate/currency_conversion', json=data)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data == {
+        'error': (
+            'The settings must have different currencies for `from` and `to`'
+        ),
+    }
+
+
 def test_validate_currency_conversion_invalid_column(test_client_factory):
     data = {
         'settings': {

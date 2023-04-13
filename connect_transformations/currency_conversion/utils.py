@@ -35,6 +35,16 @@ def validate_currency_conversion(data):
             },
         )
 
+    if data['settings']['from']['currency'] == data['settings']['to']['currency']:
+        return JSONResponse(
+            status_code=400,
+            content={
+                'error': (
+                    'The settings must have different currencies for `from` and `to`'
+                ),
+            },
+        )
+
     if data['settings']['from']['column'] not in available_input_columns:
         return JSONResponse(
             status_code=400,
