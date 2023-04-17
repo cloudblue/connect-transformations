@@ -1,0 +1,31 @@
+<!--
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>
+        <%= htmlWebpackPlugin.options.title %>
+    </title>
+</head>
+
+<body>
+    <div id="loader"></div>
+    <div id="app">
+        <div class="main-container" id="content">
+            <div class="input-group">
+                <label class="label" for="column">Input Column</label>
+                <select class="input" id="column"></select>
+            </div>
+            <div class="input-group">
+                <label class="label" for="value">Value</label>
+                <input id="value" class="input" type="text" placeholder="Value"/>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

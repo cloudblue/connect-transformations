@@ -2,12 +2,66 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 158:
+/***/ 986:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const utils_validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const utils_getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const utils_getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const utils_getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -452,8 +506,8 @@ const manual = (app) => {
     return;
   }
 
-  components_hideComponent('app');
-  components_hideComponent('loader');
+  hideComponent('app');
+  hideComponent('loader');
 
   let availableColumns;
   let rowIndex = 0;
@@ -504,8 +558,8 @@ const manual = (app) => {
       createManualOutputRow(outputColumnsElement, rowIndex);
     });
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', () => {
@@ -801,7 +855,92 @@ const formula = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+
+const filterRow = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  components_hideComponent('loader');
+  components_showComponent('app');
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    components_showComponent('loader');
+    components_hideComponent('app');
+
+    columns = availableColumns;
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('value').value = settings.value;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+    }
+    components_hideComponent('loader');
+    components_showComponent('app');
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
+
+    components_showComponent('loader');
+    components_hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${selectedColumn}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: selectedColumn,
+      value: inputValue.value,
+    };
+
+    try {
+      const overview = await utils_validate('filter_row', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+      components_showComponent('app');
+      components_hideComponent('loader');
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -814,7 +953,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(filterRow);
 
 
 /***/ })
@@ -906,7 +1045,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -956,7 +1095,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(158)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(986)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

@@ -2,12 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 953:
+/***/ 88:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -38,7 +38,7 @@ const utils_getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_
   },
 }).then((response) => response.json());
 
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
 
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
@@ -54,7 +54,7 @@ const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
 
 /* The data should contain list of jq expressions and all input columns.
 We expect to return columns used in expressions */
-const utils_getJQInput = (data) => fetch('/api/formula/extract_input', {
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -429,8 +429,8 @@ const convert = (app) => {
     createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
     createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
-    components_hideComponent('loader');
-    components_showComponent('app');
+    hideComponent('loader');
+    showComponent('app');
 
     const fromCurrency = document.getElementById('from-currency');
     const toCurrency = document.getElementById('to-currency');
@@ -486,7 +486,7 @@ const convert = (app) => {
       };
 
       try {
-        const overview = await utils_validate('currency_conversion', data);
+        const overview = await validate('currency_conversion', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -776,8 +776,8 @@ const createFormulaRow = (parent, index, output, formula) => {
 const formula = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
+  components_hideComponent('loader');
+  components_showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -834,7 +834,7 @@ const formula = (app) => {
     }
 
     try {
-      const overview = await validate('formula', data);
+      const overview = await utils_validate('formula', data);
       if (overview.error) {
         throw new Error(overview.error);
       } else {
@@ -855,7 +855,92 @@ const formula = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+
+const filterRow = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  hideComponent('loader');
+  showComponent('app');
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    showComponent('loader');
+    hideComponent('app');
+
+    columns = availableColumns;
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('value').value = settings.value;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+    }
+    hideComponent('loader');
+    showComponent('app');
+  });
+
+  app.listen('save', async () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
+
+    showComponent('loader');
+    hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${selectedColumn}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: selectedColumn,
+      value: inputValue.value,
+    };
+
+    try {
+      const overview = await validate('filter_row', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      window.alert(e);
+      showComponent('app');
+      hideComponent('loader');
+    }
+  });
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -867,7 +952,7 @@ All rights reserved.
 
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(formula);
 
 
 /***/ })
@@ -959,7 +1044,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			2: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -1009,7 +1094,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(953)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(88)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
