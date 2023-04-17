@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import httpx
 from connect.eaas.core.decorators import router, transformation
+from connect.eaas.core.responses import RowTransformationResponse
 
 from connect_transformations.currency_conversion.utils import validate_currency_conversion
 from connect_transformations.exceptions import CurrencyConversionError
@@ -62,24 +63,27 @@ class CurrencyConverterTransformationMixin:
         currency = trfn_settings['from']['currency']
         currency_to = trfn_settings['to']['currency']
 
-        await self._generate_current_exchange_rate(
-            currency,
-            currency_to,
-        )
+        try:
+            await self._generate_current_exchange_rate(
+                currency,
+                currency_to,
+            )
+        except Exception as e:
+            return RowTransformationResponse.fail(output=str(e))
 
         if is_input_column_nullable(
             self.transformation_request['transformation']['columns']['input'],
             trfn_settings['from']['column'],
         ) and not value:
-            return {trfn_settings['to']['column']: None}
+            return RowTransformationResponse.skip()
 
-        return {
+        return RowTransformationResponse.done({
             trfn_settings['to']['column']: (
                 Decimal(value) * self.current_exchange_rate
             ).quantize(
                 Decimal('.00001'),
             ),
-        }
+        })
 
 
 class CurrencyConversionWebAppMixin:

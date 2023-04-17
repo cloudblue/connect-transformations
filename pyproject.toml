@@ -15,7 +15,7 @@ readme = "./README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-connect-eaas-core = ">=27.13,<28"
+connect-eaas-core = ">=27.14,<28"
 cachetools = "^5.3.0"
 jq = "^1.4.1"
 
@@ -35,8 +35,7 @@ flake8-comprehensions = "^3.3.1"
 flake8-debugger = "^4.0.0"
 flake8-eradicate = "^1.0.0"
 flake8-string-format = "^0.3.0"
-pytest-asyncio = "^0.15.1"
-connect-devops-testing-library = "24.*"
+pytest-asyncio = "^0.21.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8-isort = "^6.0.0"

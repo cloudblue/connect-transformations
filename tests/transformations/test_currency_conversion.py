@@ -8,8 +8,9 @@ from decimal import Decimal
 
 import httpx
 import pytest
+from connect.eaas.core.enums import ResultType
 
-from connect_transformations.exceptions import BaseTransformationException, CurrencyConversionError
+from connect_transformations.exceptions import BaseTransformationException
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
@@ -37,11 +38,13 @@ async def test_currency_conversion_first(mocker, httpx_mock):
         },
     }
 
-    assert await app.currency_conversion(
+    response = await app.currency_conversion(
         {
             'Price': '22.5',
         },
-    ) == {
+    )
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'Price(Eur)': (
             Decimal('22.5') * Decimal(0.92343)
         ).quantize(
@@ -87,7 +90,8 @@ async def test_currency_conversion_first_with_multitask(mocker, httpx_mock):
 
     results = await asyncio.gather(*tasks)
     for result in results:
-        assert result == {
+        assert result.status == ResultType.SUCCESS
+        assert result.transformed_row == {
             'Price(Eur)': (
                 Decimal('22.5') * Decimal(0.92343)
             ).quantize(
@@ -117,11 +121,13 @@ async def test_currency_conversion(mocker):
         },
     }
 
-    assert await app.currency_conversion(
+    response = await app.currency_conversion(
         {
             'Price': '22.5',
         },
-    ) == {
+    )
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'Price(Eur)': (
             Decimal('22.5') * Decimal(0.92343)
         ).quantize(
@@ -151,13 +157,13 @@ async def test_currency_conversion_first_http_error(mocker):
         },
     }
 
-    with pytest.raises(CurrencyConversionError) as e:
-        await app.currency_conversion({'Price': '22.5'})
-    assert str(e.value) == (
+    response = await app.currency_conversion({'Price': '22.5'})
+    assert response.status == ResultType.FAIL
+    assert (
         'An error occurred while requesting '
         'https://api.exchangerate.host/latest with params'
         " {'symbols': 'EUR', 'base': 'USD'}: error"
-    )
+    ) in response.output
 
 
 @pytest.mark.asyncio
@@ -184,13 +190,13 @@ async def test_currency_conversion_first_unexpected_response(mocker, httpx_mock)
         },
     }
 
-    with pytest.raises(CurrencyConversionError) as e:
-        await app.currency_conversion({'Price': '22.5'})
-    assert str(e.value) == (
+    response = await app.currency_conversion({'Price': '22.5'})
+    assert response.status == ResultType.FAIL
+    assert (
         'Unexpected response calling '
         'https://api.exchangerate.host/latest with params'
         " {'symbols': 'EUR', 'base': 'USD'}"
-    )
+    ) in response.output
 
 
 @pytest.mark.asyncio
@@ -215,13 +221,13 @@ async def test_currency_conversion_first_400_response(mocker, httpx_mock):
         },
     }
 
-    with pytest.raises(CurrencyConversionError) as e:
-        await app.currency_conversion({'Price': '22.5'})
-    assert str(e.value) == (
+    response = await app.currency_conversion({'Price': '22.5'})
+    assert response.status == ResultType.FAIL
+    assert (
         'Unexpected response calling '
         'https://api.exchangerate.host/latest with params'
         " {'symbols': 'EUR', 'base': 'USD'}"
-    )
+    ) in response.output
 
 
 @pytest.mark.asyncio
@@ -240,13 +246,12 @@ async def test_currency_conversion_null_value(mocker):
         },
     }
 
-    assert await app.currency_conversion(
+    response = await app.currency_conversion(
         {
             'Price': None,
         },
-    ) == {
-        'Price(Eur)': None,
-    }
+    )
+    assert response.status == ResultType.SKIP
 
 
 @pytest.mark.asyncio

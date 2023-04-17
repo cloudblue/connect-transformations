@@ -1,3 +1,3 @@
-# EaaS: CloudBlue Connect Transformations Extension changelog
+# CloudBlue Connect Transformations Library changelog
 
-* 1.0.0: initial version
+* 27.4: initial version

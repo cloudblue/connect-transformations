@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 from connect.eaas.core.decorators import router, transformation
+from connect.eaas.core.responses import RowTransformationResponse
 
 from connect_transformations.copy_columns.utils import validate_copy_columns
 
@@ -31,7 +32,7 @@ class CopyColumnTransformationMixin:
         for setting in trfn_settings:
             result[setting['to']] = row[setting['from']]
 
-        return result
+        return RowTransformationResponse.done(result)
 
 
 class CopyColumnWebAppMixin:

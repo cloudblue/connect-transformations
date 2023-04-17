@@ -1,5 +1,5 @@
 {
-    "name": "CloudBlue Connect Strandard Transformations Extension",
+    "name": "CloudBlue Connect Standard Transformations Library",
     "description": "This extension is used to offer standard transformations for CloudBlue Connect.",
     "version": "27.4",
     "audience": ["distributor", "vendor", "reseller"],
