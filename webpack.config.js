@@ -81,11 +81,25 @@ module.exports = {
     }),
     new ESLintPlugin(),
   ],
+  resolve: {
+    alias: {
+      '~styles': path.resolve(__dirname, 'ui/styles'),
+    },
+  },
   module: {
     rules: [
       {
         test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.styl(us)?$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+          'stylus-loader',
+        ],
       },
       {
         test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
