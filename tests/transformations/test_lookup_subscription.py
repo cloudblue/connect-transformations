@@ -4,8 +4,8 @@
 # All rights reserved.
 #
 import pytest
+from connect.eaas.core.enums import ResultType
 
-from connect_transformations.exceptions import SubscriptionLookupError
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
@@ -37,9 +37,11 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
             },
         },
     }
-    assert await app.lookup_subscription({
+    response = await app.lookup_subscription({
         'ColumnA': 'SubscriptionID',
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'PREFIX.product.id': 'product.id',
         'PREFIX.product.name': 'product.name',
         'PREFIX.marketplace.id': 'marketplace.id',
@@ -75,9 +77,12 @@ async def test_lookup_subscription_cached(mocker):
         'id': 'subscription.id',
         'external_id': 'subscription.external_id',
     }
-    assert await app.lookup_subscription({
+    response = await app.lookup_subscription({
         'ColumnA': 'SubscriptionID',
-    }) == {
+    })
+
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'PREFIX.product.id': 'product.id',
         'PREFIX.product.name': 'product.name',
         'PREFIX.marketplace.id': 'marketplace.id',
@@ -114,13 +119,14 @@ async def test_lookup_subscription_not_found(
             },
         },
     }
-    with pytest.raises(SubscriptionLookupError) as e:
-        await app.lookup_subscription(
-            {
-                'ColumnA': 'SubscriptionID',
-            },
-        )
-    assert str(e.value) == "No result found for the filter {'id': 'SubscriptionID'}"
+
+    response = await app.lookup_subscription(
+        {
+            'ColumnA': 'SubscriptionID',
+        },
+    )
+    assert response.status == ResultType.FAIL
+    assert "No result found for the filter {'id': 'SubscriptionID'}" in response.output
 
 
 @pytest.mark.asyncio
@@ -148,20 +154,12 @@ async def test_lookup_subscription_not_found_leave_empty(
             },
         },
     }
-    assert await app.lookup_subscription(
+    response = await app.lookup_subscription(
         {
             'ColumnA': 'SubscriptionID',
         },
-    ) == {
-        'PREFIX.product.id': None,
-        'PREFIX.product.name': None,
-        'PREFIX.marketplace.id': None,
-        'PREFIX.marketplace.name': None,
-        'PREFIX.vendor.id': None,
-        'PREFIX.vendor.name': None,
-        'PREFIX.subscription.id': None,
-        'PREFIX.subscription.external_id': None,
-    }
+    )
+    assert response.status == ResultType.SKIP
 
 
 @pytest.mark.asyncio
@@ -189,13 +187,14 @@ async def test_lookup_subscription_found_too_many(
             },
         },
     }
-    with pytest.raises(SubscriptionLookupError) as e:
-        await app.lookup_subscription(
-            {
-                'ColumnA': 'SubscriptionID',
-            },
-        )
-    assert str(e.value) == "Many results found for the filter {'id': 'SubscriptionID'}"
+
+    response = await app.lookup_subscription(
+        {
+            'ColumnA': 'SubscriptionID',
+        },
+    )
+    assert response.status == ResultType.FAIL
+    assert "Many results found for the filter {'id': 'SubscriptionID'}" in response.output
 
 
 @pytest.mark.asyncio
@@ -215,18 +214,10 @@ async def test_lookup_subscription_null_value(mocker):
             },
         },
     }
-    assert await app.lookup_subscription({
+    response = await app.lookup_subscription({
         'ColumnA': None,
-    }) == {
-        'PREFIX.product.id': None,
-        'PREFIX.product.name': None,
-        'PREFIX.marketplace.id': None,
-        'PREFIX.marketplace.name': None,
-        'PREFIX.vendor.id': None,
-        'PREFIX.vendor.name': None,
-        'PREFIX.subscription.id': None,
-        'PREFIX.subscription.external_id': None,
-    }
+    })
+    assert response.status == ResultType.SKIP
 
 
 @pytest.mark.asyncio
@@ -263,9 +254,11 @@ async def test_lookup_subscription_params_value(
             },
         },
     }
-    assert await app.lookup_subscription({
+    response = await app.lookup_subscription({
         'ColumnA': 'SubscriptionID',
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'PREFIX.product.id': 'product.id',
         'PREFIX.product.name': 'product.name',
         'PREFIX.marketplace.id': 'marketplace.id',

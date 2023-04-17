@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 88:
+/***/ 854:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -43,7 +43,7 @@ const utils_getCurrencies = () => fetch('/api/currency_conversion/currencies').t
 /* The data should contain pattern (and optionally groups) keys.
 We expect the return groups key (with the new keys found in the regex) and the order
  (to display in order on the UI) */
-const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ const utils_getGroups = (data) => fetch('/api/split_column/extract_groups', {
 
 /* The data should contain list of jq expressions and all input columns.
 We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
+const utils_getJQInput = (data) => fetch('/api/formula/extract_input', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -374,16 +374,21 @@ const convert = (app) => {
   let columns = [];
   let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption) => {
-    const fromCurrencyColumnSelect = document.getElementById(elemId);
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
     Object.keys(currencies).forEach(currency => {
       const currencyFullName = currencies[currency];
       const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      const option = isSelected ? `<option value="${currency}" selected>${currency} • ${currencyFullName}</option>` : `<option value="${currency}">${currency} • ${currencyFullName}</option>`;
-
-      fromCurrencyColumnSelect.innerHTML += option;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
     });
   };
 
@@ -409,20 +414,34 @@ const convert = (app) => {
     let selectedToCurrency;
     let selectedFromCurrency;
 
+    currencies = await getCurrencies();
+
     if (settings) {
       outputColumnInput.value = settings.to.column;
 
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
 
-    currencies = await getCurrencies();
-
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency);
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
     hideComponent('loader');
     showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
@@ -639,8 +658,8 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    showComponent('loader');
-    hideComponent('app');
+    components_showComponent('loader');
+    components_hideComponent('app');
 
     columns = availableColumns;
 
@@ -661,8 +680,8 @@ const splitColumn = (app) => {
     document.getElementById('refresh').addEventListener('click', () => {
       createGroupRows();
     });
-    hideComponent('loader');
-    showComponent('app');
+    components_hideComponent('loader');
+    components_showComponent('app');
   });
 
   app.listen('save', async () => {
@@ -674,8 +693,8 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
-    showComponent('loader');
-    hideComponent('app');
+    components_showComponent('loader');
+    components_hideComponent('app');
 
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
@@ -702,7 +721,7 @@ const splitColumn = (app) => {
     };
 
     try {
-      const overview = await validate('split_column', data);
+      const overview = await utils_validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -713,8 +732,8 @@ const splitColumn = (app) => {
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       window.alert(e);
-      showComponent('app');
-      hideComponent('loader');
+      components_showComponent('app');
+      components_hideComponent('loader');
     }
   });
 };
@@ -757,8 +776,8 @@ const createFormulaRow = (parent, index, output, formula) => {
 const formula = (app) => {
   if (!app) return;
 
-  components_hideComponent('loader');
-  components_showComponent('app');
+  hideComponent('loader');
+  showComponent('app');
 
   let rowIndex = 0;
   let columns = [];
@@ -815,7 +834,7 @@ const formula = (app) => {
     }
 
     try {
-      const overview = await utils_validate('formula', data);
+      const overview = await validate('formula', data);
       if (overview.error) {
         throw new Error(overview.error);
       } else {
@@ -836,7 +855,7 @@ const formula = (app) => {
   });
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -847,8 +866,9 @@ All rights reserved.
 
 
 
+
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(splitColumn);
 
 
 /***/ })
@@ -940,7 +960,7 @@ All rights reserved.
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			12: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -990,7 +1010,7 @@ All rights reserved.
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(88)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(854)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

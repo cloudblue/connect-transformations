@@ -3,6 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from connect.eaas.core.enums import ResultType
+
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
@@ -17,12 +19,16 @@ def test_copy_columns(mocker):
             ],
         },
     }
-    assert app.copy_columns(
+
+    response = app.copy_columns(
         {
             'ColumnA': 'ContentColumnA',
             'ColumnB': 'ContentColumnB',
         },
-    ) == {
+    )
+
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'NewColC': 'ContentColumnA',
         'NewColD': 'ContentColumnB',
     }

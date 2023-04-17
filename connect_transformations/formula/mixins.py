@@ -7,6 +7,7 @@ import re
 
 import jq
 from connect.eaas.core.decorators import router, transformation
+from connect.eaas.core.responses import RowTransformationResponse
 
 from connect_transformations.formula.utils import extract_input, strip_column_name, validate_formula
 
@@ -46,10 +47,14 @@ class FormulaTransformationMixin:
                     column,
                     f'.{strip_column_name(column[2:-1])}',
                 )
+            try:
+                result[expression['to']] = jq.compile(
+                    formula_to_compile,
+                ).input(row_stripped).first()
+            except Exception as e:
+                return RowTransformationResponse.fail(output=str(e))
 
-            result[expression['to']] = jq.compile(formula_to_compile).input(row_stripped).first()
-
-        return result
+        return RowTransformationResponse.done(result)
 
 
 class FormulaWebAppMixin:

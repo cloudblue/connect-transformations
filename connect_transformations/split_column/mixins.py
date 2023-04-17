@@ -6,6 +6,7 @@
 import re
 
 from connect.eaas.core.decorators import router, transformation
+from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
 from connect_transformations.split_column.utils import merge_groups, validate_split_column
@@ -40,7 +41,7 @@ class SplitColumnTransformationMixin:
             value = pattern_groups[index] if len(pattern_groups) > index else None
             result[column_value] = value
 
-        return result
+        return RowTransformationResponse.done(result)
 
 
 class SplitColumnWebAppMixin:

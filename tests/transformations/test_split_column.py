@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import pytest
+from connect.eaas.core.enums import ResultType
 
 from connect_transformations.transformations import StandardTransformationsApplication
 
@@ -27,9 +28,11 @@ async def test_split_column(mocker):
             },
         },
     }
-    assert await app.split_column({
+    response = await app.split_column({
         'column': 'X Name Surname',
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'group_1': 'X',
         'First Name': 'Name',
         'Last Name': 'Surname',
@@ -55,9 +58,11 @@ async def test_split_column_not_match_regex(mocker):
             },
         },
     }
-    assert await app.split_column({
+    response = await app.split_column({
         'column': 'Name Surname',
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'First Name': None,
         'Last Name': None,
         'group_1': None,
@@ -82,9 +87,11 @@ async def test_split_column_match_partially(mocker):
             },
         },
     }
-    assert await app.split_column({
+    response = await app.split_column({
         'column': 'Name Surname Othername',
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'First Name': 'Name',
         'Last Name': 'Surname',
     }
@@ -108,9 +115,12 @@ async def test_split_column_match_optional(mocker):
             },
         },
     }
-    assert await app.split_column({
+    response = await app.split_column({
         'column': 'Name ',
-    }) == {
+    })
+
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'First Name': 'Name',
         'Last Name': None,
     }

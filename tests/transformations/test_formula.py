@@ -5,7 +5,7 @@
 #
 import datetime
 
-import pytest
+from connect.eaas.core.enums import ResultType
 
 from connect_transformations.transformations import StandardTransformationsApplication
 
@@ -42,9 +42,11 @@ def test_formula(mocker):
     }
 
     date = datetime.datetime.now()
-    assert app.formula({
+    response = app.formula({
         'Price without Tax': 100, 'Tax': 20, 'Created': date,
-    }) == {
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
         'Price with Tax': 120,
         'Tax value': 0.2,
         'Copy date': str(date),
@@ -73,7 +75,6 @@ def test_formula_invalid_row(mocker):
         },
     }
 
-    with pytest.raises(ValueError) as e:
-        app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
-
-    assert str(e.value) == 'string ("twenty") and number (100) cannot be divided'
+    response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
+    assert response.status == ResultType.FAIL
+    assert 'string ("twenty") and number (100) cannot be divided' in response.output
