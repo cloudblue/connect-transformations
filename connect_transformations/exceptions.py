@@ -17,3 +17,7 @@ class CurrencyConversionError(BaseTransformationException):
 
 class SplitColumnError(BaseTransformationException):
     """Exception that happens when the split column call fails"""
+
+
+class AirTableError(BaseTransformationException):
+    """Exception that happens when the airtable api call fails"""

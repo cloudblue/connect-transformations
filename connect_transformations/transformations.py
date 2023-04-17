@@ -8,6 +8,7 @@ import asyncio
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
 
+from connect_transformations.airtable_lookup.mixins import AirTableLookupTransformationMixin
 from connect_transformations.copy_columns.mixins import CopyColumnTransformationMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConverterTransformationMixin
 from connect_transformations.formula.mixins import FormulaTransformationMixin
@@ -18,6 +19,7 @@ from connect_transformations.split_column.mixins import SplitColumnTransformatio
 
 class StandardTransformationsApplication(
     TransformationsApplicationBase,
+    AirTableLookupTransformationMixin,
     ManualTransformationMixin,
     CopyColumnTransformationMixin,
     CurrencyConverterTransformationMixin,
