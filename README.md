@@ -11,6 +11,8 @@ The current release provides the following transformations:
 * `Split Column`: This transformation function allows you to copy values from Input to Output columns, which might be handy if you’d like to change column name in the output data for for some other reason create a copy of values in table.
 * `Lookup CloudBlue Subscription data`: This transformation function allows to search for the corresponding CloudBlue Subscription data.
 * `Convert Currency`: This transformation function converts a given column value with a given currency to another.
+* `Formula`: Use this transformation to perform data manipulation using columns manipulation formula.
+* `Filter Row`: This transformation function allows you to filter by equality of a given input column with a given string value. If it matches the row is kept, if not it is marked to be deleted.
 
 Overall, Connect Standard Transformations Library is a valuable extension of the CloudBlue Connect platform that provides users with a powerful set of tools for managing and manipulating data. By providing pre-built transformations that can be easily configured and executed, Connect Standard Transformations Library streamlines the data transformation process and makes it easier for users to work with their data.
 
