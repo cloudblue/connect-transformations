@@ -191,7 +191,7 @@ const filterRow = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      window.alert(e);
+      showError(e);
       showComponent('app');
       hideComponent('loader');
     }
