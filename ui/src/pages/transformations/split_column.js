@@ -32,19 +32,17 @@ function getCurrentGroups(parent) {
 function buildGroups(groups) {
   const parent = document.getElementById('output');
   parent.innerHTML = '';
-  Object.values(groups).forEach(element => {
-    Object.keys(element).forEach(groupKey => {
-      const groupValue = element[groupKey];
-      const item = document.createElement('div');
-      item.style.width = '200px';
-      item.innerHTML = `
-      <input
-      type="text" class="output-input" id="${groupKey}"
-      placeholder="${groupKey} value"
-      style="width: 100%;" value="${groupValue}"/>
-      `;
-      parent.appendChild(item);
-    });
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.style.width = '200px';
+    item.innerHTML = `
+    <input
+    type="text" class="output-input" id="${groupKey}"
+    placeholder="${groupKey} value"
+    style="width: 100%;" value="${groupValue}"/>
+    `;
+    parent.appendChild(item);
   });
 }
 
