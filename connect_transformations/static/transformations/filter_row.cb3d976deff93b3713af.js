@@ -2,14 +2,50 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 118:
+/***/ 813:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createGroupRows, splitColumn
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -64,45 +100,7 @@ const getJQInput = (data) => fetch('/api/formula/extract_input', {
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
-
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -116,55 +114,13 @@ All rights reserved.
 
 
 
-function getCurrentGroups(parent) {
-  const descendents = parent.getElementsByTagName('input');
-  const currentGroups = {};
-  for (let i = 0; i < descendents.length; i += 1) {
-    const element = descendents[i];
-    currentGroups[element.id] = element.value;
-  }
-
-  return currentGroups;
-}
-
-function buildGroups(groups) {
-  const parent = document.getElementById('output');
-  parent.innerHTML = '';
-  Object.keys(groups).forEach(groupKey => {
-    const groupValue = groups[groupKey];
-    const item = document.createElement('div');
-    item.style.width = '200px';
-    item.innerHTML = `
-    <input
-    type="text" class="output-input" id="${groupKey}"
-    placeholder="${groupKey} value"
-    style="width: 100%;" value="${groupValue}"/>
-    `;
-    parent.appendChild(item);
-  });
-}
-
-const createGroupRows = async () => {
-  const parent = document.getElementById('output');
-  const groups = getCurrentGroups(parent);
-  const pattern = document.getElementById('pattern').value;
-  if (pattern) {
-    const body = { pattern, groups };
-    const response = await getGroups(body);
-    if (response.error) {
-      showError(response.error);
-    } else {
-      buildGroups(response.groups);
-    }
-  } else {
-    showError('The regular expression is empty');
-  }
-};
-
-const splitColumn = (app) => {
+const filterRow = (app) => {
   if (!app) return;
 
   let columns = [];
+
+  hideComponent('loader');
+  showComponent('app');
 
   app.listen('config', (config) => {
     const {
@@ -185,15 +141,10 @@ const splitColumn = (app) => {
     });
 
     if (settings) {
-      document.getElementById('pattern').value = settings.regex.pattern;
+      document.getElementById('value').value = settings.value;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
-      buildGroups(settings.regex.groups);
     }
-
-    document.getElementById('refresh').addEventListener('click', () => {
-      createGroupRows();
-    });
     hideComponent('loader');
     showComponent('app');
   });
@@ -207,6 +158,7 @@ const splitColumn = (app) => {
       },
       overview: '',
     };
+
     showComponent('loader');
     hideComponent('app');
 
@@ -214,28 +166,22 @@ const splitColumn = (app) => {
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
     const inputColumn = columns.find((column) => column.id === inputSelector.value);
     data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${selectedColumn}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
 
-    const selector = document.getElementById('output');
-    const options = selector.getElementsByTagName('input');
-    for (let i = 0; i < options.length; i += 1) {
-      const option = options[i];
-      data.columns.output.push({
-        name: option.value,
-        type: inputColumn.type,
-        description: '',
-      });
-    }
-
+    const inputValue = document.getElementById('value');
     data.settings = {
       from: selectedColumn,
-      regex: {
-        pattern: document.getElementById('pattern').value,
-        groups: getCurrentGroups(document.getElementById('output')),
-      },
+      value: inputValue.value,
     };
 
     try {
-      const overview = await validate('split_column', data);
+      const overview = await validate('filter_row', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -253,7 +199,7 @@ const splitColumn = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(filterRow);
 
 
 /***/ })
@@ -345,7 +291,7 @@ const splitColumn = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -395,7 +341,7 @@ const splitColumn = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

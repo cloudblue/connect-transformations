@@ -183,7 +183,11 @@ def test_groups(
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        'groups': {'1': 'first_name', '2': 'last_name', '3': 'group_3'},
+        'groups': {
+            '1': {'name': 'first_name', 'type': 'string'},
+            '2': {'name': 'last_name', 'type': 'string'},
+            '3': {'name': 'group_3', 'type': 'string'},
+        },
     }
 
 
@@ -200,7 +204,8 @@ def test_groups_merge(
     assert response.status_code == 200
     data = response.json()
     groups = data.get('groups')
-    groups['1'] = 'First Name'
+    groups['1']['name'] = 'Is First Name'
+    groups['1']['type'] = 'boolean'
 
     response = client.post(
         '/api/split_column/extract_groups',
@@ -213,7 +218,11 @@ def test_groups_merge(
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        'groups': {'1': 'First Name', '2': 'first_name', '3': 'last_name'},
+        'groups': {
+            '1': {'name': 'Is First Name', 'type': 'boolean'},
+            '2': {'name': 'first_name', 'type': 'string'},
+            '3': {'name': 'last_name', 'type': 'string'},
+        },
     }
 
 
