@@ -18,10 +18,6 @@ def error_response(error):
     )
 
 
-def strip_column_name(value):
-    return ''.join([c for c in value if (c.isalnum() or c == '_')])
-
-
 def validate_formula(data):  # noqa: CCR001
     if (
         'settings' not in data
@@ -74,6 +70,16 @@ def validate_formula(data):  # noqa: CCR001
                     ),
                 )
 
+        columns = re.findall(r'\."[\w ]+"', expression['formula'])
+        for column in columns:
+            if column[2:-1] not in available_columns:
+                return error_response(
+                    (
+                        f'Settings contains formula `{expression["formula"]}` '
+                        'with column that does not exist on columns.input.'
+                    ),
+                )
+
         columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
         for column in columns:
             if column[2:-1] not in available_columns:
@@ -85,7 +91,7 @@ def validate_formula(data):  # noqa: CCR001
                 )
             formula_to_compile = formula_to_compile.replace(
                 column,
-                f'.{strip_column_name(column[2:-1])}',
+                f'."{(column[2:-1])}"',
             )
 
         try:
@@ -124,6 +130,9 @@ def extract_input(data):
     for expression in data['expressions']:
         columns = re.findall(r'\.[a-zA-Z]\w*', expression['formula'])
         input_columns.update([column[1:] for column in columns])
+
+        columns = re.findall(r'\."[\w ]+"', expression['formula'])
+        input_columns.update([column[2:-1] for column in columns])
 
         columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
         input_columns.update([column[2:-1] for column in columns])

@@ -14,7 +14,7 @@ def test_validate_formula(
             'expressions': [
                 {
                     'to': 'Price with Tax',
-                    'formula': '.(Price without Tax) + .Tax',
+                    'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
                 },
                 {
                     'to': 'Tax value',
@@ -26,6 +26,7 @@ def test_validate_formula(
             'input': [
                 {'name': 'Price without Tax', 'nullable': False},
                 {'name': 'Tax', 'nullable': False},
+                {'name': 'Additional fee', 'nullable': False},
             ],
         },
     }
@@ -38,8 +39,8 @@ def test_validate_formula(
     data = response.json()
     assert data == {
         'overview': (
-            "Price with Tax = .(Price without Tax) + .Tax\n"
-            "Tax value = .(Tax) / .(Price without Tax)\n"
+            'Price with Tax = .(Price without Tax) + .Tax + ."Additional fee"\n'
+            'Tax value = .(Tax) / .(Price without Tax)\n'
         ),
     }
 
@@ -214,6 +215,38 @@ def test_validate_formula_non_existing_column_another(
     }
 
 
+def test_validate_formula_non_existing_column_another_one(
+    test_client_factory,
+):
+    data = {
+        'settings': {
+            'expressions': [
+                {
+                    'to': 'Price with Tax',
+                    'formula': '."Price without Tax" + ."Tax federal"',
+                },
+            ],
+        },
+        'columns': {
+            'input': [
+                {'name': 'Price without Tax', 'nullable': False},
+                {'name': 'Tax', 'nullable': False},
+            ],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/validate/formula', json=data)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data == {
+        'error': (
+            'Settings contains formula `."Price without Tax" + ."Tax federal"` '
+            'with column that does not exist on columns.input.'
+        ),
+    }
+
+
 def test_validate_formula_invalid_formula(
     test_client_factory,
 ):
@@ -250,12 +283,13 @@ def test_extract_formula_input(
         'expressions': [
             {
                 'to': 'Price with Tax',
-                'formula': '.(Price without Tax) + .Tax',
+                'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
             },
         ],
         'columns': [
             {'name': 'Price without Tax', 'nullable': False},
             {'name': 'Tax', 'nullable': False},
+            {'name': 'Additional fee', 'nullable': False},
             {'name': 'Created', 'nullable': False},
             {'name': 'Purchase', 'nullable': False},
         ],
@@ -265,9 +299,10 @@ def test_extract_formula_input(
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
+    assert len(data) == 3
     assert {'name': 'Price without Tax', 'nullable': False} in data
     assert {'name': 'Tax', 'nullable': False} in data
+    assert {'name': 'Additional fee', 'nullable': False} in data
 
 
 def test_extract_formula_input_invalid_expressions(
