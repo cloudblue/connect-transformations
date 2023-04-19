@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 262:
+/***/ 179:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
@@ -27,6 +27,13 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -102,7 +109,7 @@ const hideError = () => {
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -122,7 +129,7 @@ const createOutputColumnForLookup = (prefix, name) => ({
   description: '',
 });
 
-const lookupSubscription = (app) => {
+const lookupProductItem = (app) => {
   if (!app) return;
 
   let columns = [];
@@ -135,7 +142,7 @@ const lookupSubscription = (app) => {
 
     const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = await getLookupSubscriptionCriteria();
+    const criteria = await getLookupProductItemCriteria();
 
     hideComponent('loader');
     showComponent('app');
@@ -144,9 +151,6 @@ const lookupSubscription = (app) => {
       const option = document.createElement('option');
       option.value = key;
       option.text = criteria[key];
-      if (hasProduct === false && key === 'params__value') {
-        option.disabled = true;
-      }
       document.getElementById('criteria').appendChild(option);
     });
 
@@ -155,88 +159,78 @@ const lookupSubscription = (app) => {
       option.value = column.id;
       option.text = column.name;
       document.getElementById('column').appendChild(option);
+
+      const anotherOption = document.createElement('option');
+      anotherOption.value = column.id;
+      anotherOption.text = column.name;
+      document.getElementById('product_id_column').appendChild(anotherOption);
     });
 
     if (hasProduct === true) {
-      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
-      Object.values(parameters).forEach((element) => {
-        Object.keys(element).forEach((key) => {
-          const option = document.createElement('option');
-          option.value = key;
-          option.text = element[key];
-          document.getElementById('parameter').appendChild(option);
-        });
-      });
+      document.getElementById('product_id').value = stream.context.product.id;
+      hideComponent('product_id_input');
+      hideComponent('product_column_input');
     }
 
     if (settings) {
+      document.getElementById('product_id').value = settings.product_id;
       document.getElementById('criteria').value = settings.lookup_type;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
+      const productColumnId = columns.find((c) => c.name === settings.product_column).id;
+      document.getElementById('column').value = productColumnId;
       document.getElementById('prefix').value = settings.prefix;
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('leave_empty').checked = true;
       } else {
         document.getElementById('fail').checked = true;
       }
-      if (settings.lookup_type === 'params__value') {
-        document.getElementById('parameter').value = settings.parameter.id;
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
     } else {
       document.getElementById('param_name_group').style.display = 'none';
       document.getElementById('leave_empty').checked = true;
     }
-
-    document.getElementById('criteria').addEventListener('change', () => {
-      if (document.getElementById('criteria').value === 'params__value') {
-        document.getElementById('param_name_group').style.display = 'block';
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
-    });
   });
 
   app.listen('save', async () => {
+    const productId = document.getElementById('product_id').value;
+    const productColumnId = document.getElementById('product_id_column').value;
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
     const prefix = document.getElementById('prefix').value;
-    let parameter = {};
-    if (document.getElementById('criteria').value === 'params__value') {
-      const select = document.getElementById('parameter');
-      const paramName = select[select.selectedIndex].text;
-      const paramID = select.value;
-      parameter = { name: paramName, id: paramID };
-    }
     const column = columns.find((c) => c.id === columnId);
+    const productColumn = columns.find((c) => c.id === productColumnId);
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+
+    const input = [column];
+    if (productColumnId !== '') {
+      input.push(productColumn);
+    }
 
     const data = {
       settings: {
+        product_id: productId,
         lookup_type: criteria,
         from: column.name,
-        parameter,
         prefix,
         action_if_not_found: actionIfNotFound,
+        product_column: productColumn?.name ?? '',
       },
       columns: {
-        input: [column],
+        input,
         output: [
           'product.id',
           'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
+          'item.id',
+          'item.name',
+          'item.unit',
+          'item.period',
+          'item.mpn',
         ].map((name) => createOutputColumnForLookup(prefix, name)),
       },
     };
 
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await validate('lookup_product_item', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -248,7 +242,7 @@ const lookupSubscription = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(lookupProductItem);
 
 
 /***/ })
@@ -340,7 +334,7 @@ const lookupSubscription = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			784: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -390,7 +384,7 @@ const lookupSubscription = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

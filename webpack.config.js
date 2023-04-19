@@ -31,6 +31,7 @@ const populateHtmlPlugins = (pagesArray) => {
 const pages = populateHtmlPlugins([
   "Transformations/Copy",
   "Transformations/Lookup Subscription",
+  "Transformations/Lookup Product Item",
   "Transformations/Currency Conversion",
   "Transformations/Manual",
   "Transformations/Split Column",
@@ -46,6 +47,7 @@ module.exports = {
     ['transformations/filter_row']: __dirname + "/ui/src/pages/transformations/filter_row.js",
     ['transformations/formula']: __dirname + "/ui/src/pages/transformations/formula.js",
     ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
+    ['transformations/lookup_product_item']: __dirname + "/ui/src/pages/transformations/lookup_product_item.js",
     ['transformations/manual']: __dirname + "/ui/src/pages/transformations/manual.js",
     ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",  
   },

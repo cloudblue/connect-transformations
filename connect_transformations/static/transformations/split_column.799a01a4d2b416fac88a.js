@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 506:
+/***/ 118:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createFormulaRow, formula
+// UNUSED EXPORTS: createGroupRows, splitColumn
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
@@ -27,6 +27,13 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -102,7 +109,7 @@ const hideError = () => {
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -115,48 +122,55 @@ All rights reserved.
 
 
 
-const createFormulaRow = (parent, index, output, formula) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-      <div class="input-group">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
-      </div>
+
+function getCurrentGroups(parent) {
+  const descendents = parent.getElementsByTagName('input');
+  const currentGroups = {};
+  for (let i = 0; i < descendents.length; i += 1) {
+    const element = descendents[i];
+    currentGroups[element.id] = element.value;
+  }
+
+  return currentGroups;
+}
+
+function buildGroups(groups) {
+  const parent = document.getElementById('output');
+  parent.innerHTML = '';
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.style.width = '200px';
+    item.innerHTML = `
+    <input
+    type="text" class="output-input" id="${groupKey}"
+    placeholder="${groupKey} value"
+    style="width: 100%;" value="${groupValue}"/>
     `;
-  parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
+    parent.appendChild(item);
   });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
+}
+
+const createGroupRows = async () => {
+  const parent = document.getElementById('output');
+  const groups = getCurrentGroups(parent);
+  const pattern = document.getElementById('pattern').value;
+  if (pattern) {
+    const body = { pattern, groups };
+    const response = await getGroups(body);
+    if (response.error) {
+      showError(response.error);
     } else {
-      buttons[i].disabled = false;
+      buildGroups(response.groups);
     }
+  } else {
+    showError('The regular expression is empty');
   }
 };
 
-const formula = (app) => {
+const splitColumn = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
-
-  let rowIndex = 0;
   let columns = [];
 
   app.listen('config', (config) => {
@@ -165,75 +179,88 @@ const formula = (app) => {
       settings,
     } = config;
 
+    showComponent('loader');
+    hideComponent('app');
+
     columns = availableColumns;
 
-    const content = document.getElementById('content');
-    if (settings && settings.expressions) {
-      settings.expressions.forEach((expression, i) => {
-        rowIndex = i;
-        createFormulaRow(content, rowIndex, expression.to, expression.formula);
-      });
-    } else {
-      createFormulaRow(content, rowIndex);
-    }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createFormulaRow(content, rowIndex);
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
     });
+
+    if (settings) {
+      document.getElementById('pattern').value = settings.regex.pattern;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      buildGroups(settings.regex.groups);
+    }
+
+    document.getElementById('refresh').addEventListener('click', () => {
+      createGroupRows();
+    });
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
     const data = {
-      settings: { expressions: [] },
+      settings: {},
       columns: {
-        input: columns,
+        input: [],
         output: [],
       },
+      overview: '',
     };
-    const form = document.getElementsByClassName('list-wrapper');
-    // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const to = line.getElementsByTagName('input')[0].value;
-      const jqFormula = line.getElementsByTagName('textarea')[0].value;
+    showComponent('loader');
+    hideComponent('app');
 
-      const outputColumn = {
-        name: to,
+    const inputSelector = document.getElementById('column');
+    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+
+    const selector = document.getElementById('output');
+    const options = selector.getElementsByTagName('input');
+    for (let i = 0; i < options.length; i += 1) {
+      const option = options[i];
+      data.columns.output.push({
+        name: option.value,
+        type: inputColumn.type,
         description: '',
-        type: 'string',
-        nullable: true,
-      };
-      const expression = {
-        to,
-        formula: jqFormula,
-      };
-      data.settings.expressions.push(expression);
-      data.columns.output.push(outputColumn);
+      });
     }
 
+    data.settings = {
+      from: selectedColumn,
+      regex: {
+        pattern: document.getElementById('pattern').value,
+        groups: getCurrentGroups(document.getElementById('output')),
+      },
+    };
+
     try {
-      const overview = await validate('formula', data);
+      const overview = await validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
-      } else {
-        const inputColumns = await getJQInput({
-          expressions: data.settings.expressions,
-          columns,
-        });
-        if (inputColumns.error) {
-          throw new Error(inputColumns.error);
-        } else {
-          data.columns.input = inputColumns;
-        }
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       showError(e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(splitColumn);
 
 
 /***/ })
@@ -325,7 +352,7 @@ const formula = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			12: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -375,7 +402,7 @@ const formula = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

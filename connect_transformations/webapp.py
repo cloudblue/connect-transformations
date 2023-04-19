@@ -11,6 +11,7 @@ from connect_transformations.copy_columns.mixins import CopyColumnWebAppMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConversionWebAppMixin
 from connect_transformations.filter_row.mixins import FilterRowWebAppMixin
 from connect_transformations.formula.mixins import FormulaWebAppMixin
+from connect_transformations.lookup_product_items.mixins import LookupProductItemsWebAppMixin
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionWebAppMixin
 from connect_transformations.split_column.mixins import SplitColumnWebAppMixin
 
@@ -25,5 +26,6 @@ class TransformationsWebApplication(
     FormulaWebAppMixin,
     LookupSubscriptionWebAppMixin,
     SplitColumnWebAppMixin,
+    LookupProductItemsWebAppMixin,
 ):
     pass
