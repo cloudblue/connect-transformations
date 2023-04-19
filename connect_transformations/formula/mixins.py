@@ -9,7 +9,7 @@ import jq
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
-from connect_transformations.formula.utils import extract_input, strip_column_name, validate_formula
+from connect_transformations.formula.utils import extract_input, validate_formula
 
 
 class FormulaTransformationMixin:
@@ -31,12 +31,9 @@ class FormulaTransformationMixin:
         input_columns = self.transformation_request['transformation']['columns']['input']
         columns_types = {column['name']: column.get('type') for column in input_columns}
 
-        row_stripped = {}
         for column in row:
             if columns_types[column] == 'datetime':
-                row_stripped[strip_column_name(column)] = str(row[column])
-            else:
-                row_stripped[strip_column_name(column)] = row[column]
+                row[column] = str(row[column])
 
         result = {}
         for expression in trfn_settings['expressions']:
@@ -45,12 +42,12 @@ class FormulaTransformationMixin:
             for column in columns:
                 formula_to_compile = formula_to_compile.replace(
                     column,
-                    f'.{strip_column_name(column[2:-1])}',
+                    f'."{column[2:-1]}"',
                 )
             try:
                 result[expression['to']] = jq.compile(
                     formula_to_compile,
-                ).input(row_stripped).first()
+                ).input(row).first()
             except Exception as e:
                 return RowTransformationResponse.fail(output=str(e))
 

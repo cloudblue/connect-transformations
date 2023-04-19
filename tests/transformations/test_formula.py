@@ -19,7 +19,7 @@ def test_formula(mocker):
                 'expressions': [
                     {
                         'to': 'Price with Tax',
-                        'formula': '.(Price without Tax) + .(Tax)',
+                        'formula': '.(Price without Tax) + .(Tax) + ."Additional fee"',
                     },
                     {
                         'to': 'Tax value',
@@ -34,6 +34,7 @@ def test_formula(mocker):
             'columns': {
                 'input': [
                     {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Additional fee', 'nullable': False},
                     {'name': 'Tax', 'nullable': False},
                     {'name': 'Created', 'nullable': False, 'type': 'datetime'},
                 ],
@@ -43,11 +44,11 @@ def test_formula(mocker):
 
     date = datetime.datetime.now()
     response = app.formula({
-        'Price without Tax': 100, 'Tax': 20, 'Created': date,
+        'Price without Tax': 100, 'Tax': 20, 'Additional fee': 0.2, 'Created': date,
     })
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'Price with Tax': 120,
+        'Price with Tax': 120.2,
         'Tax value': 0.2,
         'Copy date': str(date),
     }
