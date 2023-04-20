@@ -40,7 +40,7 @@ def validate_copy_columns(data):
                 },
             )
         unique_names.append(s['to'])
-        overview.append(f'{s["from"]}  -->  {s["to"]}')
+        overview.append(f'{s["from"]} \u2192 {s["to"]}')
 
     overview = ''.join([row + '\n' for row in overview])
 

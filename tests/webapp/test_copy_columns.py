@@ -36,7 +36,7 @@ def test_validate_copy_columns(test_client_factory):
 
     data = response.json()
     assert data == {
-        'overview': 'columnInput1  -->  newColumn1\ncolumnInput2  -->  newColumn2\n',
+        'overview': 'columnInput1 \u2192 newColumn1\ncolumnInput2 \u2192 newColumn2\n',
     }
 
 

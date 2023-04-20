@@ -18,7 +18,8 @@ class FormulaTransformationMixin:
         name='Formula',
         description=(
             'Use this transformation to perform data manipulation '
-            'using columns manipulation formula.'
+            'using columns manipulation formula. '
+            '(see https://stedolan.github.io/jq/manual/)'
         ),
         edit_dialog_ui='/static/transformations/formula.html',
     )
