@@ -24,17 +24,16 @@ def test_validate_formula(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
-                {'name': 'Additional fee', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
+                {'id': 'COL-3', 'name': 'Additional fee', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/validate/formula', json=data)
 
-    print(response.status_code)
-    print(response.json())
     assert response.status_code == 200
     data = response.json()
     assert data == {
@@ -81,9 +80,10 @@ def test_validate_formula_invalid_expression_field(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -107,9 +107,10 @@ def test_validate_formula_invalid_expression(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -136,9 +137,45 @@ def test_validate_formula_unique_error(
         },
         'columns': {
             'input': [
-                {'name': 'Price', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/validate/formula', json=data)
+
+    assert response.status_code == 400
+    data = response.json()
+    assert data == {
+        'error': 'Column `Price` already exists.',
+    }
+
+
+def test_validate_formula_duplicated_input_error(
+    test_client_factory,
+):
+    data = {
+        'settings': {
+            'expressions': [
+                {
+                    'to': 'Pricing',
+                    'formula': '.(Price) + .(Tax)',
+                },
+                {
+                    'to': 'Pricing',
+                    'formula': '.Price + .Tax + ."Additional fee"',
+                },
+            ],
+        },
+        'columns': {
+            'input': [
+                {'id': 'COL-1', 'name': 'Price', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
+                {'id': 'COL-3', 'name': 'Additional fee', 'nullable': False},
+            ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -148,6 +185,39 @@ def test_validate_formula_unique_error(
     data = response.json()
     assert data == {
         'error': 'Each `output column` must be unique.',
+    }
+
+
+def test_validate_formula_edit_formula(
+    test_client_factory,
+):
+    data = {
+        'settings': {
+            'expressions': [
+                {
+                    'to': 'Price full',
+                    'formula': '.(Price) + .Tax',
+                },
+            ],
+        },
+        'columns': {
+            'input': [
+                {'id': 'COL-1', 'name': 'Price', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
+                {'id': 'COL-3', 'name': 'Price full', 'nullable': False},
+            ],
+            'output': [
+                {'id': 'COL-3', 'name': 'Price full', 'nullable': False},
+            ],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/validate/formula', json=data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data == {
+        'overview': 'Price full = .(Price) + .Tax\n',
     }
 
 
@@ -165,9 +235,10 @@ def test_validate_formula_non_existing_column(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -197,9 +268,10 @@ def test_validate_formula_non_existing_column_another(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -229,9 +301,10 @@ def test_validate_formula_non_existing_column_another_one(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -261,9 +334,10 @@ def test_validate_formula_invalid_formula(
         },
         'columns': {
             'input': [
-                {'name': 'Price without Tax', 'nullable': False},
-                {'name': 'Tax', 'nullable': False},
+                {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
+                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
+            'output': [],
         },
     }
     client = test_client_factory(TransformationsWebApplication)

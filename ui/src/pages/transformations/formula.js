@@ -17,7 +17,7 @@ import {
 } from '../../components';
 
 
-export const createFormulaRow = (parent, index, output, formula) => {
+export const createFormulaRow = (parent, index, output, formula, columnId) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -26,8 +26,8 @@ export const createFormulaRow = (parent, index, output, formula) => {
       <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
       <div class="input-group">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+          <label class="label" for="${columnId || `formula-${index}`}">Formula:</label>
+          <textarea id="${columnId || `formula-${index}`}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
       </div>
     `;
   parent.appendChild(item);
@@ -60,6 +60,7 @@ export const formula = (app) => {
 
   let rowIndex = 0;
   let columns = [];
+  let columnId = '';
 
   app.listen('config', (config) => {
     const {
@@ -73,7 +74,8 @@ export const formula = (app) => {
     if (settings && settings.expressions) {
       settings.expressions.forEach((expression, i) => {
         rowIndex = i;
-        createFormulaRow(content, rowIndex, expression.to, expression.formula);
+        columnId = columns.find(col => col.name === expression.to).id;
+        createFormulaRow(content, rowIndex, expression.to, expression.formula, columnId);
       });
     } else {
       createFormulaRow(content, rowIndex);
@@ -97,13 +99,16 @@ export const formula = (app) => {
     for (const line of form) {
       const to = line.getElementsByTagName('input')[0].value;
       const jqFormula = line.getElementsByTagName('textarea')[0].value;
+      const jqColumn = line.getElementsByTagName('textarea')[0].id;
 
       const outputColumn = {
         name: to,
-        description: '',
         type: 'string',
         nullable: true,
       };
+      if (!jqColumn.startsWith('formula-')) {
+        outputColumn.id = jqColumn;
+      }
       const expression = {
         to,
         formula: jqFormula,
