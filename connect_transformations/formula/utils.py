@@ -24,6 +24,7 @@ def validate_formula(data):  # noqa: CCR001
         or not isinstance(data['settings'], dict)
         or 'columns' not in data
         or 'input' not in data['columns']
+        or 'output' not in data['columns']
     ):
         return error_response('Invalid input data.')
 
@@ -49,14 +50,23 @@ def validate_formula(data):  # noqa: CCR001
             )
 
     output_columns = []
-    available_columns = [col['name'] for col in data['columns']['input']]
+    available_columns = {col['name']: col['id'] for col in data['columns']['input']}
 
     for expression in data['settings']['expressions']:
-        if(
-            expression['to'] in available_columns
-            or expression['to'] in output_columns
-        ):
+        if expression['to'] in output_columns:
             return error_response('Each `output column` must be unique.')
+
+        if expression['to'] in available_columns:
+            output_column = list(filter(
+                lambda col: col['name'] == expression['to'],
+                data['columns']['output'],
+            ))
+            if (
+                len(output_column) != 1
+                or not output_column[0].get('id')
+                or output_column[0]['id'] != available_columns[expression['to']]
+            ):
+                return error_response(f'Column `{expression["to"]}` already exists.')
 
         formula_to_compile = str(expression['formula'])
 
@@ -70,7 +80,7 @@ def validate_formula(data):  # noqa: CCR001
                     ),
                 )
 
-        columns = re.findall(r'\."[\w ]+"', expression['formula'])
+        columns = re.findall(r'\."[\w (),]+"', expression['formula'])
         for column in columns:
             if column[2:-1] not in available_columns:
                 return error_response(
