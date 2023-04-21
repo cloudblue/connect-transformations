@@ -21,13 +21,13 @@
     width: 466px;
 }
 
-input.input {
-    width: 444px;
+input {
+    width: 100%;
     padding: 8px 10px;
 }
 
-select.input {
-    width: 444px;
+select {
+    width: 100%;
     padding: 8px 10px;
 }
 
@@ -53,5 +53,16 @@ select.input {
 }
 
 #refresh {
-    margin: 8px 0;
+    margin: 10px 0;
+}
+
+.wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-items: center;
+    grid-gap: 5px;
+}
+
+.output-header {
+    margin-top: 10px;
 }

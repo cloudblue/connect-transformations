@@ -4,7 +4,9 @@
 # All rights reserved.
 #
 import re
+from decimal import Decimal
 
+from dateutil.parser import parse as _to_datetime
 from fastapi.responses import JSONResponse
 
 
@@ -86,3 +88,35 @@ def merge_groups(new_groups: dict, past_groups: dict):
     for key in new_groups.keys():
         if key in past_groups:
             new_groups[key] = past_groups[key]
+
+
+def _to_decimal(value, precision=2):
+    p = ''.join(['0' for _ in range(int(precision))])
+    return Decimal(
+        value.replace(',', '.'),
+    ).quantize(
+        Decimal(f'.{p}1'),
+    )
+
+
+def _to_boolean(value):
+    if value in ['true', 'True', 'TRUE', '1', 'y', 'yes']:
+        return True
+    elif value in ['false', 'False', 'FALSE', '0', 'n', 'no']:
+        return False
+
+
+_cast_mapping = {
+    'string': str,
+    'integer': int,
+    'decimal': _to_decimal,
+    'boolean': _to_boolean,
+    'datetime': _to_datetime,
+}
+
+
+def cast_value_to_type(value, type, additional_parameters=None):
+    if additional_parameters is None:
+        additional_parameters = {}
+    cast_fn = _cast_mapping[type]
+    return cast_fn(value, **additional_parameters) if value else None
