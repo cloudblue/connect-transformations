@@ -9,11 +9,8 @@ from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
-from connect_transformations.split_column.utils import (
-    cast_value_to_type,
-    merge_groups,
-    validate_split_column,
-)
+from connect_transformations.split_column.utils import merge_groups, validate_split_column
+from connect_transformations.utils import cast_value_to_type
 
 
 class SplitColumnTransformationMixin:

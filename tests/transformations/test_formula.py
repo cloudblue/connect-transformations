@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import datetime
+from decimal import Decimal
 
 from connect.eaas.core.enums import ResultType
 
@@ -20,22 +21,27 @@ def test_formula(mocker):
                     {
                         'to': 'Price with Tax',
                         'formula': '.(Price without Tax) + .(Tax) + ."Additional fee"',
+                        'type': 'decimal',
+                        'precision': '2',
                     },
                     {
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
+                        'type': 'decimal',
+                        'precision': '3',
                     },
                     {
                         'to': 'Copy date',
                         'formula': '.Created',
+                        'type': 'string',
                     },
                 ],
             },
             'columns': {
                 'input': [
-                    {'name': 'Price without Tax', 'nullable': False},
-                    {'name': 'Additional fee', 'nullable': False},
-                    {'name': 'Tax', 'nullable': False},
+                    {'name': 'Price without Tax', 'nullable': False, 'type': 'integer'},
+                    {'name': 'Additional fee', 'nullable': False, 'type': 'decimal'},
+                    {'name': 'Tax', 'nullable': False, 'type': 'integer'},
                     {'name': 'Created', 'nullable': False, 'type': 'datetime'},
                 ],
             },
@@ -48,9 +54,44 @@ def test_formula(mocker):
     })
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'Price with Tax': 120.2,
-        'Tax value': 0.2,
+        'Price with Tax': Decimal(120.2).quantize(
+            Decimal('.001'),
+        ),
+        'Tax value': Decimal(0.2).quantize(
+            Decimal('.0001'),
+        ),
         'Copy date': str(date),
+    }
+
+
+def test_formula_using_old_config(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Price String',
+                        'formula': '.(Price without Tax)',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False, 'type': 'integer'},
+                ],
+            },
+        },
+    }
+
+    response = app.formula({
+        'Price without Tax': 100,
+    })
+    print(response)
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'Price String': '100',
     }
 
 
@@ -64,6 +105,8 @@ def test_formula_invalid_row(mocker):
                     {
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
+                        'type': 'decimal',
+                        'precision': '2',
                     },
                 ],
             },

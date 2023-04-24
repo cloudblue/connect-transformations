@@ -8,6 +8,8 @@ import re
 import jq
 from fastapi.responses import JSONResponse
 
+from connect_transformations.utils import _cast_mapping
+
 
 def error_response(error):
     return JSONResponse(
@@ -44,9 +46,13 @@ def validate_formula(data):  # noqa: CCR001
             or not expression['formula']
             or 'formula' not in expression
             or not isinstance(expression['formula'], str)
+            or 'type' not in expression
+            or expression['type'] not in _cast_mapping.keys()
+            or expression['type'] == 'decimal' and 'precision' not in expression
         ):
             return error_response(
-                'Each expression must have not empty `to` and `formula` fields.',
+                'Each expression must have not empty `to`, `formula` and `type` fields.'
+                '(also `precision` if the `type` is decimal)',
             )
 
     output_columns = []
