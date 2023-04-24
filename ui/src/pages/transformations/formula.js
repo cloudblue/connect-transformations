@@ -2,6 +2,7 @@
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
 */
+import suggestBox from 'suggest-box';
 import createApp from '@cloudblueconnect/connect-ui-toolkit';
 import '@fontsource/roboto/500.css';
 import '../../../styles/index.css';
@@ -17,6 +18,8 @@ import {
 } from '../../components';
 
 
+let suggestor = {};
+
 export const createFormulaRow = (parent, index, output, formula, columnId) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
@@ -25,12 +28,13 @@ export const createFormulaRow = (parent, index, output, formula, columnId) => {
   item.innerHTML = `
       <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
-      <div class="input-group">
+      <div class="input-group _mt_12 _mb_18">
           <label class="label" for="${columnId || `formula-${index}`}">Formula:</label>
-          <textarea id="${columnId || `formula-${index}`}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+          <textarea materialize id="${columnId || `formula-${index}`}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
       </div>
     `;
   parent.appendChild(item);
+  suggestBox(document.getElementById(`${columnId || `formula-${index}`}`), suggestor);
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
     if (document.getElementsByClassName('list-wrapper').length === 1) {
       showError('You need to have at least one row');
@@ -69,6 +73,10 @@ export const formula = (app) => {
     } = config;
 
     columns = availableColumns;
+    suggestor = { '.': availableColumns.map(col => ({
+      title: col.name,
+      value: `."${col.name}"`,
+    })) };
 
     const content = document.getElementById('content');
     if (settings && settings.expressions) {
