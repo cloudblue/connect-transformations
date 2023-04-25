@@ -12,7 +12,7 @@ from connect_transformations.filter_row.utils import validate_filter_row
 class FilterRowTransformationMixin:
 
     @transformation(
-        name='Filter row by condition',
+        name='Filter rows by condition',
         description=(
             'This transformation function allows you to filter by equality of a given input column'
             ' with a given string value. If it matches the row is kept, if not it is marked to be '

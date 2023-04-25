@@ -1,0 +1,22 @@
+.suggest-box {
+  position: absolute !important;
+  background-color: #fff;
+  border: 1px solid #eee;
+  overflow: auto;
+  height: 92px;
+  & ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    & li {
+      padding: 6px 10px;
+      border-bottom: 1px solid #eee;
+      &:last-child {
+        border-bottom: none;
+      }
+      &.selected {
+        background-color: #eee;
+      }
+    }
+  }
+}

@@ -1,13 +1,16 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 506:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+"use strict";
 
 // UNUSED EXPORTS: createFormulaRow, formula
 
+// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
+var suggest_box = __webpack_require__(54);
+var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -122,7 +125,10 @@ All rights reserved.
 
 
 
-const createFormulaRow = (parent, index, output, formula) => {
+
+let suggestor = {};
+
+const createFormulaRow = (parent, index, output, formula, columnId) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -130,12 +136,13 @@ const createFormulaRow = (parent, index, output, formula) => {
   item.innerHTML = `
       <input type="text" placeholder="Output column" style="width: 70%;" ${output ? `value="${output}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
-      <div class="input-group">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+      <div class="input-group _mt_12 _mb_18">
+          <label class="label" for="${columnId || `formula-${index}`}">Formula:</label>
+          <textarea materialize id="${columnId || `formula-${index}`}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
       </div>
     `;
   parent.appendChild(item);
+  suggest_box_default()(document.getElementById(`${columnId || `formula-${index}`}`), suggestor);
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
     if (document.getElementsByClassName('list-wrapper').length === 1) {
       showError('You need to have at least one row');
@@ -165,6 +172,7 @@ const formula = (app) => {
 
   let rowIndex = 0;
   let columns = [];
+  let columnId = '';
 
   app.listen('config', (config) => {
     const {
@@ -173,12 +181,17 @@ const formula = (app) => {
     } = config;
 
     columns = availableColumns;
+    suggestor = { '.': availableColumns.map(col => ({
+      title: col.name,
+      value: `."${col.name}"`,
+    })) };
 
     const content = document.getElementById('content');
     if (settings && settings.expressions) {
       settings.expressions.forEach((expression, i) => {
         rowIndex = i;
-        createFormulaRow(content, rowIndex, expression.to, expression.formula);
+        columnId = columns.find(col => col.name === expression.to).id;
+        createFormulaRow(content, rowIndex, expression.to, expression.formula, columnId);
       });
     } else {
       createFormulaRow(content, rowIndex);
@@ -202,13 +215,16 @@ const formula = (app) => {
     for (const line of form) {
       const to = line.getElementsByTagName('input')[0].value;
       const jqFormula = line.getElementsByTagName('textarea')[0].value;
+      const jqColumn = line.getElementsByTagName('textarea')[0].id;
 
       const outputColumn = {
         name: to,
-        description: '',
         type: 'string',
         nullable: true,
       };
+      if (!jqColumn.startsWith('formula-')) {
+        outputColumn.id = jqColumn;
+      }
       const expression = {
         to,
         formula: jqFormula,
@@ -242,6 +258,13 @@ const formula = (app) => {
 (0,dist/* default */.ZP)({ })
   .then(formula);
 
+
+/***/ }),
+
+/***/ 291:
+/***/ (() => {
+
+/* (ignored) */
 
 /***/ })
 
@@ -304,6 +327,18 @@ const formula = (app) => {
 /******/ 				}
 /******/ 			}
 /******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
 /******/ 		};
 /******/ 	})();
 /******/ 	

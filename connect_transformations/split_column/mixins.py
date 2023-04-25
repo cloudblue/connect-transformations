@@ -9,7 +9,11 @@ from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
-from connect_transformations.split_column.utils import merge_groups, validate_split_column
+from connect_transformations.split_column.utils import (
+    cast_value_to_type,
+    merge_groups,
+    validate_split_column,
+)
 
 
 class SplitColumnTransformationMixin:
@@ -36,10 +40,16 @@ class SplitColumnTransformationMixin:
         match = re.match(pattern, row_value) if row_value else None
         pattern_groups = match.groups() if match else {}
 
-        for key, column_value in groups.items():
+        for key, column in groups.items():
             index = int(key) - 1
+            column_name = column['name']
+            column_type = column['type']
             value = pattern_groups[index] if len(pattern_groups) > index else None
-            result[column_value] = value
+            parameters = {'value': value, 'type': column_type}
+            if column_type == 'decimal' and 'precision' in column:
+                parameters['additional_parameters'] = {'precision': column['precision']}
+            cast_value = cast_value_to_type(**parameters)
+            result[column_name] = cast_value
 
         return RowTransformationResponse.done(result)
 
@@ -78,11 +88,14 @@ class SplitColumnWebAppMixin:
             )
         try:
             pattern = re.compile(data['pattern'])
-            named_groups = {str(v): k for k, v in dict(pattern.groupindex).items()}
+            named_groups = {
+                str(v): {'name': k, 'type': 'string'}
+                for k, v in dict(pattern.groupindex).items()
+            }
             for n in range(1, pattern.groups + 1):
                 n = str(n)
                 if n not in named_groups:
-                    named_groups[n] = f'group_{n}'
+                    named_groups[n] = {'name': f'group_{n}', 'type': 'string'}
             merge_groups(named_groups, data.get('groups', None))
             return {'groups': named_groups}
         except re.error:
