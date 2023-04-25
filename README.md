@@ -10,6 +10,7 @@ The current release provides the following transformations:
 * `Copy Column(s)`: This transformation allows you to copy values from Input to Output columns, which might be handy if you’d like to change column name in the output data or for some other reason create a copy of values in a table.
 * `Split Column`: This transformation function allows you to copy values from Input to Output columns, which might be handy if you’d like to change column name in the output data for for some other reason create a copy of values in table.
 * `Lookup CloudBlue Subscription data`: This transformation function allows to search for the corresponding CloudBlue Subscription data.
+* `Lookup CloudBlue Product Item data`: This transformation function allows to search for the corresponding CloudBlue Product Item data.
 * `Convert Currency`: This transformation function converts a given column value with a given currency to another.
 * `Formula`: Use this transformation to perform data manipulation using columns manipulation formula.
 * `Filter Rows`: This transformation function allows you to filter by equality of a given input column with a given string value. If it matches the row is kept, if not it is marked to be deleted.
