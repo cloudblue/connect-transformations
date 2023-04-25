@@ -3,6 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+import pytest
+
 from connect_transformations.webapp import TransformationsWebApplication
 
 
@@ -15,10 +17,14 @@ def test_validate_formula(
                 {
                     'to': 'Price with Tax',
                     'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
                 {
                     'to': 'Tax value',
                     'formula': '.(Tax) / .(Price without Tax)',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -96,13 +102,23 @@ def test_validate_formula_invalid_expression_field(
     }
 
 
+@pytest.mark.parametrize(
+    'expression',
+    (
+        {'formula': '.(Price without Tax) + .(Tax)'},
+        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield'},
+        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'type': 'decimal'},
+        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'type': 'invalid'},
+    ),
+)
 def test_validate_formula_invalid_expression(
     test_client_factory,
+    expression,
 ):
     data = {
         'settings': {
             'expressions': [
-                {'formula': '.(Price without Tax) + .(Tax)'},
+                expression,
             ],
         },
         'columns': {
@@ -119,7 +135,10 @@ def test_validate_formula_invalid_expression(
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'Each expression must have not empty `to` and `formula` fields.',
+        'error': (
+            'Each expression must have not empty `to`, `formula` and `type` fields.'
+            '(also `precision` if the `type` is decimal)'
+        ),
     }
 
 
@@ -132,6 +151,7 @@ def test_validate_formula_unique_error(
                 {
                     'to': 'Price',
                     'formula': '.(Price) + .(Tax)',
+                    'type': 'integer',
                 },
             ],
         },
@@ -162,10 +182,14 @@ def test_validate_formula_duplicated_input_error(
                 {
                     'to': 'Pricing',
                     'formula': '.(Price) + .(Tax)',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
                 {
                     'to': 'Pricing',
                     'formula': '.Price + .Tax + ."Additional fee"',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -197,6 +221,7 @@ def test_validate_formula_edit_formula(
                 {
                     'to': 'Price full',
                     'formula': '.(Price) + .Tax',
+                    'type': 'string',
                 },
             ],
         },
@@ -221,7 +246,7 @@ def test_validate_formula_edit_formula(
     }
 
 
-def test_validate_formula_non_existing_column(
+def test_validate_formula_non_existing_column_parenthesis(
     test_client_factory,
 ):
     data = {
@@ -230,6 +255,8 @@ def test_validate_formula_non_existing_column(
                 {
                     'to': 'Price with Tax',
                     'formula': '.(Price) + .(Tax)',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -254,7 +281,7 @@ def test_validate_formula_non_existing_column(
     }
 
 
-def test_validate_formula_non_existing_column_another(
+def test_validate_formula_non_existing_column(
     test_client_factory,
 ):
     data = {
@@ -263,6 +290,8 @@ def test_validate_formula_non_existing_column_another(
                 {
                     'to': 'Price with Tax',
                     'formula': '.Price + .(Tax)',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -287,7 +316,7 @@ def test_validate_formula_non_existing_column_another(
     }
 
 
-def test_validate_formula_non_existing_column_another_one(
+def test_validate_formula_non_existing_column_double_quote(
     test_client_factory,
 ):
     data = {
@@ -296,6 +325,8 @@ def test_validate_formula_non_existing_column_another_one(
                 {
                     'to': 'Price with Tax',
                     'formula': '."Price without Tax" + ."Tax federal"',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -329,6 +360,8 @@ def test_validate_formula_invalid_formula(
                 {
                     'to': 'Price with Tax',
                     'formula': '.(Price with Tax + .(Tax)',
+                    'type': 'decimal',
+                    'precision': '2',
                 },
             ],
         },
@@ -358,6 +391,8 @@ def test_extract_formula_input(
             {
                 'to': 'Price with Tax',
                 'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
+                'type': 'decimal',
+                'precision': '2',
             },
         ],
         'columns': [
@@ -410,6 +445,8 @@ def test_extract_formula_input_missing_columns(
             {
                 'to': 'Price with Tax',
                 'formula': '.(Price without Tax) + .(Tax)',
+                'type': 'decimal',
+                'precision': '2',
             },
         ],
     }
