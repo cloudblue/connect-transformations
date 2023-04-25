@@ -50,3 +50,11 @@ export const getJQInput = (data) => fetch('/api/formula/extract_input', {
   },
   body: JSON.stringify(data),
 }).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+export const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());

@@ -30,6 +30,7 @@ const populateHtmlPlugins = (pagesArray) => {
 
 const pages = populateHtmlPlugins([
   "Transformations/Copy",
+  "Transformations/Attachment Lookup",
   "Transformations/Lookup Subscription",
   "Transformations/Currency Conversion",
   "Transformations/Manual",
@@ -47,7 +48,8 @@ module.exports = {
     ['transformations/formula']: __dirname + "/ui/src/pages/transformations/formula.js",
     ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
     ['transformations/manual']: __dirname + "/ui/src/pages/transformations/manual.js",
-    ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",  
+    ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",
+    ['transformations/attachment_lookup']: __dirname + "/ui/src/pages/transformations/attachment_lookup.js",
   },
   output: {
     filename: '[name].[contenthash].js',

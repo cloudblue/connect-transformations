@@ -1,0 +1,41 @@
+.input-group {
+  width: 222px;
+    
+  input {
+    width: 206px;
+  }
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  .col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    &.button-col {
+      width: 40px !important;
+    }
+  }
+}
+
+.delete-button, .add-button {
+  background-color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+
+  svg {
+    fill: #212121;
+  }
+}
