@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from dateutil.parser import parse as _to_datetime
+from fastapi.responses import JSONResponse
 
 from connect_transformations.exceptions import BaseTransformationException
 
@@ -45,3 +46,33 @@ def cast_value_to_type(value, type, additional_parameters=None):
         additional_parameters = {}
     cast_fn = _cast_mapping[type]
     return cast_fn(value, **additional_parameters) if value is not None else None
+
+
+def check_mapping(settings, columns):
+    available_columns = [c['name'] for c in columns['input']]
+    if settings['map_by']['input_column'] not in available_columns:
+        return JSONResponse(
+            status_code=400,
+            content={
+                'error': (
+                    'The settings contains invalid input column that '
+                    'does not exist on columns.input'
+                ),
+            },
+        )
+
+    for mapping in settings['mapping']:
+        if (
+                not isinstance(mapping, dict)
+                or 'from' not in mapping
+                or 'to' not in mapping
+        ):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'Each element of the settings `mapping` must contain '
+                        '`from` and `to` fields in it.'
+                    ),
+                },
+            )
