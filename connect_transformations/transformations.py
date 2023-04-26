@@ -5,10 +5,12 @@
 #
 import asyncio
 import threading
+from collections import defaultdict
 
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
 
+from connect_transformations.attachment_lookup.mixins import AttachmentLookupTransformationMixin
 from connect_transformations.copy_columns.mixins import CopyColumnTransformationMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConverterTransformationMixin
 from connect_transformations.filter_row.mixins import FilterRowTransformationMixin
@@ -21,6 +23,7 @@ from connect_transformations.split_column.mixins import SplitColumnTransformatio
 class StandardTransformationsApplication(
     TransformationsApplicationBase,
     ManualTransformationMixin,
+    AttachmentLookupTransformationMixin,
     CopyColumnTransformationMixin,
     CurrencyConverterTransformationMixin,
     FilterRowTransformationMixin,
@@ -36,3 +39,5 @@ class StandardTransformationsApplication(
         self._current_exchange_rate_lock = asyncio.Lock()
         self._sync_lock = threading.Lock()
         self.current_exchange_rate = None
+        self._attachments = defaultdict(dict)
+        self._attachment_lock = asyncio.Lock()
