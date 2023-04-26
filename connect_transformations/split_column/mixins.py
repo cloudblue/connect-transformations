@@ -40,7 +40,7 @@ class SplitColumnTransformationMixin:
         for key, column in groups.items():
             index = int(key) - 1
             column_name = column['name']
-            column_type = column['type']
+            column_type = column.get('type', 'string')
             value = pattern_groups[index] if len(pattern_groups) > index else None
             parameters = {'value': value, 'type': column_type}
             if column_type == 'decimal' and 'precision' in column:
