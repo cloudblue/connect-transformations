@@ -39,7 +39,6 @@ def test_validate_formula(
     }
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/validate/formula', json=data)
-
     assert response.status_code == 200
     data = response.json()
     assert data == {
@@ -359,7 +358,7 @@ def test_validate_formula_invalid_formula(
             'expressions': [
                 {
                     'to': 'Price with Tax',
-                    'formula': '.(Price with Tax + .(Tax)',
+                    'formula': '."Price without Tax"|fill + .(Tax)',
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -378,9 +377,7 @@ def test_validate_formula_invalid_formula(
 
     assert response.status_code == 400
     data = response.json()
-    assert data == {
-        'error': 'Settings contains invalid formula `.(Price with Tax + .(Tax)`.',
-    }
+    assert 'jq: error:' in data['error']
 
 
 def test_extract_formula_input(

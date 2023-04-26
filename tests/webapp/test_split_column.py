@@ -27,7 +27,6 @@ def test_validate_split_column(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/validate/split_column', json=data)
-    print(response.json())
     assert response.status_code == 200
     data = response.json()
     assert data == {
@@ -254,7 +253,6 @@ def test_groups_invalid_data(
         json={},
     )
 
-    print(response.json())
     assert response.status_code == 400
     assert response.json() == {
         'error': 'The body does not contain `pattern` key',
