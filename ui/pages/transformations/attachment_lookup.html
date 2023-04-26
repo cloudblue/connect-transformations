@@ -1,0 +1,56 @@
+<!--
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>
+    <%= htmlWebpackPlugin.options.title %>
+  </title>
+</head>
+
+<body>
+  <div id="loader"></div>
+  <div id="app" class="hidden">
+    <div class="main-container" id="content">
+      <div class="row">
+        <div class="col">
+          <div class="input-group">
+            <label class="label" for="attachment">Attachment</label>
+            <select materialize id="attachment"></select>
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group">
+            <label class="label" for="sheet">Sheet</label>
+            <input materialize type="text" id="sheet"></select>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <div class="input-group">
+            <label class="label" for="input-column">Input Column (Key)</label>
+            <select materialize id="input-column"></select>
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group">
+            <label class="label" for="attachment-column">Attachment Field name (Key)</label>
+            <input materialize type="text" id="attachment-column"></select>
+          </div>
+        </div>
+      </div>
+      <div id="mapping">
+        <div class="subtitle">
+          Columns mapping
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

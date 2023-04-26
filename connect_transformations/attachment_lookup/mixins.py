@@ -19,48 +19,52 @@ from connect_transformations.utils import is_input_column_nullable
 
 class AttachmentLookupTransformationMixin:
 
-    async def preprocess(self):
-        settings = self.transformation_request['transformation']['settings']
-        map_by = settings['map_by']['attachment_column']
-        sheet = settings.get('sheet')
-        mapping = [col['from'] for col in settings['mapping']]
+    async def preload_attachment_for_lookup(self):
+        async with self._attachment_lock:
+            settings = self.transformation_request['transformation']['settings']
+            file_url = settings['file']
+            if file_url in self._attachments:
+                return
+            map_by = settings['map_by']['attachment_column']
+            sheet = settings.get('sheet')
+            mapping = [col['from'] for col in settings['mapping']]
 
-        file_url = settings['file']
-        input_file = NamedTemporaryFile(suffix=f'.{file_url.split(".")[-1]}')
-        wb = None
+            file_url = settings['file']
+            input_file = NamedTemporaryFile(suffix=f'.{file_url.split(".")[-1]}')
+            wb = None
 
-        try:
-            url = file_url.split('/public/v1/')[-1]
-            url = url[1:] if url[0] == '/' else url
-            content = await self.installation_client.get(url)
-            input_file.write(content)
+            try:
+                url = file_url.split('/public/v1/')[-1]
+                url = url[1:] if url[0] == '/' else url
+                content = await self.installation_client.get(url, follow_redirects=True)
+                input_file.write(content)
 
-            wb = load_workbook(input_file, read_only=True)
-            if not sheet:
-                sheet = wb.sheetnames[0]
-            ws = wb[sheet]
-            lookup_columns = {}
-            for row in ws.rows:
-                if not lookup_columns:
-                    lookup_columns = {
-                        cell.value: cell.column - 1
-                        for cell in row
-                        if cell.value == map_by or cell.value in mapping
-                    }
-                else:
-                    self._attachments[file_url][row[lookup_columns[map_by]].value] = {
-                        col: row[lookup_columns[col]].value for col in mapping
-                    }
-        except ClientError as e:
-            raise AttachmentError(f'Error during downloading attachment: {e}')
-        except (KeyError, ValueError) as e:
-            raise AttachmentError(f'Invalid column: {e}')
-        except Exception as e:
-            raise e
-        finally:
-            if wb:  # pragma: no branch
-                wb.close()
-            input_file.close()
+                wb = load_workbook(input_file, read_only=True)
+                if not sheet:
+                    sheet = wb.sheetnames[0]
+                ws = wb[sheet]
+                lookup_columns = {}
+                for row in ws.rows:
+                    if not lookup_columns:
+                        lookup_columns = {
+                            cell.value: cell.column - 1
+                            for cell in row
+                            if cell.value == map_by or cell.value in mapping
+                        }
+                    else:
+                        self._attachments[file_url][row[lookup_columns[map_by]].value] = {
+                            col: row[lookup_columns[col]].value for col in mapping
+                        }
+            except ClientError as e:
+                raise AttachmentError(f'Error during downloading attachment: {e}')
+            except (KeyError, ValueError) as e:
+                raise AttachmentError(f'Invalid column: {e}')
+            except Exception as e:
+                raise e
+            finally:
+                if wb:  # pragma: no branch
+                    wb.close()
+                input_file.close()
 
     @transformation(
         name='Excel attachment lookup',
@@ -75,17 +79,14 @@ class AttachmentLookupTransformationMixin:
         self,
         row: dict,
     ):
+        try:
+            await self.preload_attachment_for_lookup()
+        except Exception as e:
+            return RowTransformationResponse.fail(output=str(e))
         trfn_settings = self.transformation_request['transformation']['settings']
         map_by = trfn_settings['map_by']
         input_column = self.transformation_request['transformation']['columns']['input']
         file = self.transformation_request['transformation']['settings']['file']
-
-        if file not in self._attachments:
-            try:
-                async with self._attachment_lock:
-                    await self.preprocess()
-            except Exception as e:
-                return RowTransformationResponse.fail(output=str(e))
 
         if is_input_column_nullable(
                 input_column,

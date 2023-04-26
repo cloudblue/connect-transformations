@@ -2,50 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 813:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
-
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -100,7 +62,77 @@ const getJQInput = (data) => fetch('/api/formula/extract_input', {
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -114,39 +146,82 @@ All rights reserved.
 
 
 
-const filterRow = (app) => {
-  if (!app) return;
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
 
   let columns = [];
+  let currencies = {};
 
-  hideComponent('loader');
-  showComponent('app');
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
-  app.listen('config', (config) => {
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
+
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
+    });
+  };
+
+  app.listen('config', async config => {
     const {
       context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    showComponent('loader');
-    hideComponent('app');
-
     columns = availableColumns;
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
     });
 
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    currencies = await getCurrencies();
+
     if (settings) {
-      document.getElementById('value').value = settings.value;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
+
     hideComponent('loader');
     showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
@@ -156,50 +231,60 @@ const filterRow = (app) => {
         input: [],
         output: [],
       },
-      overview: '',
     };
 
-    showComponent('loader');
-    hideComponent('app');
+    const formElements = document.forms.convertCurrency.elements;
 
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    data.columns.input.push(inputColumn);
-    data.columns.output.push(
-      {
-        name: `${selectedColumn}_INSTRUCTIONS`,
-        type: 'string',
-        output: false,
-      },
-    );
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
 
-    const inputValue = document.getElementById('value');
-    data.settings = {
-      from: selectedColumn,
-      value: inputValue.value,
-    };
+    const outputColumnValue = formElements.outputColumn.value;
 
-    try {
-      const overview = await validate('filter_row', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      };
+
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
-      }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
-      showComponent('app');
-      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(filterRow);
+  .then(convert);
 
 
 /***/ })
@@ -291,7 +376,7 @@ const filterRow = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			429: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -341,7 +426,7 @@ const filterRow = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

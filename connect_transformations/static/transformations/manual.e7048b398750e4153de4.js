@@ -1,72 +1,15 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 506:
+/***/ 355:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-"use strict";
 
-// UNUSED EXPORTS: createFormulaRow, formula
+// UNUSED EXPORTS: createManualOutputRow, manual
 
-// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
-var suggest_box = __webpack_require__(54);
-var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -105,7 +48,31 @@ const hideError = () => {
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -118,59 +85,16 @@ All rights reserved.
 
 
 
-
-
-let suggestor = {};
-
-function buildSelectColumnType(index) {
-  return `
-  <select id="datatype-${index}">
-  <option value="string" selected>String</option>
-  <option value="integer">Integer</option>
-  <option value="decimal">Decimal</option>
-  <option value="boolean">Boolean</option>
-  <option value="datetime">Datetime</option>
-  </select>
-  `;
-}
-
-function buildSelectColumnPrecision(index) {
-  return `
-  <select id="precision-${index}">
-  <option value="2" selected>2 decimals</option>
-  <option value="3">3 decimals</option>
-  <option value="4">4 decimals</option>
-  <option value="5">5 decimals</option>
-  <option value="6">6 decimals</option>
-  <option value="7">7 decimals</option>
-  <option value="8">8 decimals</option>
-  </select>
-  `;
-}
-
-const createFormulaRow = (parent, index, output, columnId, formula, dataType, precision) => {
+const createManualOutputRow = (parent, index, output) => {
   const item = document.createElement('div');
-  const typeSelect = buildSelectColumnType(index);
-  const precisionSelect = buildSelectColumnPrecision(index);
-  const columnIdInput = columnId === undefined ? '' : `<input type="text" id="columnid-${index}" value="${columnId}" hidden/>`;
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '100%';
+  item.style.width = '450px';
   item.innerHTML = `
-      <div class="output-group">
-      ${columnIdInput}
-      <input id="output-${index}" type="text" placeholder="Output column" ${output ? `value="${output}"` : ''} />
-      ${typeSelect}
-      ${precisionSelect}
+      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
-      </div>
-      <div class="input-group _mt_12 _mb_18">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
-      </div>
     `;
   parent.appendChild(item);
-  suggest_box_default()(document.getElementById(`formula-${index}`), suggestor);
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
     if (document.getElementsByClassName('list-wrapper').length === 1) {
       showError('You need to have at least one row');
@@ -180,16 +104,6 @@ const createFormulaRow = (parent, index, output, columnId, formula, dataType, pr
       if (buttons.length === 1) {
         buttons[0].disabled = true;
       }
-    }
-  });
-  document.getElementById(`datatype-${index}`).value = dataType || 'string';
-  document.getElementById(`precision-${index}`).value = precision || '2';
-  document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
-  document.getElementById(`datatype-${index}`).addEventListener('change', () => {
-    if (document.getElementById(`datatype-${index}`).value === 'decimal') {
-      document.getElementById(`precision-${index}`).disabled = false;
-    } else {
-      document.getElementById(`precision-${index}`).disabled = true;
     }
   });
   const buttons = document.getElementsByClassName('delete-button');
@@ -202,106 +116,101 @@ const createFormulaRow = (parent, index, output, columnId, formula, dataType, pr
   }
 };
 
-const formula = (app) => {
-  if (!app) return;
+const manual = (app) => {
+  if (!app) {
+    return;
+  }
 
+  hideComponent('app');
   hideComponent('loader');
-  showComponent('app');
 
+  let availableColumns;
   let rowIndex = 0;
-  let columns = [];
+
+  const descriptionElement = document.getElementById('description-text');
+  const settingsElement = document.getElementById('settings-text');
 
   app.listen('config', (config) => {
     const {
-      context: { available_columns: availableColumns },
+      columns: { input: inputColumns, output: outputColumns },
+      context: { available_columns }, // eslint-disable-line camelcase
+      overview,
       settings,
     } = config;
 
-    columns = availableColumns;
-    suggestor = { '.': availableColumns.map(col => ({
-      title: col.name,
-      value: `."${col.name}"`,
-    })) };
+    availableColumns = available_columns; // eslint-disable-line camelcase
 
-    const content = document.getElementById('content');
-    if (settings && settings.expressions) {
-      settings.expressions.forEach((expression, i) => {
-        const columnId = columns.find(col => col.name === expression.to).id;
-        rowIndex = i;
-        createFormulaRow(
-          content,
-          rowIndex,
-          expression.to,
-          columnId,
-          expression.formula,
-          expression.type,
-          expression.precision,
-        );
+    descriptionElement.value = overview || '';
+    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
+
+    const inputColumnsEditElement = document.getElementById('edit-input-columns');
+    availableColumns.forEach((column) => {
+      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
+      const inputColumnRow = document.createElement('tr');
+      inputColumnRow.innerHTML = `
+        <td>${column.id.slice(-3)}</td>
+        <td>${column.name}</td>
+        <td>${column.type}</td>
+        <td>${column.description ? column.description : '-'}</td>
+        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
+      `;
+      inputColumnsEditElement.appendChild(inputColumnRow);
+    });
+
+    const outputColumnsElement = document.getElementById('output-columns');
+
+    if (outputColumns.length > 0) {
+      outputColumns.forEach((outputColumn, index) => {
+        rowIndex = index;
+        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
       });
     } else {
-      createFormulaRow(content, rowIndex);
+      createManualOutputRow(outputColumnsElement, rowIndex);
     }
+
     document.getElementById('add').addEventListener('click', () => {
       rowIndex += 1;
-      createFormulaRow(content, rowIndex);
+      createManualOutputRow(outputColumnsElement, rowIndex);
     });
+
+    hideComponent('loader');
+    showComponent('app');
   });
 
-  app.listen('save', async () => {
+  app.listen('save', () => {
     const data = {
-      settings: { expressions: [] },
+      settings: {},
       columns: {
-        input: columns,
+        input: [],
         output: [],
       },
+      overview: '',
     };
-    const form = document.getElementsByClassName('list-wrapper');
-
-    for (let iteration = 0; iteration < form.length; iteration += 1) {
-      const index = form[iteration].id.split('-')[1];
-      const columnIdInput = document.getElementById(`columnid-${index}`);
-      const to = document.getElementById(`output-${index}`).value;
-      const dataType = document.getElementById(`datatype-${index}`).value;
-      const jqFormula = document.getElementById(`formula-${index}`).value;
-      const expression = {
-        to,
-        formula: jqFormula,
-        type: dataType,
-      };
-      const outputColumn = {
-        name: to,
-        type: dataType,
-        nullable: true,
-        constraints: {},
-      };
-      if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${index}`).value;
-        expression.precision = precision;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
-      }
-      if (columnIdInput) {
-        outputColumn.id = columnIdInput.value;
-      }
-      data.settings.expressions.push(expression);
-      data.columns.output.push(outputColumn);
-    }
 
     try {
-      const overview = await validate('formula', data);
-      if (overview.error) {
-        throw new Error(overview.error);
-      } else {
-        const inputColumns = await getJQInput({
-          expressions: data.settings.expressions,
-          columns,
-        });
-        if (inputColumns.error) {
-          throw new Error(inputColumns.error);
-        } else {
-          data.columns.input = inputColumns;
-        }
+      data.overview = descriptionElement.value;
+      data.settings = JSON.parse(settingsElement.value);
+      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
+      inputColumns.forEach((inputColumn) => {
+        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
+        data.columns.input.push(availableColumn);
+      });
+
+      const outputColumnsElements = document.getElementsByClassName('output-column-name');
+      // eslint-disable-next-line no-restricted-syntax
+      for (const outputColumnElement of outputColumnsElements) {
+        const outputColumn = {
+          name: outputColumnElement.value,
+          type: 'string',
+          description: '',
+        };
+        data.columns.output.push(outputColumn);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+
+      app.emit('save', {
+        data,
+        status: 'ok',
+      });
     } catch (e) {
       showError(e);
     }
@@ -309,15 +218,8 @@ const formula = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(manual);
 
-
-/***/ }),
-
-/***/ 291:
-/***/ (() => {
-
-/* (ignored) */
 
 /***/ })
 
@@ -383,18 +285,6 @@ const formula = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -420,7 +310,7 @@ const formula = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			577: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -470,7 +360,7 @@ const formula = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(355)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
