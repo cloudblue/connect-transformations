@@ -35,10 +35,10 @@ def test_cast_to_integer(value, expected):
 @pytest.mark.parametrize(
     ('value', 'precision', 'expected'),
     (
-        ('1.11', '2', Decimal(1.11).quantize(Decimal('.001'))),
-        ('1.123', '8', Decimal(1.123).quantize(Decimal('.000000001'))),
-        (1.11, '2', Decimal(1.11).quantize(Decimal('.001'))),
-        (None, '2', None),
+        ('1.11', 2, Decimal(1.11).quantize(Decimal('.001'))),
+        ('1.123', 8, Decimal(1.123).quantize(Decimal('.000000001'))),
+        (1.11, 2, Decimal(1.11).quantize(Decimal('.001'))),
+        (None, 2, None),
     ),
 )
 def test_cast_to_decimal(value, precision, expected):

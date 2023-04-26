@@ -13,12 +13,11 @@ def is_input_column_nullable(input_columns, column):
 
 
 def _to_decimal(value, precision=2):
-    p = ''.join(['0' for _ in range(int(precision))])
     value = value.replace(',', '.') if isinstance(value, str) else value
     return Decimal(
         value,
     ).quantize(
-        Decimal(f'.{p}1'),
+        Decimal(f'.{"1".zfill(int(precision))}'),
     )
 
 

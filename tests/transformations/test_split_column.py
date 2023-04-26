@@ -96,10 +96,10 @@ async def test_split_column_decimal(mocker):
     assert response.transformed_row == {
         'currency': 'euro',
         'number': Decimal('22.44').quantize(
-            Decimal('.001'),
+            Decimal('.01'),
         ),
         'vat': Decimal('3.4333').quantize(
-            Decimal('.0001'),
+            Decimal('.001'),
         ),
     }
 

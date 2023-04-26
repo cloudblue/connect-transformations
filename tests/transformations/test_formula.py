@@ -22,13 +22,13 @@ def test_formula(mocker):
                         'to': 'Price with Tax',
                         'formula': '.(Price without Tax) + .(Tax) + ."Additional fee"',
                         'type': 'decimal',
-                        'precision': '2',
+                        'precision': 2,
                     },
                     {
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
                         'type': 'decimal',
-                        'precision': '3',
+                        'precision': 3,
                     },
                     {
                         'to': 'Copy date',
@@ -55,10 +55,10 @@ def test_formula(mocker):
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
         'Price with Tax': Decimal(120.2).quantize(
-            Decimal('.001'),
+            Decimal('.01'),
         ),
         'Tax value': Decimal(0.2).quantize(
-            Decimal('.0001'),
+            Decimal('.001'),
         ),
         'Copy date': str(date),
     }
@@ -88,7 +88,6 @@ def test_formula_using_old_config(mocker):
     response = app.formula({
         'Price without Tax': 100,
     })
-    print(response)
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
         'Price String': '100',

@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import asyncio
+import threading
 
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
@@ -33,4 +34,5 @@ class StandardTransformationsApplication(
         self._cache = LRUCache(128)
         self._cache_lock = asyncio.Lock()
         self._current_exchange_rate_lock = asyncio.Lock()
+        self._sync_lock = threading.Lock()
         self.current_exchange_rate = None
