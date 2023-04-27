@@ -25,7 +25,7 @@ class AirTableLookupTransformationMixin:
         ),
         edit_dialog_ui='/static/transformations/airtable_lookup.html',
     )
-    def airtable_lookup(
+    async def airtable_lookup(
             self,
             row: dict,
     ):
@@ -45,7 +45,7 @@ class AirTableLookupTransformationMixin:
                 'filterByFormula': f'{map_by["airtable_column"]}={row[map_by["input_column"]]}',
                 'maxRecords': 2,
             }
-            records = get_airtable_data(
+            records = await get_airtable_data(
                 api_url=f'{trfn_settings["base_id"]}/{trfn_settings["table_id"]}',
                 token=trfn_settings['api_key'],
                 params=params,
@@ -61,13 +61,13 @@ class AirTableLookupTransformationMixin:
             return RowTransformationResponse.skip()
 
         try:
-            record = records['records']['field']
+            record = records['records'][0]['fields']
             return RowTransformationResponse.done({
                 mapping['to']: record[mapping['from']]
                 for mapping in trfn_settings['mapping']
             })
-        except ValueError as e:
-            return RowTransformationResponse.fail(output=str(e))
+        except Exception as e:
+            return RowTransformationResponse.fail(output=f'Error extracting data: {e}')
 
 
 class AirTableLookupWebAppMixin:
@@ -76,25 +76,17 @@ class AirTableLookupWebAppMixin:
         '/airtable_lookup/bases',
         summary='Get list of bases by given token',
     )
-    def get_tables(
+    async def get_bases(
         self,
-        data: dict,
+        api_key: str,
     ):
         try:
-            bases = get_airtable_data('meta/bases', data['api_key'])
-            if 'bases' in bases:
-                return [
-                    {'id': base['id'], 'name': base['name']}
-                    for base in bases['bases']
-                ]
+            bases = await get_airtable_data('meta/bases', api_key, params={})
+            return [
+                {'id': base['id'], 'name': base['name']}
+                for base in bases['bases']
+            ]
 
-            return []
-
-        except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={'error': 'api_key must be provided'},
-            )
         except AirTableError as e:
             return JSONResponse(
                 status_code=400,
@@ -105,32 +97,25 @@ class AirTableLookupWebAppMixin:
         '/airtable_lookup/tables',
         summary='Get list of tables with its columns by given base and token',
     )
-    def get_table_columns(
+    async def get_tables(
         self,
-        data: dict,
+        api_key: str,
+        base_id: str,
     ):
         try:
-            tables = get_airtable_data(
-                f'meta/bases/{data["base_id"]}/tables',
-                data['api_key'],
+            tables = await get_airtable_data(
+                f'meta/bases/{base_id}/tables',
+                api_key,
             )
-            if 'tables' in tables:
-                return [
-                    {
-                        'id': table['id'],
-                        'name': table['name'],
-                        'columns': table['fields'],
-                    }
-                    for table in tables['tables']
-                ]
+            return [
+                {
+                    'id': table['id'],
+                    'name': table['name'],
+                    'columns': table['fields'],
+                }
+                for table in tables['tables']
+            ]
 
-            return []
-
-        except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={'error': 'api_key and base_id must be provided'},
-            )
         except AirTableError as e:
             return JSONResponse(
                 status_code=400,

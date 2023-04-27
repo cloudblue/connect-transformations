@@ -10,22 +10,20 @@ from connect_transformations.exceptions import AirTableError
 from connect_transformations.utils import check_mapping
 
 
-def get_airtable_data(api_url, token, params=None):
-    try:
-        with httpx.Client(transport=httpx.HTTPTransport(retries=3)) as client:
-            response = client.get(
+async def get_airtable_data(api_url, token, params=None):
+    async with httpx.AsyncClient(transport=httpx.AsyncHTTPTransport(retries=3)) as client:
+        try:
+            response = await client.get(
                 f'https://api.airtable.com/v0/{api_url}',
                 headers={'Authorization': f'Bearer {token}'},
                 params=params,
             )
-
-            if response.status_code != 200:
-                raise AirTableError(f'Unexpected response calling {api_url}')
+            response.raise_for_status()
 
             return response.json()
 
-    except httpx.RequestError as e:
-        raise AirTableError(f'Error calling {api_url}: {e}')
+        except httpx.HTTPError:
+            raise AirTableError(f'Error calling `{api_url}`')
 
 
 def validate_airtable_lookup(data):
@@ -44,14 +42,14 @@ def validate_airtable_lookup(data):
         or 'map_by' not in data['settings']
         or not isinstance(data['settings']['map_by'], dict)
         or 'mapping' not in data['settings']
-        or not isinstance(data['settings']['mapping'], dict)
+        or not isinstance(data['settings']['mapping'], list)
     ):
         return JSONResponse(
             status_code=400,
             content={
                 'error': (
                     'The settings must contain `api_key`, `base_id`, `table_id` '
-                    'fields and dictionary `map_by` and `mapping` fields.'
+                    'fields, dictionary `map_by` and list `mapping` fields.'
                 ),
             },
         )

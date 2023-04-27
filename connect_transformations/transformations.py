@@ -10,6 +10,7 @@ from collections import defaultdict
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
 
+from connect_transformations.airtable_lookup.mixins import AirTableLookupTransformationMixin
 from connect_transformations.attachment_lookup.mixins import AttachmentLookupTransformationMixin
 from connect_transformations.copy_columns.mixins import CopyColumnTransformationMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConverterTransformationMixin
@@ -27,6 +28,7 @@ from connect_transformations.vat_rate.mixins import VATRateForEUCountryTransform
 class StandardTransformationsApplication(
     TransformationsApplicationBase,
     ManualTransformationMixin,
+    AirTableLookupTransformationMixin,
     AttachmentLookupTransformationMixin,
     CopyColumnTransformationMixin,
     CurrencyConverterTransformationMixin,
