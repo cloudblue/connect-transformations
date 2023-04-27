@@ -11,6 +11,7 @@ from connect_transformations.transformations import StandardTransformationsAppli
 
 @pytest.mark.asyncio
 async def test_attachment_lookup(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
@@ -57,6 +58,7 @@ async def test_attachment_lookup(mocker, async_connect_client, httpx_mock):
 
 @pytest.mark.asyncio
 async def test_attachment_lookup_no_sheet(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
@@ -109,6 +111,7 @@ async def test_attachment_lookup_no_sheet(mocker, async_connect_client, httpx_mo
 
 @pytest.mark.asyncio
 async def test_attachment_lookup_api_error(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     httpx_mock.add_response(
         method='GET',
         url=f'{async_connect_client.endpoint}/path/to/input.xlsx',
@@ -151,6 +154,7 @@ async def test_attachment_lookup_api_error(mocker, async_connect_client, httpx_m
 
 @pytest.mark.asyncio
 async def test_attachment_lookup_invalid_sheet(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
@@ -194,6 +198,7 @@ async def test_attachment_lookup_invalid_sheet(mocker, async_connect_client, htt
 
 @pytest.mark.asyncio
 async def test_attachment_lookup_empty(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
@@ -236,6 +241,7 @@ async def test_attachment_lookup_empty(mocker, async_connect_client, httpx_mock)
 
 @pytest.mark.asyncio
 async def test_attachment_lookup_map_not_found(mocker, async_connect_client, httpx_mock):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
@@ -277,11 +283,12 @@ async def test_attachment_lookup_map_not_found(mocker, async_connect_client, htt
 
 
 @pytest.mark.asyncio
-async def test_attachment_lookup_map_invalid_attachment_colums(
+async def test_attachment_lookup_map_invalid_attachment_columns(
     mocker,
     async_connect_client,
     httpx_mock,
 ):
+    async_connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         httpx_mock.add_response(
             method='GET',
