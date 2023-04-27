@@ -2,14 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 33:
+/***/ 81:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
+// UNUSED EXPORTS: createManualOutputRow, manual
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -72,69 +72,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -147,189 +85,140 @@ All rights reserved.
 
 
 
-
-
-const getRequiredValue = (id, errorMessage) => {
-  const { value } = document.getElementById(id);
-  if (!value) {
-    throw new Error(errorMessage);
-  }
-
-  return value;
-};
-
-const fillSelect = (options, id, value) => {
-  const select = document.getElementById(id);
-  if (value) {
-    select.value = value;
-  }
-  select.innerHTML = '';
-  options.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.text = item.name;
-    if (item.id === value) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-};
-
-const createMappingRow = (index, from, to) => {
-  let lastRowIndex = 0;
-  // remove existing ADD button and add REMOVE button to last col of the row
-  const addButton = document.getElementById('add-button');
-  if (addButton) {
-    // get data-row-index from the ADD button and add delete button to this row
-    lastRowIndex = addButton.getAttribute('data-row-index');
-    addButton.remove();
-    document
-      .getElementById(`row-${lastRowIndex}`)
-      .children[3]
-      .appendChild(getDeleteButton(lastRowIndex));
-  }
-
-  const row = document.createElement('div');
-  row.classList.add('row');
-  row.id = `row-${index}`;
-  row.innerHTML = `
-    <div class="col button-col">
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Input column" value="${from || ''}" />
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Output column" value="${to || ''}" />
-    </div>
-    <div class="col button-col">
-    </div>`;
-  row.children[0].appendChild(getAddButton(index));
-  document.getElementById('mapping').appendChild(row);
-
-  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
-  if (deleteButton) {
-    deleteButton.addEventListener('click', () => {
-      document.getElementById(`row-${lastRowIndex}`).remove();
-      // replace delete button with add button if there is only one row left
-      if (document.getElementsByClassName('row').length === 1) {
-        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+const createManualOutputRow = (parent, index, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '450px';
+  item.innerHTML = `
+      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
       }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+const manual = (app) => {
+  if (!app) {
+    return;
+  }
+
+  hideComponent('app');
+  hideComponent('loader');
+
+  let availableColumns;
+  let rowIndex = 0;
+
+  const descriptionElement = document.getElementById('description-text');
+  const settingsElement = document.getElementById('settings-text');
+
+  app.listen('config', (config) => {
+    const {
+      columns: { input: inputColumns, output: outputColumns },
+      context: { available_columns }, // eslint-disable-line camelcase
+      overview,
+      settings,
+    } = config;
+
+    availableColumns = available_columns; // eslint-disable-line camelcase
+
+    descriptionElement.value = overview || '';
+    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
+
+    const inputColumnsEditElement = document.getElementById('edit-input-columns');
+    availableColumns.forEach((column) => {
+      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
+      const inputColumnRow = document.createElement('tr');
+      inputColumnRow.innerHTML = `
+        <td>${column.id.slice(-3)}</td>
+        <td>${column.name}</td>
+        <td>${column.type}</td>
+        <td>${column.description ? column.description : '-'}</td>
+        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
+      `;
+      inputColumnsEditElement.appendChild(inputColumnRow);
     });
-  }
-  document.getElementById('add-button').addEventListener('click', () => {
-    createMappingRow(index + 1);
-  });
-};
 
-const loockupSpreadsheet = (app) => {
-  if (!app) return;
+    const outputColumnsElement = document.getElementById('output-columns');
 
-  let attachments = [];
-  let columns = [];
-
-  app.listen('config', async (config) => {
-    try {
-      const {
-        context: {
-          stream: { id: streamId },
-          available_columns: availableColumns,
-        },
-        settings,
-      } = config;
-
-      attachments = await getAttachments(streamId);
-      columns = availableColumns;
-
-      if (settings) {
-        const {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumnName,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        } = settings;
-
-        const inputColumn = columns.find((item) => item.name === inputColumnName);
-        fillSelect(columns, 'input-column', inputColumn.id);
-        const fileId = attachments.find((item) => item.file === file).id;
-        fillSelect(attachments, 'attachment', fileId);
-        document.getElementById('attachment-column').value = attachmentColumn;
-        document.getElementById('sheet').value = sheet;
-        mapping.forEach((item, index) => {
-          createMappingRow(index, item.from, item.to);
-        });
-      } else {
-        fillSelect(columns, 'input-column');
-        fillSelect(attachments, 'attachment');
-        createMappingRow(0);
-      }
-    } catch (error) {
-      showError(error);
-    } finally {
-      hideComponent('loader');
-      showComponent('app');
+    if (outputColumns.length > 0) {
+      outputColumns.forEach((outputColumn, index) => {
+        rowIndex = index;
+        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
+      });
+    } else {
+      createManualOutputRow(outputColumnsElement, rowIndex);
     }
+
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createManualOutputRow(outputColumnsElement, rowIndex);
+    });
+
+    hideComponent('loader');
+    showComponent('app');
   });
 
-  app.listen('save', async () => {
-    hideError();
+  app.listen('save', () => {
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
 
     try {
-      const fileId = getRequiredValue('attachment', 'Please select attachment');
-      const { file } = attachments.find((item) => item.id === fileId);
-      const sheet = document.getElementById('sheet').value;
-      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
-      const inputColumn = columns.find((item) => item.id === inputColumnId);
-      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
-
-      const outputColumns = [];
-      const mapping = [];
-      const rows = document.querySelectorAll('#mapping .row');
-      rows.forEach((row) => {
-        const from = row.children[1].children[0].value;
-        const to = row.children[2].children[0].value;
-        if (from && to) {
-          mapping.push({ from, to });
-          outputColumns.push({
-            name: to,
-            type: 'string',
-          });
-        } else {
-          showError('Please fill all mapping rows');
-          throw new Error('Please fill all mapping rows');
-        }
+      data.overview = descriptionElement.value;
+      data.settings = JSON.parse(settingsElement.value);
+      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
+      inputColumns.forEach((inputColumn) => {
+        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
+        data.columns.input.push(availableColumn);
       });
 
-      const data = {
-        settings: {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumn.name,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        },
-        columns: {
-          input: [inputColumn],
-          output: outputColumns,
-        },
-      };
-
-      const overview = await validate('attachment_lookup', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      const outputColumnsElements = document.getElementsByClassName('output-column-name');
+      // eslint-disable-next-line no-restricted-syntax
+      for (const outputColumnElement of outputColumnsElements) {
+        const outputColumn = {
+          name: outputColumnElement.value,
+          type: 'string',
+          description: '',
+        };
+        data.columns.output.push(outputColumn);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (error) {
-      showError(error);
+
+      app.emit('save', {
+        data,
+        status: 'ok',
+      });
+    } catch (e) {
+      showError(e);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
+(0,dist/* default */.ZP)({ })
+  .then(manual);
 
 
 /***/ })
@@ -421,7 +310,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			264: 0
+/******/ 			577: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -471,7 +360,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(81)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
