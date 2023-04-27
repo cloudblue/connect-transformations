@@ -1,13 +1,16 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 118:
+/***/ 506:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+"use strict";
 
-// UNUSED EXPORTS: createGroupRows, splitColumn
+// UNUSED EXPORTS: createFormulaRow, formula
 
+// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
+var suggest_box = __webpack_require__(54);
+var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -27,13 +30,6 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -79,7 +75,8 @@ const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`,
   },
 }).then((response) => response.json());
 
-/* The key is the api key from airtable */
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
 const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
   method: 'GET',
   headers: {
@@ -87,7 +84,8 @@ const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${ke
   },
 }).then((response) => response.json());
 
-/* The key is the api key from airtable and the base id is the id of the base */
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
 const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
   method: 'GET',
   headers: {
@@ -158,7 +156,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -172,30 +170,12 @@ All rights reserved.
 
 
 
-function getCurrentGroups(parent) {
-  const descendents = parent.getElementsByTagName('input');
-  const currentGroups = {};
-  for (let i = 0; i < descendents.length; i += 1) {
-    const element = descendents[i];
-    const dataType = document.getElementById(`datatype-${element.id}`);
-    if (dataType && dataType.value === 'decimal') {
-      const precision = document.getElementById(`precision-${element.id}`).value;
-      currentGroups[element.id] = {
-        name: element.value,
-        type: dataType.value,
-        precision,
-      };
-    } else {
-      currentGroups[element.id] = { name: element.value, type: dataType.value };
-    }
-  }
 
-  return currentGroups;
-}
+let suggestor = {};
 
-function buildSelectColumnType(groupKey) {
+function buildSelectColumnType(index) {
   return `
-  <select id="datatype-${groupKey}">
+  <select id="datatype-${index}">
   <option value="string" selected>String</option>
   <option value="integer">Integer</option>
   <option value="decimal">Decimal</option>
@@ -205,9 +185,9 @@ function buildSelectColumnType(groupKey) {
   `;
 }
 
-function buildSelectColumnPrecision(groupKey) {
+function buildSelectColumnPrecision(index) {
   return `
-  <select id="precision-${groupKey}">
+  <select id="precision-${index}">
   <option value="2" selected>2 decimals</option>
   <option value="3">3 decimals</option>
   <option value="4">4 decimals</option>
@@ -219,82 +199,67 @@ function buildSelectColumnPrecision(groupKey) {
   `;
 }
 
-function buildGroups(groups) {
-  const parent = document.getElementById('output');
-  parent.innerHTML = '';
-  if (Object.keys(groups).length > 0) {
-    const item = document.createElement('div');
-    item.setAttribute('class', 'wrapper output-header');
-    item.innerHTML = `
-    <div>
-    Name
-    </div>
-    <div>
-    Type
-    </div>
-    <div>
-    Precision
-    </div>
+const createFormulaRow = (parent, index, output, columnId, formula, dataType, precision) => {
+  const item = document.createElement('div');
+  const typeSelect = buildSelectColumnType(index);
+  const precisionSelect = buildSelectColumnPrecision(index);
+  const columnIdInput = columnId === undefined ? '' : `<input type="text" id="columnid-${index}" value="${columnId}" hidden/>`;
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <div class="output-group">
+      ${columnIdInput}
+      <input id="output-${index}" type="text" placeholder="Output column" ${output ? `value="${output}"` : ''} />
+      ${typeSelect}
+      ${precisionSelect}
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+      </div>
+      <div class="input-group _mt_12 _mb_18">
+          <label class="label" for="formula-${index}">Formula:</label>
+          <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+      </div>
     `;
-    parent.appendChild(item);
-  }
-  Object.keys(groups).forEach(groupKey => {
-    const groupValue = groups[groupKey];
-    const item = document.createElement('div');
-    item.className = 'wrapper';
-    const selectType = buildSelectColumnType(groupKey);
-    const selectPrecision = buildSelectColumnPrecision(groupKey);
-    item.innerHTML = `
-    <div>
-    <input 
-    type="text" 
-    class="output-input" 
-    id="${groupKey}"
-    placeholder="${groupKey} group name" 
-    value="${groupValue.name}"/>
-    </div>
-    <div>
-    ${selectType}
-    </div>
-    <div>
-    ${selectPrecision}
-    </div>
-    `;
-    parent.appendChild(item);
-    document.getElementById(`datatype-${groupKey}`).value = groupValue.type;
-    const precisionSelect = document.getElementById(`precision-${groupKey}`);
-    precisionSelect.disabled = groupValue.type !== 'decimal';
-    precisionSelect.value = groupValue.precision || '2';
-    document.getElementById(`datatype-${groupKey}`).addEventListener('change', () => {
-      if (document.getElementById(`datatype-${groupKey}`).value === 'decimal') {
-        document.getElementById(`precision-${groupKey}`).disabled = false;
-      } else {
-        document.getElementById(`precision-${groupKey}`).disabled = true;
-      }
-    });
-  });
-}
-
-const createGroupRows = async () => {
-  const parent = document.getElementById('output');
-  const groups = getCurrentGroups(parent);
-  const pattern = document.getElementById('pattern').value;
-  if (pattern) {
-    const body = { pattern, groups };
-    const response = await getGroups(body);
-    if (response.error) {
-      showError(response.error);
+  parent.appendChild(item);
+  suggest_box_default()(document.getElementById(`formula-${index}`), suggestor);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
     } else {
-      buildGroups(response.groups);
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
     }
-  } else {
-    showError('The regular expression is empty');
+  });
+  document.getElementById(`datatype-${index}`).value = dataType || 'string';
+  document.getElementById(`precision-${index}`).value = precision || '2';
+  document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
+  document.getElementById(`datatype-${index}`).addEventListener('change', () => {
+    if (document.getElementById(`datatype-${index}`).value === 'decimal') {
+      document.getElementById(`precision-${index}`).disabled = false;
+    } else {
+      document.getElementById(`precision-${index}`).disabled = true;
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
   }
 };
 
-const splitColumn = (app) => {
+const formula = (app) => {
   if (!app) return;
 
+  hideComponent('loader');
+  showComponent('app');
+
+  let rowIndex = 0;
   let columns = [];
 
   app.listen('config', (config) => {
@@ -303,83 +268,89 @@ const splitColumn = (app) => {
       settings,
     } = config;
 
-    showComponent('loader');
-    hideComponent('app');
-
     columns = availableColumns;
+    suggestor = { '.': availableColumns.map(col => ({
+      title: col.name,
+      value: `."${col.name}"`,
+    })) };
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (settings) {
-      document.getElementById('pattern').value = settings.regex.pattern;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      buildGroups(settings.regex.groups);
+    const content = document.getElementById('content');
+    if (settings && settings.expressions) {
+      settings.expressions.forEach((expression, i) => {
+        const columnId = columns.find(col => col.name === expression.to).id;
+        rowIndex = i;
+        createFormulaRow(
+          content,
+          rowIndex,
+          expression.to,
+          columnId,
+          expression.formula,
+          expression.type,
+          expression.precision,
+        );
+      });
+    } else {
+      createFormulaRow(content, rowIndex);
     }
-
-    document.getElementById('refresh').addEventListener('click', () => {
-      createGroupRows();
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createFormulaRow(content, rowIndex);
     });
-    hideComponent('loader');
-    showComponent('app');
   });
 
   app.listen('save', async () => {
     const data = {
-      settings: {},
+      settings: { expressions: [] },
       columns: {
-        input: [],
+        input: columns,
         output: [],
       },
-      overview: '',
     };
-    showComponent('loader');
-    hideComponent('app');
+    const form = document.getElementsByClassName('list-wrapper');
 
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    data.columns.input.push(inputColumn);
-
-    const selector = document.getElementById('output');
-    const options = selector.getElementsByTagName('input');
-    for (let i = 0; i < options.length; i += 1) {
-      const option = options[i];
-      const dataType = document.getElementById(`datatype-${option.id}`).value;
-      const outputColumn = {
-        name: option.value,
+    for (let iteration = 0; iteration < form.length; iteration += 1) {
+      const index = form[iteration].id.split('-')[1];
+      const columnIdInput = document.getElementById(`columnid-${index}`);
+      const to = document.getElementById(`output-${index}`).value;
+      const dataType = document.getElementById(`datatype-${index}`).value;
+      const jqFormula = document.getElementById(`formula-${index}`).value;
+      const expression = {
+        to,
+        formula: jqFormula,
         type: dataType,
-        description: '',
+      };
+      const outputColumn = {
+        name: to,
+        type: dataType,
+        nullable: true,
         constraints: {},
       };
       if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${option.id}`).value;
+        const precision = document.getElementById(`precision-${index}`).value;
+        expression.precision = precision;
         outputColumn.constraints = { precision: parseInt(precision, 10) };
       }
+      if (columnIdInput) {
+        outputColumn.id = columnIdInput.value;
+      }
+      data.settings.expressions.push(expression);
       data.columns.output.push(outputColumn);
     }
 
-    data.settings = {
-      from: selectedColumn,
-      regex: {
-        pattern: document.getElementById('pattern').value,
-        groups: getCurrentGroups(document.getElementById('output')),
-      },
-    };
-
     try {
-      const overview = await validate('split_column', data);
+      const overview = await validate('formula', data);
       if (overview.error) {
         throw new Error(overview.error);
-      }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
+      } else {
+        const inputColumns = await getJQInput({
+          expressions: data.settings.expressions,
+          columns,
+        });
+        if (inputColumns.error) {
+          throw new Error(inputColumns.error);
+        } else {
+          data.columns.input = inputColumns;
+        }
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
@@ -389,8 +360,15 @@ const splitColumn = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(formula);
 
+
+/***/ }),
+
+/***/ 291:
+/***/ (() => {
+
+/* (ignored) */
 
 /***/ })
 
@@ -456,6 +434,18 @@ const splitColumn = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -481,7 +471,7 @@ const splitColumn = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			2: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -531,7 +521,7 @@ const splitColumn = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

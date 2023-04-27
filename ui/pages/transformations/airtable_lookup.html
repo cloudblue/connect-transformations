@@ -1,0 +1,59 @@
+<!--
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>
+        <%= htmlWebpackPlugin.options.title %>
+    </title>
+</head>
+
+<body>
+    <div id="loader"></div>
+    <div id="app">
+      <div class="main-container">
+        <div class="config-elem api-input">
+          <label for="key-select">API Key</label>
+          <input style="width: 86%;" id="key-input" placeholder="Enter an AirTable key"></input>
+        </div>
+
+        <div class="config-elem">
+          <label for="base-select">AirTable Base</label>
+          <select disabled class="list" style="width: 80%;" id="base-select">
+          </select>
+        </div>
+
+
+        <div class="config-elem">
+          <label for="table-select">AirTable table name</label>
+          <select disabled class="list" style="width: 80%;" id="table-select">
+          </select>
+        </div>
+
+        <div class="config-elem">
+          <label for="table-select">Input column (Key)</label>
+          <select disabled class="list" style="width: 80%;" id="input-column-select">
+          </select>
+        </div>
+
+        <div class="config-elem">
+          <label for="table-select">AirTable Field Name (Key)</label>
+          <select disabled class="list" style="width: 80%;" id="field-select">
+          </select>
+        </div>
+      </div>
+      <b>Columns Mapping</b>
+      <div id="content">
+      </div>
+      <div class="button-container">
+        <button disabled id="add" class="button">ADD COLUMN</button>
+      </div>
+    </div>
+
+</body>
+
+</html>

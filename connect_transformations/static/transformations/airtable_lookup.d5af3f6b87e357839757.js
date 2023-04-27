@@ -2,100 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 118:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createGroupRows, splitColumn
-
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable */
-const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable and the base id is the id of the base */
-const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -158,7 +70,88 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -172,214 +165,172 @@ All rights reserved.
 
 
 
-function getCurrentGroups(parent) {
-  const descendents = parent.getElementsByTagName('input');
-  const currentGroups = {};
-  for (let i = 0; i < descendents.length; i += 1) {
-    const element = descendents[i];
-    const dataType = document.getElementById(`datatype-${element.id}`);
-    if (dataType && dataType.value === 'decimal') {
-      const precision = document.getElementById(`precision-${element.id}`).value;
-      currentGroups[element.id] = {
-        name: element.value,
-        type: dataType.value,
-        precision,
-      };
+const createCopyRow = (parent, index, options, input, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${column.name}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
     } else {
-      currentGroups[element.id] = { name: element.value, type: dataType.value };
-    }
-  }
-
-  return currentGroups;
-}
-
-function buildSelectColumnType(groupKey) {
-  return `
-  <select id="datatype-${groupKey}">
-  <option value="string" selected>String</option>
-  <option value="integer">Integer</option>
-  <option value="decimal">Decimal</option>
-  <option value="boolean">Boolean</option>
-  <option value="datetime">Datetime</option>
-  </select>
-  `;
-}
-
-function buildSelectColumnPrecision(groupKey) {
-  return `
-  <select id="precision-${groupKey}">
-  <option value="2" selected>2 decimals</option>
-  <option value="3">3 decimals</option>
-  <option value="4">4 decimals</option>
-  <option value="5">5 decimals</option>
-  <option value="6">6 decimals</option>
-  <option value="7">7 decimals</option>
-  <option value="8">8 decimals</option>
-  </select>
-  `;
-}
-
-function buildGroups(groups) {
-  const parent = document.getElementById('output');
-  parent.innerHTML = '';
-  if (Object.keys(groups).length > 0) {
-    const item = document.createElement('div');
-    item.setAttribute('class', 'wrapper output-header');
-    item.innerHTML = `
-    <div>
-    Name
-    </div>
-    <div>
-    Type
-    </div>
-    <div>
-    Precision
-    </div>
-    `;
-    parent.appendChild(item);
-  }
-  Object.keys(groups).forEach(groupKey => {
-    const groupValue = groups[groupKey];
-    const item = document.createElement('div');
-    item.className = 'wrapper';
-    const selectType = buildSelectColumnType(groupKey);
-    const selectPrecision = buildSelectColumnPrecision(groupKey);
-    item.innerHTML = `
-    <div>
-    <input 
-    type="text" 
-    class="output-input" 
-    id="${groupKey}"
-    placeholder="${groupKey} group name" 
-    value="${groupValue.name}"/>
-    </div>
-    <div>
-    ${selectType}
-    </div>
-    <div>
-    ${selectPrecision}
-    </div>
-    `;
-    parent.appendChild(item);
-    document.getElementById(`datatype-${groupKey}`).value = groupValue.type;
-    const precisionSelect = document.getElementById(`precision-${groupKey}`);
-    precisionSelect.disabled = groupValue.type !== 'decimal';
-    precisionSelect.value = groupValue.precision || '2';
-    document.getElementById(`datatype-${groupKey}`).addEventListener('change', () => {
-      if (document.getElementById(`datatype-${groupKey}`).value === 'decimal') {
-        document.getElementById(`precision-${groupKey}`).disabled = false;
-      } else {
-        document.getElementById(`precision-${groupKey}`).disabled = true;
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
       }
-    });
-  });
-}
-
-const createGroupRows = async () => {
-  const parent = document.getElementById('output');
-  const groups = getCurrentGroups(parent);
-  const pattern = document.getElementById('pattern').value;
-  if (pattern) {
-    const body = { pattern, groups };
-    const response = await getGroups(body);
-    if (response.error) {
-      showError(response.error);
-    } else {
-      buildGroups(response.groups);
     }
-  } else {
-    showError('The regular expression is empty');
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
   }
 };
 
-const splitColumn = (app) => {
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
+
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const airtable = (app) => {
   if (!app) return;
+  hideComponent('loader');
+  showComponent('app');
 
   let columns = [];
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
 
   app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
+    const baseSelect = document.getElementById('base-select');
+    const content = document.getElementById('content');
+    const tableSelect = document.getElementById('table-select');
+    const keyInput = document.getElementById('key-input');
+    let airtableBases;
+    let rowIndex = 0;
+    columns = config.context.available_columns;
 
-    showComponent('loader');
-    hideComponent('app');
 
-    columns = availableColumns;
+    keyInput.addEventListener('input', async () => {
+      apiKey = keyInput.value;
+      airtableBases = await getAirtableBases(apiKey);
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
     });
 
-    if (settings) {
-      document.getElementById('pattern').value = settings.regex.pattern;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      buildGroups(settings.regex.groups);
-    }
+    baseSelect.addEventListener('change', async () => {
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
 
-    document.getElementById('refresh').addEventListener('click', () => {
-      createGroupRows();
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
     });
-    hideComponent('loader');
-    showComponent('app');
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', columns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = columns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+    });
   });
 
   app.listen('save', async () => {
+    let overview = '';
+
     const data = {
-      settings: {},
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
       columns: {
-        input: [],
+        input: [mapInputColumn],
         output: [],
       },
-      overview: '',
     };
-    showComponent('loader');
-    hideComponent('app');
 
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    data.columns.input.push(inputColumn);
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
 
-    const selector = document.getElementById('output');
-    const options = selector.getElementsByTagName('input');
-    for (let i = 0; i < options.length; i += 1) {
-      const option = options[i];
-      const dataType = document.getElementById(`datatype-${option.id}`).value;
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
       const outputColumn = {
-        name: option.value,
-        type: dataType,
+        name: outputName,
+        type: 'string',
         description: '',
-        constraints: {},
       };
-      if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${option.id}`).value;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
-      }
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
       data.columns.output.push(outputColumn);
     }
 
-    data.settings = {
-      from: selectedColumn,
-      regex: {
-        pattern: document.getElementById('pattern').value,
-        groups: getCurrentGroups(document.getElementById('output')),
-      },
-    };
-
     try {
-      const overview = await validate('split_column', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
-      }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
@@ -389,7 +340,8 @@ const splitColumn = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(airtable);
+
 
 
 /***/ })
@@ -481,7 +433,7 @@ const splitColumn = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -531,7 +483,7 @@ const splitColumn = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
