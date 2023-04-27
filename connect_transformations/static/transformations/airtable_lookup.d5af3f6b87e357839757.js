@@ -1,104 +1,13 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 506:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-"use strict";
 
-// UNUSED EXPORTS: createFormulaRow, formula
-
-// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
-var suggest_box = __webpack_require__(54);
-var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable */
-const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable and the base id is the id of the base */
-const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -161,7 +70,88 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -175,58 +165,23 @@ All rights reserved.
 
 
 
-
-let suggestor = {};
-
-function buildSelectColumnType(index) {
-  return `
-  <select id="datatype-${index}">
-  <option value="string" selected>String</option>
-  <option value="integer">Integer</option>
-  <option value="decimal">Decimal</option>
-  <option value="boolean">Boolean</option>
-  <option value="datetime">Datetime</option>
-  </select>
-  `;
-}
-
-function buildSelectColumnPrecision(index) {
-  return `
-  <select id="precision-${index}">
-  <option value="2" selected>2 decimals</option>
-  <option value="3">3 decimals</option>
-  <option value="4">4 decimals</option>
-  <option value="5">5 decimals</option>
-  <option value="6">6 decimals</option>
-  <option value="7">7 decimals</option>
-  <option value="8">8 decimals</option>
-  </select>
-  `;
-}
-
-const createFormulaRow = (parent, index, output, columnId, formula, dataType, precision) => {
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
-  const typeSelect = buildSelectColumnType(index);
-  const precisionSelect = buildSelectColumnPrecision(index);
-  const columnIdInput = columnId === undefined ? '' : `<input type="text" id="columnid-${index}" value="${columnId}" hidden/>`;
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
   item.innerHTML = `
-      <div class="output-group">
-      ${columnIdInput}
-      <input id="output-${index}" type="text" placeholder="Output column" ${output ? `value="${output}"` : ''} />
-      ${typeSelect}
-      ${precisionSelect}
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${column.name}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
-      </div>
-      <div class="input-group _mt_12 _mb_18">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
-      </div>
     `;
   parent.appendChild(item);
-  suggest_box_default()(document.getElementById(`formula-${index}`), suggestor);
+
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
     if (document.getElementsByClassName('list-wrapper').length === 1) {
       showError('You need to have at least one row');
@@ -236,16 +191,6 @@ const createFormulaRow = (parent, index, output, columnId, formula, dataType, pr
       if (buttons.length === 1) {
         buttons[0].disabled = true;
       }
-    }
-  });
-  document.getElementById(`datatype-${index}`).value = dataType || 'string';
-  document.getElementById(`precision-${index}`).value = precision || '2';
-  document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
-  document.getElementById(`datatype-${index}`).addEventListener('change', () => {
-    if (document.getElementById(`datatype-${index}`).value === 'decimal') {
-      document.getElementById(`precision-${index}`).disabled = false;
-    } else {
-      document.getElementById(`precision-${index}`).disabled = true;
     }
   });
   const buttons = document.getElementsByClassName('delete-button');
@@ -258,104 +203,134 @@ const createFormulaRow = (parent, index, output, columnId, formula, dataType, pr
   }
 };
 
-const formula = (app) => {
-  if (!app) return;
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
 
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const airtable = (app) => {
+  if (!app) return;
   hideComponent('loader');
   showComponent('app');
 
-  let rowIndex = 0;
   let columns = [];
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
 
   app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
-
-    columns = availableColumns;
-    suggestor = { '.': availableColumns.map(col => ({
-      title: col.name,
-      value: `."${col.name}"`,
-    })) };
-
+    const baseSelect = document.getElementById('base-select');
     const content = document.getElementById('content');
-    if (settings && settings.expressions) {
-      settings.expressions.forEach((expression, i) => {
-        const columnId = columns.find(col => col.name === expression.to).id;
-        rowIndex = i;
-        createFormulaRow(
-          content,
-          rowIndex,
-          expression.to,
-          columnId,
-          expression.formula,
-          expression.type,
-          expression.precision,
-        );
-      });
-    } else {
-      createFormulaRow(content, rowIndex);
-    }
-    document.getElementById('add').addEventListener('click', () => {
+    const tableSelect = document.getElementById('table-select');
+    const keyInput = document.getElementById('key-input');
+    let airtableBases;
+    let rowIndex = 0;
+    columns = config.context.available_columns;
+
+
+    keyInput.addEventListener('input', async () => {
+      apiKey = keyInput.value;
+      airtableBases = await getAirtableBases(apiKey);
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
+    });
+
+    baseSelect.addEventListener('change', async () => {
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', columns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = columns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+    });
+
+    addButton.addEventListener('click', () => {
       rowIndex += 1;
-      createFormulaRow(content, rowIndex);
+      createCopyRow(content, rowIndex, airtableColumns);
     });
   });
 
   app.listen('save', async () => {
+    let overview = '';
+
     const data = {
-      settings: { expressions: [] },
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
       columns: {
-        input: columns,
+        input: [mapInputColumn],
         output: [],
       },
     };
-    const form = document.getElementsByClassName('list-wrapper');
 
-    for (let iteration = 0; iteration < form.length; iteration += 1) {
-      const index = form[iteration].id.split('-')[1];
-      const columnIdInput = document.getElementById(`columnid-${index}`);
-      const to = document.getElementById(`output-${index}`).value;
-      const dataType = document.getElementById(`datatype-${index}`).value;
-      const jqFormula = document.getElementById(`formula-${index}`).value;
-      const expression = {
-        to,
-        formula: jqFormula,
-        type: dataType,
-      };
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
       const outputColumn = {
-        name: to,
-        type: dataType,
-        nullable: true,
-        constraints: {},
+        name: outputName,
+        type: 'string',
+        description: '',
       };
-      if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${index}`).value;
-        expression.precision = precision;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
-      }
-      if (columnIdInput) {
-        outputColumn.id = columnIdInput.value;
-      }
-      data.settings.expressions.push(expression);
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
       data.columns.output.push(outputColumn);
     }
 
     try {
-      const overview = await validate('formula', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
-      } else {
-        const inputColumns = await getJQInput({
-          expressions: data.settings.expressions,
-          columns,
-        });
-        if (inputColumns.error) {
-          throw new Error(inputColumns.error);
-        } else {
-          data.columns.input = inputColumns;
-        }
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
@@ -365,15 +340,9 @@ const formula = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(airtable);
 
 
-/***/ }),
-
-/***/ 291:
-/***/ (() => {
-
-/* (ignored) */
 
 /***/ })
 
@@ -439,18 +408,6 @@ const formula = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -476,7 +433,7 @@ const formula = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -526,7 +483,7 @@ const formula = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

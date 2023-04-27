@@ -36,13 +36,6 @@ const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/crit
   },
 }).then((response) => response.json());
 
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
 const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
@@ -82,7 +75,8 @@ const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`,
   },
 }).then((response) => response.json());
 
-/* The key is the api key from airtable */
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
 const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
   method: 'GET',
   headers: {
@@ -90,7 +84,8 @@ const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${ke
   },
 }).then((response) => response.json());
 
-/* The key is the api key from airtable and the base id is the id of the base */
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
 const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
   method: 'GET',
   headers: {

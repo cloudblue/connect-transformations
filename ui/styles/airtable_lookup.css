@@ -1,0 +1,26 @@
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+.main-container {
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.main-container label, .main-container select{
+  display: block;
+}
+
+.config-elem {
+  display: inline;
+  flex: 50%;
+  margin-bottom: 20px;
+}
+
+.api-input {
+  flex: 100%;
+}
+
+
+
