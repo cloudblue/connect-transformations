@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import pytest
+import responses as sentry_responses
 from connect.client import AsyncConnectClient, ConnectClient
 
 
@@ -26,3 +27,9 @@ def async_connect_client():
 @pytest.fixture
 def logger(mocker):
     return mocker.MagicMock()
+
+
+@pytest.fixture
+def responses():
+    with sentry_responses.RequestsMock() as rsps:
+        yield rsps

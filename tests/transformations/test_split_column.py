@@ -96,10 +96,10 @@ async def test_split_column_decimal(mocker):
     assert response.transformed_row == {
         'currency': 'euro',
         'number': Decimal('22.44').quantize(
-            Decimal('.001'),
+            Decimal('.01'),
         ),
         'vat': Decimal('3.4333').quantize(
-            Decimal('.0001'),
+            Decimal('.001'),
         ),
     }
 
@@ -262,4 +262,34 @@ async def test_split_column_match_optional(mocker):
     assert response.transformed_row == {
         'First Name': 'Name',
         'Last Name': None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_split_column_old_config(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': r'(\w+) (?P<first_name>\w+) (?P<last_name>\w+)',
+                    'groups': {
+                        '1': {'name': 'group_1'},
+                        '2': {'name': 'First Name'},
+                        '3': {'name': 'Last Name'},
+                    },
+                },
+            },
+        },
+    }
+    response = await app.split_column({
+        'column': 'X Name Surname',
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'group_1': 'X',
+        'First Name': 'Name',
+        'Last Name': 'Surname',
     }

@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 813:
+/***/ 33:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
@@ -46,6 +48,30 @@ const hideError = () => {
   }
 };
 
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -63,13 +89,6 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -107,7 +126,15 @@ const getJQInput = (data) => fetch('/api/formula/extract_input', {
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -121,92 +148,188 @@ All rights reserved.
 
 
 
-const filterRow = (app) => {
+
+const getRequiredValue = (id, errorMessage) => {
+  const { value } = document.getElementById(id);
+  if (!value) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+};
+
+const fillSelect = (options, id, value) => {
+  const select = document.getElementById(id);
+  if (value) {
+    select.value = value;
+  }
+  select.innerHTML = '';
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.text = item.name;
+    if (item.id === value) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+};
+
+const createMappingRow = (index, from, to) => {
+  let lastRowIndex = 0;
+  // remove existing ADD button and add REMOVE button to last col of the row
+  const addButton = document.getElementById('add-button');
+  if (addButton) {
+    // get data-row-index from the ADD button and add delete button to this row
+    lastRowIndex = addButton.getAttribute('data-row-index');
+    addButton.remove();
+    document
+      .getElementById(`row-${lastRowIndex}`)
+      .children[3]
+      .appendChild(getDeleteButton(lastRowIndex));
+  }
+
+  const row = document.createElement('div');
+  row.classList.add('row');
+  row.id = `row-${index}`;
+  row.innerHTML = `
+    <div class="col button-col">
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Input column" value="${from || ''}" />
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Output column" value="${to || ''}" />
+    </div>
+    <div class="col button-col">
+    </div>`;
+  row.children[0].appendChild(getAddButton(index));
+  document.getElementById('mapping').appendChild(row);
+
+  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      document.getElementById(`row-${lastRowIndex}`).remove();
+      // replace delete button with add button if there is only one row left
+      if (document.getElementsByClassName('row').length === 1) {
+        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+      }
+    });
+  }
+  document.getElementById('add-button').addEventListener('click', () => {
+    createMappingRow(index + 1);
+  });
+};
+
+const loockupSpreadsheet = (app) => {
   if (!app) return;
 
+  let attachments = [];
   let columns = [];
 
-  hideComponent('loader');
-  showComponent('app');
+  app.listen('config', async (config) => {
+    try {
+      const {
+        context: {
+          stream: { id: streamId },
+          available_columns: availableColumns,
+        },
+        settings,
+      } = config;
 
-  app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
+      attachments = await getAttachments(streamId);
+      columns = availableColumns;
 
-    showComponent('loader');
-    hideComponent('app');
+      if (settings) {
+        const {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumnName,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        } = settings;
 
-    columns = availableColumns;
-
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (settings) {
-      document.getElementById('value').value = settings.value;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
+        const inputColumn = columns.find((item) => item.name === inputColumnName);
+        fillSelect(columns, 'input-column', inputColumn.id);
+        const fileId = attachments.find((item) => item.file === file).id;
+        fillSelect(attachments, 'attachment', fileId);
+        document.getElementById('attachment-column').value = attachmentColumn;
+        document.getElementById('sheet').value = sheet;
+        mapping.forEach((item, index) => {
+          createMappingRow(index, item.from, item.to);
+        });
+      } else {
+        fillSelect(columns, 'input-column');
+        fillSelect(attachments, 'attachment');
+        createMappingRow(0);
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      hideComponent('loader');
+      showComponent('app');
     }
-    hideComponent('loader');
-    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
-      },
-      overview: '',
-    };
-
-    showComponent('loader');
-    hideComponent('app');
-
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    data.columns.input.push(inputColumn);
-    data.columns.output.push(
-      {
-        name: `${selectedColumn}_INSTRUCTIONS`,
-        type: 'string',
-        output: false,
-      },
-    );
-
-    const inputValue = document.getElementById('value');
-    data.settings = {
-      from: selectedColumn,
-      value: inputValue.value,
-    };
+    hideError();
 
     try {
-      const overview = await validate('filter_row', data);
+      const fileId = getRequiredValue('attachment', 'Please select attachment');
+      const { file } = attachments.find((item) => item.id === fileId);
+      const sheet = document.getElementById('sheet').value;
+      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
+      const inputColumn = columns.find((item) => item.id === inputColumnId);
+      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+
+      const outputColumns = [];
+      const mapping = [];
+      const rows = document.querySelectorAll('#mapping .row');
+      rows.forEach((row) => {
+        const from = row.children[1].children[0].value;
+        const to = row.children[2].children[0].value;
+        if (from && to) {
+          mapping.push({ from, to });
+          outputColumns.push({
+            name: to,
+            type: 'string',
+          });
+        } else {
+          showError('Please fill all mapping rows');
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const data = {
+        settings: {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumn.name,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        },
+        columns: {
+          input: [inputColumn],
+          output: outputColumns,
+        },
+      };
+
+      const overview = await validate('attachment_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
-      }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
-      showComponent('app');
-      hideComponent('loader');
+    } catch (error) {
+      showError(error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ })
-  .then(filterRow);
+(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
 
 
 /***/ })
@@ -298,7 +421,7 @@ const filterRow = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			429: 0
+/******/ 			264: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -348,7 +471,7 @@ const filterRow = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

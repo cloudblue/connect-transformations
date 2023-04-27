@@ -7,6 +7,7 @@ import httpx
 from fastapi.responses import JSONResponse
 
 from connect_transformations.exceptions import AirTableError
+from connect_transformations.utils import check_mapping
 
 
 def get_airtable_data(api_url, token, params=None):
@@ -69,36 +70,11 @@ def validate_airtable_lookup(data):
             },
         )
 
-    available_columns = [c['name'] for c in data['settings']['input']['columns']]
-    if data['settings']['map_by']['input_column'] not in available_columns:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings contains invalid input column that '
-                    'does not exist on columns.input'
-                ),
-            },
-        )
-
-    for mapping in data['settings']['mapping']:
-        if (
-            not isinstance(mapping, dict)
-            or 'from' not in mapping
-            or 'to' not in mapping
-        ):
-            return JSONResponse(
-                status_code=400,
-                content={
-                    'error': (
-                        'Each element of the settings `mapping` must contain '
-                        '`from` and `to` fields in it.'
-                    ),
-                },
-            )
+    mapping_error = check_mapping(data['settings'], data['columns'])
+    if mapping_error:
+        return mapping_error
 
     populate = len(data["settings"]["mapping"])
-
     overview = f'Match column "{data["settings"]["map_by"]["input_column"]}" with AirTable '
     overview += f'field "{data["settings"]["map_by"]["airtable_column"]}" and populate '
     overview += f'{populate} column{"s" if populate > 1 else ""} with the matching data.'

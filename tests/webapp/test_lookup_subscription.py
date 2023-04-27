@@ -244,7 +244,6 @@ def test_validate_lookup_subscription_invalid_parameter(test_client_factory, par
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/validate/lookup_subscription', json=data)
 
-    print(response.json())
     assert response.status_code == 400
     data = response.json()
     assert data == {

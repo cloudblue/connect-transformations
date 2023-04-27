@@ -25,3 +25,7 @@ class SplitColumnError(BaseTransformationException):
 
 class AirTableError(BaseTransformationException):
     """Exception that happens when the airtable api call fails"""
+
+
+class AttachmentError(BaseTransformationException):
+    """Exception that happens when the attachment lookup api call fails"""

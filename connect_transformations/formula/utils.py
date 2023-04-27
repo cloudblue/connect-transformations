@@ -8,6 +8,11 @@ import re
 import jq
 from fastapi.responses import JSONResponse
 
+from connect_transformations.utils import _cast_mapping
+
+
+JQ_FIELDS_REGEX = re.compile(r'\.\"([^\"]*)\"|\.([^\(\)\"]\S+)|\.\(([^\"\)]*)\)')
+
 
 def error_response(error):
     return JSONResponse(
@@ -44,9 +49,13 @@ def validate_formula(data):  # noqa: CCR001
             or not expression['formula']
             or 'formula' not in expression
             or not isinstance(expression['formula'], str)
+            or 'type' not in expression
+            or expression['type'] not in _cast_mapping.keys()
+            or expression['type'] == 'decimal' and 'precision' not in expression
         ):
             return error_response(
-                'Each expression must have not empty `to` and `formula` fields.',
+                'Each expression must have not empty `to`, `formula` and `type` fields.'
+                '(also `precision` if the `type` is decimal)',
             )
 
     output_columns = []
@@ -68,11 +77,13 @@ def validate_formula(data):  # noqa: CCR001
             ):
                 return error_response(f'Column `{expression["to"]}` already exists.')
 
-        formula_to_compile = str(expression['formula'])
+        columns = [
+            (m.group(1) or m.group(2) or m.group(3))
+            for m in JQ_FIELDS_REGEX.finditer(expression['formula'])
+        ]
 
-        columns = re.findall(r'\.[a-zA-Z]\w*', expression['formula'])
         for column in columns:
-            if column[1:] not in available_columns:
+            if column not in available_columns:
                 return error_response(
                     (
                         f'Settings contains formula `{expression["formula"]}` '
@@ -80,35 +91,20 @@ def validate_formula(data):  # noqa: CCR001
                     ),
                 )
 
-        columns = re.findall(r'\."[\w (),]+"', expression['formula'])
-        for column in columns:
-            if column[2:-1] not in available_columns:
-                return error_response(
-                    (
-                        f'Settings contains formula `{expression["formula"]}` '
-                        'with column that does not exist on columns.input.'
-                    ),
-                )
+        columns = re.findall(r'\.\([^\"\)]*\)', expression['formula'])
+        formula_to_compile = expression['formula']
 
-        columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
         for column in columns:
-            if column[2:-1] not in available_columns:
-                return error_response(
-                    (
-                        f'Settings contains formula `{expression["formula"]}` '
-                        'with column that does not exist on columns.input.'
-                    ),
-                )
             formula_to_compile = formula_to_compile.replace(
                 column,
-                f'."{(column[2:-1])}"',
+                f'."{column[2:-1]}"',
             )
 
         try:
             jq.compile(formula_to_compile)
-        except ValueError:
+        except ValueError as e:
             return error_response(
-                f'Settings contains invalid formula `{expression["formula"]}`.',
+                f'Settings contains invalid formula `{expression["formula"]}: {str(e)}`.',
             )
 
         output_columns.append(expression['to'])
@@ -138,13 +134,8 @@ def extract_input(data):
 
     input_columns = set()
     for expression in data['expressions']:
-        columns = re.findall(r'\.[a-zA-Z]\w*', expression['formula'])
-        input_columns.update([column[1:] for column in columns])
-
-        columns = re.findall(r'\."[\w ]+"', expression['formula'])
-        input_columns.update([column[2:-1] for column in columns])
-
-        columns = re.findall(r'\.\([a-zA-Z][^\(]*?\)', expression['formula'])
-        input_columns.update([column[2:-1] for column in columns])
-
+        input_columns.update([
+            (m.group(1) or m.group(2) or m.group(3))
+            for m in JQ_FIELDS_REGEX.finditer(expression['formula'])
+        ])
     return [column for column in data['columns'] if column['name'] in input_columns]

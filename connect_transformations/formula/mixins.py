@@ -10,6 +10,7 @@ from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
 from connect_transformations.formula.utils import extract_input, validate_formula
+from connect_transformations.utils import cast_value_to_type
 
 
 class FormulaTransformationMixin:
@@ -28,6 +29,11 @@ class FormulaTransformationMixin:
         row: dict,
     ):
 
+        try:
+            self.precompile_jq_expression()
+        except Exception as e:
+            return RowTransformationResponse.fail(output=str(e))
+
         trfn_settings = self.transformation_request['transformation']['settings']
         input_columns = self.transformation_request['transformation']['columns']['input']
         columns_types = {column['name']: column.get('type') for column in input_columns}
@@ -38,21 +44,35 @@ class FormulaTransformationMixin:
 
         result = {}
         for expression in trfn_settings['expressions']:
-            columns = re.findall(r'\.\(.*?\)', expression['formula'])
-            formula_to_compile = expression['formula']
-            for column in columns:
-                formula_to_compile = formula_to_compile.replace(
-                    column,
-                    f'."{column[2:-1]}"',
-                )
             try:
-                result[expression['to']] = jq.compile(
-                    formula_to_compile,
-                ).input(row).first()
+                value = self.jq_expressions[expression['to']].input(row).first()
+                column_type = expression.get('type', 'string')
+                parameters = {'value': value, 'type': column_type}
+                if column_type == 'decimal':
+                    parameters['additional_parameters'] = {'precision': expression['precision']}
+                result[expression['to']] = cast_value_to_type(**parameters)
             except Exception as e:
                 return RowTransformationResponse.fail(output=str(e))
 
         return RowTransformationResponse.done(result)
+
+    def precompile_jq_expression(self):
+        with self._sync_lock:
+            if hasattr(self, 'jq_expressions'):
+                return
+            self.jq_expressions = {}
+            trfn_settings = self.transformation_request['transformation']['settings']
+            for expression in trfn_settings['expressions']:
+                columns = re.findall(r'\.\([^\"\)]*\)', expression['formula'])
+                formula_to_compile = expression['formula']
+
+                for column in columns:
+                    formula_to_compile = formula_to_compile.replace(
+                        column,
+                        f'."{column[2:-1]}"',
+                    )
+
+                self.jq_expressions[expression['to']] = jq.compile(formula_to_compile)
 
 
 class FormulaWebAppMixin:

@@ -9,11 +9,8 @@ from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
-from connect_transformations.split_column.utils import (
-    cast_value_to_type,
-    merge_groups,
-    validate_split_column,
-)
+from connect_transformations.split_column.utils import merge_groups, validate_split_column
+from connect_transformations.utils import cast_value_to_type
 
 
 class SplitColumnTransformationMixin:
@@ -43,7 +40,7 @@ class SplitColumnTransformationMixin:
         for key, column in groups.items():
             index = int(key) - 1
             column_name = column['name']
-            column_type = column['type']
+            column_type = column.get('type', 'string')
             value = pattern_groups[index] if len(pattern_groups) > index else None
             parameters = {'value': value, 'type': column_type}
             if column_type == 'decimal' and 'precision' in column:

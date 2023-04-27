@@ -23,9 +23,9 @@ function getCurrentGroups(parent) {
   const currentGroups = {};
   for (let i = 0; i < descendents.length; i += 1) {
     const element = descendents[i];
-    const dataType = document.getElementById(`${element.id}-datatype`);
+    const dataType = document.getElementById(`datatype-${element.id}`);
     if (dataType && dataType.value === 'decimal') {
-      const precision = document.getElementById(`${element.id}-precision`).value;
+      const precision = document.getElementById(`precision-${element.id}`).value;
       currentGroups[element.id] = {
         name: element.value,
         type: dataType.value,
@@ -41,7 +41,7 @@ function getCurrentGroups(parent) {
 
 function buildSelectColumnType(groupKey) {
   return `
-  <select id="${groupKey}-datatype">
+  <select id="datatype-${groupKey}">
   <option value="string" selected>String</option>
   <option value="integer">Integer</option>
   <option value="decimal">Decimal</option>
@@ -51,9 +51,9 @@ function buildSelectColumnType(groupKey) {
   `;
 }
 
-function buildSelectColumnPrecision(groupKey, enabled) {
+function buildSelectColumnPrecision(groupKey) {
   return `
-  <select id="${groupKey}-precision" ${enabled === true ? '' : 'disabled'}>
+  <select id="precision-${groupKey}">
   <option value="2" selected>2 decimals</option>
   <option value="3">3 decimals</option>
   <option value="4">4 decimals</option>
@@ -89,7 +89,7 @@ function buildGroups(groups) {
     const item = document.createElement('div');
     item.className = 'wrapper';
     const selectType = buildSelectColumnType(groupKey);
-    const selectPrecision = buildSelectColumnPrecision(groupKey, groupValue.type === 'decimal');
+    const selectPrecision = buildSelectColumnPrecision(groupKey);
     item.innerHTML = `
     <div>
     <input 
@@ -107,13 +107,15 @@ function buildGroups(groups) {
     </div>
     `;
     parent.appendChild(item);
-    document.getElementById(`${groupKey}-datatype`).value = groupValue.type;
-    document.getElementById(`${groupKey}-precision`).value = groupValue.precision;
-    document.getElementById(`${groupKey}-datatype`).addEventListener('change', () => {
-      if (document.getElementById(`${groupKey}-datatype`).value === 'decimal') {
-        document.getElementById(`${groupKey}-precision`).disabled = false;
+    document.getElementById(`datatype-${groupKey}`).value = groupValue.type;
+    const precisionSelect = document.getElementById(`precision-${groupKey}`);
+    precisionSelect.disabled = groupValue.type !== 'decimal';
+    precisionSelect.value = groupValue.precision || '2';
+    document.getElementById(`datatype-${groupKey}`).addEventListener('change', () => {
+      if (document.getElementById(`datatype-${groupKey}`).value === 'decimal') {
+        document.getElementById(`precision-${groupKey}`).disabled = false;
       } else {
-        document.getElementById(`${groupKey}-precision`).disabled = true;
+        document.getElementById(`precision-${groupKey}`).disabled = true;
       }
     });
   });
@@ -194,12 +196,18 @@ export const splitColumn = (app) => {
     const options = selector.getElementsByTagName('input');
     for (let i = 0; i < options.length; i += 1) {
       const option = options[i];
-      const dataType = document.getElementById(`${option.id}-datatype`).value;
-      data.columns.output.push({
+      const dataType = document.getElementById(`datatype-${option.id}`).value;
+      const outputColumn = {
         name: option.value,
         type: dataType,
         description: '',
-      });
+        constraints: {},
+      };
+      if (dataType === 'decimal') {
+        const precision = document.getElementById(`precision-${option.id}`).value;
+        outputColumn.constraints = { precision: parseInt(precision, 10) };
+      }
+      data.columns.output.push(outputColumn);
     }
 
     data.settings = {
