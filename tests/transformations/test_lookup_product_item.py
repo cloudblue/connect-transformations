@@ -464,7 +464,7 @@ async def test_lookup_product_item_product_column(
                 'from': 'ColumnA',
                 'prefix': 'PREFIX',
                 'action_if_not_found': 'fail',
-                'product_lookup_mode': 'column'
+                'product_lookup_mode': 'column',
             },
             'columns': {
                 'input': [

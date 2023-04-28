@@ -15,7 +15,7 @@ def test_validate_lookup_product_item(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
-            'product_lookup_mode': 'id'
+            'product_lookup_mode': 'id',
         },
         'columns': {
             'input': [
@@ -256,7 +256,7 @@ def test_validate_lookup_product_item_with_column(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
-            'product_lookup_mode': 'column'
+            'product_lookup_mode': 'column',
         },
         'columns': {
             'input': [
