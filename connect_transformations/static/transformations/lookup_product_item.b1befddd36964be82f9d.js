@@ -216,6 +216,8 @@ const lookupProductItem = (app) => {
       document.getElementById('product_id').value = stream.context.product.id;
       hideComponent('product_id_input');
       hideComponent('product_column_input');
+      hideComponent('product_id_radio_group');
+      hideComponent('no_product');
     }
 
     if (settings) {
