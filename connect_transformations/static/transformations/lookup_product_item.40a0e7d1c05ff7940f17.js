@@ -2,14 +2,83 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 81:
+/***/ 179:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createManualOutputRow, manual
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
-// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(164);
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -72,7 +141,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -85,132 +154,146 @@ All rights reserved.
 
 
 
-const createManualOutputRow = (parent, index, output) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '450px';
-  item.innerHTML = `
-      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
+
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
+
+const lookupProductItem = (app) => {
+  if (!app) return;
+
+  let columns = [];
+  const toggleProductId = (value) => {
+    if (value === 'product_id') {
+      hideComponent('product_column_input');
+      showComponent('product_id_input');
     } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
+      hideComponent('product_id_input');
+      showComponent('product_column_input');
     }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-};
+  };
 
-const manual = (app) => {
-  if (!app) {
-    return;
-  }
-
-  hideComponent('app');
-  hideComponent('loader');
-
-  let availableColumns;
-  let rowIndex = 0;
-
-  const descriptionElement = document.getElementById('description-text');
-  const settingsElement = document.getElementById('settings-text');
-
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
-      columns: { input: inputColumns, output: outputColumns },
-      context: { available_columns }, // eslint-disable-line camelcase
-      overview,
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
-    availableColumns = available_columns; // eslint-disable-line camelcase
+    const hasProduct = 'product' in stream.context;
+    columns = availableColumns;
+    const criteria = await getLookupProductItemCriteria();
 
-    descriptionElement.value = overview || '';
-    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
-
-    const inputColumnsEditElement = document.getElementById('edit-input-columns');
-    availableColumns.forEach((column) => {
-      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
-      const inputColumnRow = document.createElement('tr');
-      inputColumnRow.innerHTML = `
-        <td>${column.id.slice(-3)}</td>
-        <td>${column.name}</td>
-        <td>${column.type}</td>
-        <td>${column.description ? column.description : '-'}</td>
-        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
-      `;
-      inputColumnsEditElement.appendChild(inputColumnRow);
-    });
-
-    const outputColumnsElement = document.getElementById('output-columns');
-
-    if (outputColumns.length > 0) {
-      outputColumns.forEach((outputColumn, index) => {
-        rowIndex = index;
-        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
-      });
-    } else {
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    });
-
+    // defaults
+    document.getElementById('leave_empty').checked = true;
+    document.getElementById('by_product_id').checked = true;
+    hideComponent('product_column_input');
+    showComponent('product_id_input');
     hideComponent('loader');
     showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      document.getElementById('criteria').appendChild(option);
+    });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+
+      const anotherOption = document.createElement('option');
+      anotherOption.value = column.id;
+      anotherOption.text = column.name;
+      document.getElementById('product_id_column').appendChild(anotherOption);
+    });
+
+    if (hasProduct === true) {
+      document.getElementById('product_id').value = stream.context.product.id;
+      hideComponent('product_id_input');
+      hideComponent('product_column_input');
+    }
+
+    if (settings) {
+      document.getElementById('product_id').value = settings.product_id;
+      document.getElementById('criteria').value = settings.lookup_type;
+      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
+      document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.product_lookup_mode === 'id') {
+        document.getElementById('by_product_id').checked = true;
+        hideComponent('product_column_input');
+        showComponent('product_id_input');
+      } else {
+        document.getElementById('by_product_column').checked = true;
+        hideComponent('product_id_input');
+        showComponent('product_column_input');
+      }
+    }
+
+    const radios = document.getElementsByName('product_id_radio');
+    for (let i = 0, max = radios.length; i < max; i += 1) {
+      radios[i].onclick = () => {
+        toggleProductId(radios[i].value);
+      };
+    }
   });
 
-  app.listen('save', () => {
+  app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
+    const productId = document.getElementById('product_id').value;
+    const productColumnId = document.getElementById('product_id_column').value;
+    const productColumn = columns.find((c) => c.id === productColumnId);
+
+    const input = [column];
+    if (productLookupMode === 'column') {
+      input.push(productColumn);
+    }
+
     const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
+      settings: {
+        product_id: productId,
+        lookup_type: criteria,
+        from: column.name,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+        product_column: productColumn?.name ?? '',
+        product_lookup_mode: productLookupMode,
       },
-      overview: '',
+      columns: {
+        input,
+        output: [
+          'product.id',
+          'product.name',
+          'item.id',
+          'item.name',
+          'item.unit',
+          'item.period',
+          'item.mpn',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
     };
 
     try {
-      data.overview = descriptionElement.value;
-      data.settings = JSON.parse(settingsElement.value);
-      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
-      inputColumns.forEach((inputColumn) => {
-        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
-        data.columns.input.push(availableColumn);
-      });
-
-      const outputColumnsElements = document.getElementsByClassName('output-column-name');
-      // eslint-disable-next-line no-restricted-syntax
-      for (const outputColumnElement of outputColumnsElements) {
-        const outputColumn = {
-          name: outputColumnElement.value,
-          type: 'string',
-          description: '',
-        };
-        data.columns.output.push(outputColumn);
+      const overview = await validate('lookup_product_item', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
-
-      app.emit('save', {
-        data,
-        status: 'ok',
-      });
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       showError(e);
     }
@@ -218,7 +301,7 @@ const manual = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(lookupProductItem);
 
 
 /***/ })
@@ -310,7 +393,7 @@ const manual = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			784: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -360,7 +443,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(81)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

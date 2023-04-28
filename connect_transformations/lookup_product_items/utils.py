@@ -96,9 +96,9 @@ def _build_error_response(message):
 
 def _build_overview(settings):
     overview = f'Criteria = "{PRODUCT_ITEM_LOOKUP[settings["lookup_type"]]}"\n'
-    if settings.get('product_id', '') != '':
+    if settings.get('product_lookup_mode', '') == 'id':
         overview += f'In product = "{settings["product_id"]}"\n'
-    if settings.get('product_column', '') != '':
+    if settings.get('product_lookup_mode', '') == 'column':
         overview += 'With row-specific product IDs \n'
     overview += f'Prefix = "{settings["prefix"]}"\n'
     overview += f'If not found = {settings["action_if_not_found"].replace("_", " ").title()}\n'
@@ -158,8 +158,9 @@ def validate_lookup_product_item(data):
 
 
 def extract_settings(trfn_settings, row):
+    product_lookup_mode = trfn_settings.get('product_lookup_mode', 'id')
     product_id = trfn_settings['product_id']
-    if product_id == '':
+    if product_lookup_mode == 'column':
         product_column = trfn_settings['product_column']
         product_id = row[product_column]
     from_column = trfn_settings['from']

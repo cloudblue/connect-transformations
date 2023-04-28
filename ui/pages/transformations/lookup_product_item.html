@@ -19,14 +19,23 @@ All rights reserved.
             <div class="subtitle">
                 Supported search criteria includes CloudBlue Item MPN and CloudBlue Item ID.
             </div>
+            <div class="input-group">
+                <label class="label" for="criteria">Criteria</label>
+                <select class="input" id="criteria"></select>
+            </div>
             <div class="subtitle no-product" id="no-product">
                 Warning: No product associated with this data stream. Please either enter a Product ID,
                 which will be applied to all product item lookups, or select a Product column containing
                 the row-specific product IDs.
             </div>
-            <div class="input-group">
-                <label class="label" for="criteria">Criteria</label>
-                <select class="input" id="criteria"></select>
+            <div class="input-group" style="margin-bottom: 8px">
+                <p class="radio-buttons">Please specify a way to find product:</p>
+                <div class="radio-buttons">
+                    <input type="radio" id="by_product_id" name="product_id_radio" value="product_id"/>
+                    <label class="label" for="by_product_id">By static product ID</label><br />
+                    <input type="radio" id="by_product_column" name="product_id_radio" value="product_column"/>
+                    <label class="label" for="by_product_column">By column containing product IDs</label>
+                </div>
             </div>
             <div class="input-group" id="product_id_input">
                 <label class="label" for="product_id">Product ID</label>
@@ -34,9 +43,7 @@ All rights reserved.
             </div>
             <div class="input-group" id="product_column_input">
                 <label class="label" for="product_id_column">Product ID Column</label>
-                <select class="input" id="product_id_column">
-                    <option value="">None</option>
-                </select>
+                <select class="input" id="product_id_column"></select>
             </div>
             <div class="input-group">
                 <label class="label" for="column">Input Column</label>

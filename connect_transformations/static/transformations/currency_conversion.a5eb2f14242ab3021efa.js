@@ -2,76 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 33:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
-
-// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(164);
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
-
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -141,7 +77,69 @@ const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`,
   },
 }).then((response) => response.json());
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -155,188 +153,145 @@ All rights reserved.
 
 
 
-
-const getRequiredValue = (id, errorMessage) => {
-  const { value } = document.getElementById(id);
-  if (!value) {
-    throw new Error(errorMessage);
+const convert = (app) => {
+  if (!app) {
+    return;
   }
 
-  return value;
-};
-
-const fillSelect = (options, id, value) => {
-  const select = document.getElementById(id);
-  if (value) {
-    select.value = value;
-  }
-  select.innerHTML = '';
-  options.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.text = item.name;
-    if (item.id === value) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-};
-
-const createMappingRow = (index, from, to) => {
-  let lastRowIndex = 0;
-  // remove existing ADD button and add REMOVE button to last col of the row
-  const addButton = document.getElementById('add-button');
-  if (addButton) {
-    // get data-row-index from the ADD button and add delete button to this row
-    lastRowIndex = addButton.getAttribute('data-row-index');
-    addButton.remove();
-    document
-      .getElementById(`row-${lastRowIndex}`)
-      .children[3]
-      .appendChild(getDeleteButton(lastRowIndex));
-  }
-
-  const row = document.createElement('div');
-  row.classList.add('row');
-  row.id = `row-${index}`;
-  row.innerHTML = `
-    <div class="col button-col">
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Input column" value="${from || ''}" />
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Output column" value="${to || ''}" />
-    </div>
-    <div class="col button-col">
-    </div>`;
-  row.children[0].appendChild(getAddButton(index));
-  document.getElementById('mapping').appendChild(row);
-
-  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
-  if (deleteButton) {
-    deleteButton.addEventListener('click', () => {
-      document.getElementById(`row-${lastRowIndex}`).remove();
-      // replace delete button with add button if there is only one row left
-      if (document.getElementsByClassName('row').length === 1) {
-        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
-      }
-    });
-  }
-  document.getElementById('add-button').addEventListener('click', () => {
-    createMappingRow(index + 1);
-  });
-};
-
-const loockupSpreadsheet = (app) => {
-  if (!app) return;
-
-  let attachments = [];
   let columns = [];
+  let currencies = {};
 
-  app.listen('config', async (config) => {
-    try {
-      const {
-        context: {
-          stream: { id: streamId },
-          available_columns: availableColumns,
-        },
-        settings,
-      } = config;
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
-      attachments = await getAttachments(streamId);
-      columns = availableColumns;
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      if (settings) {
-        const {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumnName,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        } = settings;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
+    });
+  };
 
-        const inputColumn = columns.find((item) => item.name === inputColumnName);
-        fillSelect(columns, 'input-column', inputColumn.id);
-        const fileId = attachments.find((item) => item.file === file).id;
-        fillSelect(attachments, 'attachment', fileId);
-        document.getElementById('attachment-column').value = attachmentColumn;
-        document.getElementById('sheet').value = sheet;
-        mapping.forEach((item, index) => {
-          createMappingRow(index, item.from, item.to);
-        });
-      } else {
-        fillSelect(columns, 'input-column');
-        fillSelect(attachments, 'attachment');
-        createMappingRow(0);
-      }
-    } catch (error) {
-      showError(error);
-    } finally {
-      hideComponent('loader');
-      showComponent('app');
+  app.listen('config', async config => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    currencies = await getCurrencies();
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
+
+    hideComponent('loader');
+    showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
-    hideError();
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
 
-    try {
-      const fileId = getRequiredValue('attachment', 'Please select attachment');
-      const { file } = attachments.find((item) => item.id === fileId);
-      const sheet = document.getElementById('sheet').value;
-      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
-      const inputColumn = columns.find((item) => item.id === inputColumnId);
-      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+    const formElements = document.forms.convertCurrency.elements;
 
-      const outputColumns = [];
-      const mapping = [];
-      const rows = document.querySelectorAll('#mapping .row');
-      rows.forEach((row) => {
-        const from = row.children[1].children[0].value;
-        const to = row.children[2].children[0].value;
-        if (from && to) {
-          mapping.push({ from, to });
-          outputColumns.push({
-            name: to,
-            type: 'string',
-          });
-        } else {
-          showError('Please fill all mapping rows');
-          throw new Error('Please fill all mapping rows');
-        }
-      });
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
 
-      const data = {
-        settings: {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumn.name,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
         },
-        columns: {
-          input: [inputColumn],
-          output: outputColumns,
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
         },
       };
 
-      const overview = await validate('attachment_lookup', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (error) {
-      showError(error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
+(0,dist/* default */.ZP)({ })
+  .then(convert);
 
 
 /***/ })
@@ -428,7 +383,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			264: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -478,7 +433,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

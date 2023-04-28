@@ -8,11 +8,11 @@
 
 // UNUSED EXPORTS: createFormulaRow, formula
 
-// EXTERNAL MODULE: ./node_modules/suggest-box/index.js
-var suggest_box = __webpack_require__(764);
+// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
+var suggest_box = __webpack_require__(54);
 var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
-// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(164);
+// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -353,7 +353,7 @@ const formula = (app) => {
 
 /***/ }),
 
-/***/ 933:
+/***/ 291:
 /***/ (() => {
 
 /* (ignored) */
