@@ -11,6 +11,10 @@ class SubscriptionLookupError(BaseTransformationException):
     """Exception that happens when the subscription lookup fails"""
 
 
+class ProductLookupError(BaseTransformationException):
+    """Exception that happens when the subscription lookup fails"""
+
+
 class CurrencyConversionError(BaseTransformationException):
     """Exception that happens when the conversion call fails"""
 

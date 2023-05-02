@@ -54,6 +54,8 @@ class FormulaTransformationMixin:
             except Exception as e:
                 if not expression.get('ignore_errors'):
                     return RowTransformationResponse.fail(output=str(e))
+                else:
+                    result[expression['to']] = None
 
         return RowTransformationResponse.done(result)
 

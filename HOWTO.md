@@ -2,10 +2,12 @@
 
 ## Next steps
 
-You may open your favourite IDE and start working with your project, please note that this project runs using docker.
-You may modify at any time the credentials used to authenticate to connect modifying the file *.eaas_transformations_dev.env*.
-
-
+You may open your favourite IDE and start working with your project, please note that this project runs using docker.  
+In the root directory of the project you could find *.eaas_transformations_dev.env.__dist__* file, 
+which contains example data for configuring your authentication credentials. Before you start using the extension, 
+it is essential to rename this file to *.eaas_transformations_dev.env* and update it with your correct authentication 
+information.  
+This step is crucial to ensure a seamless connection and authentication process when interacting with the application. Please make sure to replace the example data with your accurate credentials to avoid any potential issues during the authentication process.  
 
 In order to start your extension as a standalone docker container first of all you need to build the docker image for your project. To do that run:
 

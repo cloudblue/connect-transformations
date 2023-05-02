@@ -8,3 +8,8 @@ SUBSCRIPTION_LOOKUP = {
     'id': 'CloudBlue Subscription ID',
     'params__value': 'Parameter Value',
 }
+
+PRODUCT_ITEM_LOOKUP = {
+    'mpn': 'CloudBlue Item MPN',
+    'id': 'CloudBlue Item ID',
+}

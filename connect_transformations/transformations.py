@@ -15,6 +15,9 @@ from connect_transformations.copy_columns.mixins import CopyColumnTransformation
 from connect_transformations.currency_conversion.mixins import CurrencyConverterTransformationMixin
 from connect_transformations.filter_row.mixins import FilterRowTransformationMixin
 from connect_transformations.formula.mixins import FormulaTransformationMixin
+from connect_transformations.lookup_product_items.mixins import (
+    LookupProductItemsTransformationMixin,
+)
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionTransformationMixin
 from connect_transformations.manual_transformation.mixins import ManualTransformationMixin
 from connect_transformations.split_column.mixins import SplitColumnTransformationMixin
@@ -30,6 +33,7 @@ class StandardTransformationsApplication(
     FormulaTransformationMixin,
     LookupSubscriptionTransformationMixin,
     SplitColumnTransformationMixin,
+    LookupProductItemsTransformationMixin,
 ):
 
     def __init__(self, *args, **kwargs):
