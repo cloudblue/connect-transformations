@@ -2,14 +2,81 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 33:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
-
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -72,69 +139,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -148,188 +153,145 @@ All rights reserved.
 
 
 
-
-const getRequiredValue = (id, errorMessage) => {
-  const { value } = document.getElementById(id);
-  if (!value) {
-    throw new Error(errorMessage);
+const convert = (app) => {
+  if (!app) {
+    return;
   }
 
-  return value;
-};
-
-const fillSelect = (options, id, value) => {
-  const select = document.getElementById(id);
-  if (value) {
-    select.value = value;
-  }
-  select.innerHTML = '';
-  options.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.text = item.name;
-    if (item.id === value) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-};
-
-const createMappingRow = (index, from, to) => {
-  let lastRowIndex = 0;
-  // remove existing ADD button and add REMOVE button to last col of the row
-  const addButton = document.getElementById('add-button');
-  if (addButton) {
-    // get data-row-index from the ADD button and add delete button to this row
-    lastRowIndex = addButton.getAttribute('data-row-index');
-    addButton.remove();
-    document
-      .getElementById(`row-${lastRowIndex}`)
-      .children[3]
-      .appendChild(getDeleteButton(lastRowIndex));
-  }
-
-  const row = document.createElement('div');
-  row.classList.add('row');
-  row.id = `row-${index}`;
-  row.innerHTML = `
-    <div class="col button-col">
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Input column" value="${from || ''}" />
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Output column" value="${to || ''}" />
-    </div>
-    <div class="col button-col">
-    </div>`;
-  row.children[0].appendChild(getAddButton(index));
-  document.getElementById('mapping').appendChild(row);
-
-  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
-  if (deleteButton) {
-    deleteButton.addEventListener('click', () => {
-      document.getElementById(`row-${lastRowIndex}`).remove();
-      // replace delete button with add button if there is only one row left
-      if (document.getElementsByClassName('row').length === 1) {
-        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
-      }
-    });
-  }
-  document.getElementById('add-button').addEventListener('click', () => {
-    createMappingRow(index + 1);
-  });
-};
-
-const loockupSpreadsheet = (app) => {
-  if (!app) return;
-
-  let attachments = [];
   let columns = [];
+  let currencies = {};
 
-  app.listen('config', async (config) => {
-    try {
-      const {
-        context: {
-          stream: { id: streamId },
-          available_columns: availableColumns,
-        },
-        settings,
-      } = config;
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
 
-      attachments = await getAttachments(streamId);
-      columns = availableColumns;
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
 
-      if (settings) {
-        const {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumnName,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        } = settings;
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
+    });
+  };
 
-        const inputColumn = columns.find((item) => item.name === inputColumnName);
-        fillSelect(columns, 'input-column', inputColumn.id);
-        const fileId = attachments.find((item) => item.file === file).id;
-        fillSelect(attachments, 'attachment', fileId);
-        document.getElementById('attachment-column').value = attachmentColumn;
-        document.getElementById('sheet').value = sheet;
-        mapping.forEach((item, index) => {
-          createMappingRow(index, item.from, item.to);
-        });
-      } else {
-        fillSelect(columns, 'input-column');
-        fillSelect(attachments, 'attachment');
-        createMappingRow(0);
-      }
-    } catch (error) {
-      showError(error);
-    } finally {
-      hideComponent('loader');
-      showComponent('app');
+  app.listen('config', async config => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    columns = availableColumns;
+
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    currencies = await getCurrencies();
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
     }
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
+
+    hideComponent('loader');
+    showComponent('app');
+
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
+    });
+
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
+    });
   });
 
   app.listen('save', async () => {
-    hideError();
+    const data = {
+      settings: {},
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
 
-    try {
-      const fileId = getRequiredValue('attachment', 'Please select attachment');
-      const { file } = attachments.find((item) => item.id === fileId);
-      const sheet = document.getElementById('sheet').value;
-      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
-      const inputColumn = columns.find((item) => item.id === inputColumnId);
-      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+    const formElements = document.forms.convertCurrency.elements;
 
-      const outputColumns = [];
-      const mapping = [];
-      const rows = document.querySelectorAll('#mapping .row');
-      rows.forEach((row) => {
-        const from = row.children[1].children[0].value;
-        const to = row.children[2].children[0].value;
-        if (from && to) {
-          mapping.push({ from, to });
-          outputColumns.push({
-            name: to,
-            type: 'string',
-          });
-        } else {
-          showError('Please fill all mapping rows');
-          throw new Error('Please fill all mapping rows');
-        }
-      });
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
 
-      const data = {
-        settings: {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumn.name,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
         },
-        columns: {
-          input: [inputColumn],
-          output: outputColumns,
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
         },
       };
 
-      const overview = await validate('attachment_lookup', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (error) {
-      showError(error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
+(0,dist/* default */.ZP)({ })
+  .then(convert);
 
 
 /***/ })
@@ -421,7 +383,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			264: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -471,7 +433,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

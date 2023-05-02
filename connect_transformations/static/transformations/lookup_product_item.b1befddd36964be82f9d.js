@@ -1,16 +1,13 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 506:
+/***/ 179:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-"use strict";
 
-// UNUSED EXPORTS: createFormulaRow, formula
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
-// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
-var suggest_box = __webpack_require__(54);
-var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -30,6 +27,13 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -137,7 +141,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -151,187 +155,145 @@ All rights reserved.
 
 
 
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
 
-let suggestor = {};
-
-function buildSelectColumnType(index) {
-  return `
-  <select id="datatype-${index}">
-  <option value="string" selected>String</option>
-  <option value="integer">Integer</option>
-  <option value="decimal">Decimal</option>
-  <option value="boolean">Boolean</option>
-  <option value="datetime">Datetime</option>
-  </select>
-  `;
-}
-
-function buildSelectColumnPrecision(index) {
-  return `
-  <select id="precision-${index}">
-  <option value="2" selected>2 decimals</option>
-  <option value="3">3 decimals</option>
-  <option value="4">4 decimals</option>
-  <option value="5">5 decimals</option>
-  <option value="6">6 decimals</option>
-  <option value="7">7 decimals</option>
-  <option value="8">8 decimals</option>
-  </select>
-  `;
-}
-
-const createFormulaRow = (parent, index, output, columnId, formula, dataType, precision) => {
-  const item = document.createElement('div');
-  const typeSelect = buildSelectColumnType(index);
-  const precisionSelect = buildSelectColumnPrecision(index);
-  const columnIdInput = columnId === undefined ? '' : `<input type="text" id="columnid-${index}" value="${columnId}" hidden/>`;
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <div class="output-group">
-      ${columnIdInput}
-      <input id="output-${index}" type="text" placeholder="Output column" ${output ? `value="${output}"` : ''} />
-      ${typeSelect}
-      ${precisionSelect}
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-      </div>
-      <div class="input-group _mt_12 _mb_18">
-          <label class="label" for="formula-${index}">Formula:</label>
-          <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
-      </div>
-    `;
-  parent.appendChild(item);
-  suggest_box_default()(document.getElementById(`formula-${index}`), suggestor);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  document.getElementById(`datatype-${index}`).value = dataType || 'string';
-  document.getElementById(`precision-${index}`).value = precision || '2';
-  document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
-  document.getElementById(`datatype-${index}`).addEventListener('change', () => {
-    if (document.getElementById(`datatype-${index}`).value === 'decimal') {
-      document.getElementById(`precision-${index}`).disabled = false;
-    } else {
-      document.getElementById(`precision-${index}`).disabled = true;
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-};
-
-const formula = (app) => {
+const lookupProductItem = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
-
-  let rowIndex = 0;
   let columns = [];
+  const toggleProductId = (value) => {
+    if (value === 'product_id') {
+      hideComponent('product_column_input');
+      showComponent('product_id_input');
+    } else {
+      hideComponent('product_id_input');
+      showComponent('product_column_input');
+    }
+  };
 
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    suggestor = { '.': availableColumns.map(col => ({
-      title: col.name,
-      value: `."${col.name}"`,
-    })) };
+    const criteria = await getLookupProductItemCriteria();
 
-    const content = document.getElementById('content');
-    if (settings && settings.expressions) {
-      settings.expressions.forEach((expression, i) => {
-        const columnId = columns.find(col => col.name === expression.to).id;
-        rowIndex = i;
-        createFormulaRow(
-          content,
-          rowIndex,
-          expression.to,
-          columnId,
-          expression.formula,
-          expression.type,
-          expression.precision,
-        );
-      });
-    } else {
-      createFormulaRow(content, rowIndex);
-    }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createFormulaRow(content, rowIndex);
+    // defaults
+    document.getElementById('leave_empty').checked = true;
+    document.getElementById('by_product_id').checked = true;
+    hideComponent('product_column_input');
+    showComponent('product_id_input');
+    hideComponent('loader');
+    showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      document.getElementById('criteria').appendChild(option);
     });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
+
+      const anotherOption = document.createElement('option');
+      anotherOption.value = column.id;
+      anotherOption.text = column.name;
+      document.getElementById('product_id_column').appendChild(anotherOption);
+    });
+
+    if (hasProduct === true) {
+      document.getElementById('product_id').value = stream.context.product.id;
+      hideComponent('product_id_input');
+      hideComponent('product_column_input');
+      hideComponent('product_id_radio_group');
+      hideComponent('no_product');
+    }
+
+    if (settings) {
+      document.getElementById('product_id').value = settings.product_id;
+      document.getElementById('criteria').value = settings.lookup_type;
+      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
+      document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.product_lookup_mode === 'id') {
+        document.getElementById('by_product_id').checked = true;
+        hideComponent('product_column_input');
+        showComponent('product_id_input');
+      } else {
+        document.getElementById('by_product_column').checked = true;
+        hideComponent('product_id_input');
+        showComponent('product_column_input');
+      }
+    }
+
+    const radios = document.getElementsByName('product_id_radio');
+    for (let i = 0, max = radios.length; i < max; i += 1) {
+      radios[i].onclick = () => {
+        toggleProductId(radios[i].value);
+      };
+    }
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: { expressions: [] },
-      columns: {
-        input: columns,
-        output: [],
-      },
-    };
-    const form = document.getElementsByClassName('list-wrapper');
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
+    const productId = document.getElementById('product_id').value;
+    const productColumnId = document.getElementById('product_id_column').value;
+    const productColumn = columns.find((c) => c.id === productColumnId);
 
-    for (let iteration = 0; iteration < form.length; iteration += 1) {
-      const index = form[iteration].id.split('-')[1];
-      const columnIdInput = document.getElementById(`columnid-${index}`);
-      const to = document.getElementById(`output-${index}`).value;
-      const dataType = document.getElementById(`datatype-${index}`).value;
-      const jqFormula = document.getElementById(`formula-${index}`).value;
-      const expression = {
-        to,
-        formula: jqFormula,
-        type: dataType,
-      };
-      const outputColumn = {
-        name: to,
-        type: dataType,
-        nullable: true,
-        constraints: {},
-      };
-      if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${index}`).value;
-        expression.precision = precision;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
-      }
-      if (columnIdInput) {
-        outputColumn.id = columnIdInput.value;
-      }
-      data.settings.expressions.push(expression);
-      data.columns.output.push(outputColumn);
+    const input = [column];
+    if (productLookupMode === 'column') {
+      input.push(productColumn);
     }
 
+    const data = {
+      settings: {
+        product_id: productId,
+        lookup_type: criteria,
+        from: column.name,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+        product_column: productColumn?.name ?? '',
+        product_lookup_mode: productLookupMode,
+      },
+      columns: {
+        input,
+        output: [
+          'product.id',
+          'product.name',
+          'item.id',
+          'item.name',
+          'item.unit',
+          'item.period',
+          'item.mpn',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
+    };
+
     try {
-      const overview = await validate('formula', data);
+      const overview = await validate('lookup_product_item', data);
       if (overview.error) {
         throw new Error(overview.error);
-      } else {
-        const inputColumns = await getJQInput({
-          expressions: data.settings.expressions,
-          columns,
-        });
-        if (inputColumns.error) {
-          throw new Error(inputColumns.error);
-        } else {
-          data.columns.input = inputColumns;
-        }
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
@@ -341,15 +303,8 @@ const formula = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(lookupProductItem);
 
-
-/***/ }),
-
-/***/ 291:
-/***/ (() => {
-
-/* (ignored) */
 
 /***/ })
 
@@ -415,18 +370,6 @@ const formula = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -452,7 +395,7 @@ const formula = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			784: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -502,7 +445,7 @@ const formula = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

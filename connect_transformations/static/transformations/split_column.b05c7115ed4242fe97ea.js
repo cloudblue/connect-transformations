@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 491:
+/***/ 118:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createGroupRows, splitColumn
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
@@ -25,6 +27,13 @@ const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, 
 }).then((response) => response.json());
 
 const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -132,7 +141,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -146,82 +155,161 @@ All rights reserved.
 
 
 
-const convert = (app) => {
-  if (!app) {
-    return;
+function getCurrentGroups(parent) {
+  const descendents = parent.getElementsByTagName('input');
+  const currentGroups = {};
+  for (let i = 0; i < descendents.length; i += 1) {
+    const element = descendents[i];
+    const dataType = document.getElementById(`datatype-${element.id}`);
+    if (dataType && dataType.value === 'decimal') {
+      const precision = document.getElementById(`precision-${element.id}`).value;
+      currentGroups[element.id] = {
+        name: element.value,
+        type: dataType.value,
+        precision,
+      };
+    } else {
+      currentGroups[element.id] = { name: element.value, type: dataType.value };
+    }
   }
 
-  let columns = [];
-  let currencies = {};
+  return currentGroups;
+}
 
-  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
-    const selectCurrencyColumnSelect = document.getElementById(elemId);
-    selectCurrencyColumnSelect.innerHTML = '';
+function buildSelectColumnType(groupKey) {
+  return `
+  <select id="datatype-${groupKey}">
+  <option value="string" selected>String</option>
+  <option value="integer">Integer</option>
+  <option value="decimal">Decimal</option>
+  <option value="boolean">Boolean</option>
+  <option value="datetime">Datetime</option>
+  </select>
+  `;
+}
 
-    Object.keys(currencies).forEach(currency => {
-      const currencyFullName = currencies[currency];
-      const isSelected = selectedOption && currency === selectedOption;
-      const isDisabled = disabledOption && currency === disabledOption;
+function buildSelectColumnPrecision(groupKey) {
+  return `
+  <select id="precision-${groupKey}">
+  <option value="2" selected>2 decimals</option>
+  <option value="3">3 decimals</option>
+  <option value="4">4 decimals</option>
+  <option value="5">5 decimals</option>
+  <option value="6">6 decimals</option>
+  <option value="7">7 decimals</option>
+  <option value="8">8 decimals</option>
+  </select>
+  `;
+}
 
-      const option = document.createElement('option');
-      option.value = currency;
-      option.text = `${currency} • ${currencyFullName}`;
-      option.selected = isSelected;
-      option.disabled = isDisabled;
-      selectCurrencyColumnSelect.appendChild(option);
+function buildGroups(groups) {
+  const parent = document.getElementById('output');
+  parent.innerHTML = '';
+  if (Object.keys(groups).length > 0) {
+    const item = document.createElement('div');
+    item.setAttribute('class', 'wrapper output-header');
+    item.innerHTML = `
+    <div>
+    Name
+    </div>
+    <div>
+    Type
+    </div>
+    <div>
+    Precision
+    </div>
+    `;
+    parent.appendChild(item);
+  }
+  Object.keys(groups).forEach(groupKey => {
+    const groupValue = groups[groupKey];
+    const item = document.createElement('div');
+    item.className = 'wrapper';
+    const selectType = buildSelectColumnType(groupKey);
+    const selectPrecision = buildSelectColumnPrecision(groupKey);
+    item.innerHTML = `
+    <div>
+    <input 
+    type="text" 
+    class="output-input" 
+    id="${groupKey}"
+    placeholder="${groupKey} group name" 
+    value="${groupValue.name}"/>
+    </div>
+    <div>
+    ${selectType}
+    </div>
+    <div>
+    ${selectPrecision}
+    </div>
+    `;
+    parent.appendChild(item);
+    document.getElementById(`datatype-${groupKey}`).value = groupValue.type;
+    const precisionSelect = document.getElementById(`precision-${groupKey}`);
+    precisionSelect.disabled = groupValue.type !== 'decimal';
+    precisionSelect.value = groupValue.precision || '2';
+    document.getElementById(`datatype-${groupKey}`).addEventListener('change', () => {
+      if (document.getElementById(`datatype-${groupKey}`).value === 'decimal') {
+        document.getElementById(`precision-${groupKey}`).disabled = false;
+      } else {
+        document.getElementById(`precision-${groupKey}`).disabled = true;
+      }
     });
-  };
+  });
+}
 
-  app.listen('config', async config => {
+const createGroupRows = async () => {
+  const parent = document.getElementById('output');
+  const groups = getCurrentGroups(parent);
+  const pattern = document.getElementById('pattern').value;
+  if (pattern) {
+    const body = { pattern, groups };
+    const response = await getGroups(body);
+    if (response.error) {
+      showError(response.error);
+    } else {
+      buildGroups(response.groups);
+    }
+  } else {
+    showError('The regular expression is empty');
+  }
+};
+
+const splitColumn = (app) => {
+  if (!app) return;
+
+  let columns = [];
+
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns },
       settings,
     } = config;
 
+    showComponent('loader');
+    hideComponent('app');
+
     columns = availableColumns;
 
-    const inputColumnSelect = document.getElementById('input-column');
-    const outputColumnInput = document.getElementById('output-column');
-
-    columns.forEach(column => {
-      const isSelected = settings && column.name === settings.from.column;
-
-      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
-
-      inputColumnSelect.innerHTML += option;
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = column.name;
+      document.getElementById('column').appendChild(option);
     });
-
-    let selectedToCurrency;
-    let selectedFromCurrency;
-
-    currencies = await getCurrencies();
 
     if (settings) {
-      outputColumnInput.value = settings.to.column;
-
-      selectedFromCurrency = settings.from.currency;
-      selectedToCurrency = settings.to.currency;
-    } else {
-      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
-      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
+      document.getElementById('pattern').value = settings.regex.pattern;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      buildGroups(settings.regex.groups);
     }
 
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
-
+    document.getElementById('refresh').addEventListener('click', () => {
+      createGroupRows();
+    });
     hideComponent('loader');
     showComponent('app');
-
-    const fromCurrency = document.getElementById('from-currency');
-    const toCurrency = document.getElementById('to-currency');
-
-    fromCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
-    });
-
-    toCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
-    });
   });
 
   app.listen('save', async () => {
@@ -231,60 +319,60 @@ const convert = (app) => {
         input: [],
         output: [],
       },
+      overview: '',
+    };
+    showComponent('loader');
+    hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+
+    const selector = document.getElementById('output');
+    const options = selector.getElementsByTagName('input');
+    for (let i = 0; i < options.length; i += 1) {
+      const option = options[i];
+      const dataType = document.getElementById(`datatype-${option.id}`).value;
+      const outputColumn = {
+        name: option.value,
+        type: dataType,
+        description: '',
+        constraints: {},
+      };
+      if (dataType === 'decimal') {
+        const precision = document.getElementById(`precision-${option.id}`).value;
+        outputColumn.constraints = { precision: parseInt(precision, 10) };
+      }
+      data.columns.output.push(outputColumn);
+    }
+
+    data.settings = {
+      from: selectedColumn,
+      regex: {
+        pattern: document.getElementById('pattern').value,
+        groups: getCurrentGroups(document.getElementById('output')),
+      },
     };
 
-    const formElements = document.forms.convertCurrency.elements;
-
-    const inputColumnValue = formElements.inputColumn.value;
-    const inputColumn = columns.find(column => column.id === inputColumnValue);
-
-    const outputColumnValue = formElements.outputColumn.value;
-
-    if (outputColumnValue === inputColumn.name) {
-      showError('This fields may not be equal: columns.input.name, columns.output.name.');
-    } else if (outputColumnValue === '' || outputColumnValue === null) {
-      showError('Output column name is required.');
-    } else {
-      const outputColumn = {
-        name: outputColumnValue,
-        type: 'decimal',
-        description: '',
-      };
-
-      const currencyFromValue = formElements.fromCurrency.value;
-      const currencyToValue = formElements.toCurrency.value;
-
-      data.columns.input.push(inputColumn);
-      data.columns.output.push(outputColumn);
-      data.settings = {
-        from: {
-          currency: currencyFromValue,
-          column: inputColumn.name,
-        },
-        to: {
-          currency: currencyToValue,
-          column: outputColumn.name,
-        },
-      };
-
-      try {
-        const overview = await validate('currency_conversion', data);
-        if (overview.error) {
-          throw new Error(overview.error);
-        }
-        app.emit('save', {
-          data: { ...data, ...overview },
-          status: 'ok',
-        });
-      } catch (e) {
-        showError(e);
+    try {
+      const overview = await validate('split_column', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(splitColumn);
 
 
 /***/ })
@@ -376,7 +464,7 @@ const convert = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			12: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -426,7 +514,7 @@ const convert = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
