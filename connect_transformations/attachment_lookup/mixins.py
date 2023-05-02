@@ -89,8 +89,8 @@ class AttachmentLookupTransformationMixin:
         file = self.transformation_request['transformation']['settings']['file']
 
         if is_input_column_nullable(
-                input_column,
-                map_by['input_column'],
+            input_column,
+            map_by['input_column'],
         ) and not row[map_by['input_column']]:
             return RowTransformationResponse.skip()
 

@@ -21,18 +21,21 @@ def test_formula(mocker):
                     {
                         'to': 'Price with Tax',
                         'formula': '.(Price without Tax) + .(Tax) + ."Additional fee"',
+                        'ignore_errors': True,
                         'type': 'decimal',
                         'precision': 2,
                     },
                     {
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
+                        'ignore_errors': True,
                         'type': 'decimal',
                         'precision': 3,
                     },
                     {
                         'to': 'Copy date',
                         'formula': '.Created',
+                        'ignore_errors': True,
                         'type': 'string',
                     },
                 ],
@@ -104,6 +107,7 @@ def test_formula_invalid_row(mocker):
                     {
                         'to': 'Tax value',
                         'formula': '.(Tax) / .(Price without Tax)',
+                        'ignore_errors': False,
                         'type': 'decimal',
                         'precision': '2',
                     },
@@ -121,3 +125,32 @@ def test_formula_invalid_row(mocker):
     response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
     assert response.status == ResultType.FAIL
     assert 'string ("twenty") and number (100) cannot be divided' in response.output
+
+
+def test_formula_invalid_row_ignore_errors(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Tax value',
+                        'formula': '.(Tax) / .(Price without Tax)',
+                        'ignore_errors': True,
+                        'type': 'decimal',
+                        'precision': '2',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+
+    response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
+    assert response.status == ResultType.SUCCESS

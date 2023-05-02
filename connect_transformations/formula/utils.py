@@ -52,10 +52,12 @@ def validate_formula(data):  # noqa: CCR001
             or 'type' not in expression
             or expression['type'] not in _cast_mapping.keys()
             or expression['type'] == 'decimal' and 'precision' not in expression
+            or 'ignore_errors' not in expression
+            or not isinstance(expression['ignore_errors'], bool)
         ):
             return error_response(
-                'Each expression must have not empty `to`, `formula` and `type` fields.'
-                '(also `precision` if the `type` is decimal)',
+                'Each expression must have not empty `to`, `formula`, `type` '
+                'and `ignore_errors` fields (also `precision` if the `type` is decimal).',
             )
 
     output_columns = []

@@ -52,7 +52,8 @@ class FormulaTransformationMixin:
                     parameters['additional_parameters'] = {'precision': expression['precision']}
                 result[expression['to']] = cast_value_to_type(**parameters)
             except Exception as e:
-                return RowTransformationResponse.fail(output=str(e))
+                if not expression.get('ignore_errors'):
+                    return RowTransformationResponse.fail(output=str(e))
 
         return RowTransformationResponse.done(result)
 
