@@ -48,7 +48,7 @@ class LookupProductItemsTransformationMixin:
                 return RowTransformationResponse.skip()
 
             product_item = await self._get_product_item(
-                trfn_settings, product, row[from_column], leave_empty,
+                trfn_settings, product, row[from_column].strip(), leave_empty,
             )
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))

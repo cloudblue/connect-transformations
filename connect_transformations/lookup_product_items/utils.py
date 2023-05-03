@@ -49,7 +49,7 @@ async def _get_product_item_by_filter(client, product, lookup_value):
 async def retrieve_product_item(
         client, cache, cache_lock, product, lookup_type, lookup_value, leave_empty,
 ):
-    cache_key = f'{lookup_type}-{lookup_value}'
+    cache_key = f'{product["id"]}-{lookup_type}-{lookup_value}'
     cached_product_item = cache.get(cache_key)
 
     if cached_product_item:
