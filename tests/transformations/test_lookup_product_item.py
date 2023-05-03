@@ -74,7 +74,7 @@ async def test_lookup_product_item_cached(mocker):
             },
         },
     }
-    app._cache['id-PRD-000-000-001-0001'] = {
+    app._cache['PRD-000-000-001-id-PRD-000-000-001-0001'] = {
         'product': {'id': 'PRD-000-000-001', 'name': 'Google Apps'},
         'id': 'PRD-000-000-001-0001',
         'name': 'Prd 000 000 001 0001',
