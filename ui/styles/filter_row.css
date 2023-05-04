@@ -3,6 +3,11 @@ input.input {
     padding: 8px 10px;
 }
 
+.input {
+    margin: 0 0 16px;
+    width: 100%;
+}
+
 select.input {
     width: 444px;
     padding: 8px 10px;
@@ -24,4 +29,12 @@ label {
     color: #212121;
     width: 100%;
     margin-top: 10px;
+}
+
+input[type="radio"] {
+    margin-left:10px;
+}
+
+.radio-buttons {
+    width: 100%;
 }

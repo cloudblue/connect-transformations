@@ -13,6 +13,13 @@ def test_validate_filter_row(test_client_factory):
         'settings': {
             'from': 'columnInput1',
             'value': 'somevalue',
+            'match_condition': True,
+            'additional_values': [
+                {
+                    'operation': 'or',
+                    'value': 'another_value',
+                },
+            ],
         },
         'columns': {
             'input': [
@@ -31,7 +38,9 @@ def test_validate_filter_row(test_client_factory):
 
     data = response.json()
     assert data == {
-        'overview': 'We Keep Row If Value == "somevalue"',
+        'overview': (
+            'We Keep Row If Value of column "columnInput1" == "somevalue" OR "another_value"'
+        ),
     }
 
 
@@ -62,6 +71,14 @@ def test_validate_filter_row_invalid_input(test_client_factory, data):
         {'settings': {'from': 'Hola', 'value': None}},
         {'settings': {'from': 'Hola', 'value': 22}},
         {'settings': {'from': 'Hola', 'value': 2.2}},
+        {'settings': {'from': 'Hola', 'value': 2.2, 'match_condition': '1'}},
+        {'settings': {'from': 'Hola', 'value': 2.2, 'match_condition': False}},
+        {'settings': {
+            'from': 'Hola',
+            'value': 2.2,
+            'match_condition': True,
+            'additional_value': {},
+        }},
     ),
 )
 def test_validate_filter_row_invalid_format(test_client_factory, settings):
@@ -78,7 +95,10 @@ def test_validate_filter_row_invalid_format(test_client_factory, settings):
 
     response = client.post('/api/validate/filter_row', json=data)
     assert response.status_code == 400
-    assert response.json() == {'error': 'The settings must have `from` and `value` fields'}
+    assert response.json() == {'error': (
+        'The settings must have `from`, `value`, boolean `match_condition` '
+        'and list `additional_values` fields'
+    )}
 
 
 def test_validate_filter_row_invalid_column(test_client_factory):
@@ -86,6 +106,34 @@ def test_validate_filter_row_invalid_column(test_client_factory):
         'settings': {
             'from': 'columnInput1',
             'value': 'somevalue',
+            'match_condition': True,
+            'additional_values': [],
+        },
+        'columns': {
+            'input': [
+                {'name': 'otherColumn'},
+            ],
+        },
+    }
+
+    client = test_client_factory(TransformationsWebApplication)
+
+    response = client.post('/api/validate/filter_row', json=data)
+    assert response.status_code == 400
+    assert response.json() == {
+        'error': 'The settings must have a valid `from` column name',
+    }
+
+
+def test_validate_filter_row_invalid_additional_value(test_client_factory):
+    data = {
+        'settings': {
+            'from': 'columnInput1',
+            'value': 'somevalue',
+            'match_condition': True,
+            'additional_values': [
+                {'operation': 'xor', 'value': '123'},
+            ],
         },
         'columns': {
             'input': [
