@@ -29,3 +29,7 @@ class AirTableError(BaseTransformationException):
 
 class AttachmentError(BaseTransformationException):
     """Exception that happens when the attachment lookup api call fails"""
+
+
+class VATRateError(BaseTransformationException):
+    """Exception that happens when the VAT rate call fails"""

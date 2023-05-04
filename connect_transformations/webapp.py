@@ -15,6 +15,7 @@ from connect_transformations.formula.mixins import FormulaWebAppMixin
 from connect_transformations.lookup_product_items.mixins import LookupProductItemsWebAppMixin
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionWebAppMixin
 from connect_transformations.split_column.mixins import SplitColumnWebAppMixin
+from connect_transformations.vat_rate.mixins import VATRateForEUCountryWebAppMixin
 
 
 @web_app(router)
@@ -29,5 +30,6 @@ class TransformationsWebApplication(
     LookupSubscriptionWebAppMixin,
     SplitColumnWebAppMixin,
     LookupProductItemsWebAppMixin,
+    VATRateForEUCountryWebAppMixin,
 ):
     pass

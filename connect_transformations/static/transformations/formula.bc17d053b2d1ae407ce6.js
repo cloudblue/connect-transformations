@@ -36,6 +36,13 @@ const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/crit
   },
 }).then((response) => response.json());
 
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
 const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
