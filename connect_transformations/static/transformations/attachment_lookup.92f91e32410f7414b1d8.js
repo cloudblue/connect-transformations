@@ -301,7 +301,6 @@ const loockupSpreadsheet = (app) => {
           mapping.push({ from, to });
           outputColumns.push({
             name: to,
-            type: 'string',
           });
         } else {
           showError('Please fill all mapping rows');
