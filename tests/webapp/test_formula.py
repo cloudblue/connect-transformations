@@ -17,12 +17,14 @@ def test_validate_formula(
                 {
                     'to': 'Price with Tax',
                     'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
                 {
                     'to': 'Tax value',
                     'formula': '.(Tax) / .(Price without Tax)',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -106,8 +108,19 @@ def test_validate_formula_invalid_expression_field(
     (
         {'formula': '.(Price without Tax) + .(Tax)'},
         {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield'},
-        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'type': 'decimal'},
-        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'type': 'invalid'},
+        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'ignore_errors': False},
+        {
+            'formula': '.(PriceWithoutTax) + .(Tax)',
+            'to': 'somefield',
+            'ignore_errors': False,
+            'type': 'decimal',
+        },
+        {
+            'formula': '.(PriceWithoutTax) + .(Tax)',
+            'to': 'somefield',
+            'ignore_errors': False,
+            'type': 'invalid',
+        },
     ),
 )
 def test_validate_formula_invalid_expression(
@@ -135,8 +148,8 @@ def test_validate_formula_invalid_expression(
     data = response.json()
     assert data == {
         'error': (
-            'Each expression must have not empty `to`, `formula` and `type` fields.'
-            '(also `precision` if the `type` is decimal)'
+            'Each expression must have not empty `to`, `formula`, `type` and `ignore_errors` '
+            'fields (also `precision` if the `type` is decimal).'
         ),
     }
 
@@ -150,6 +163,7 @@ def test_validate_formula_unique_error(
                 {
                     'to': 'Price',
                     'formula': '.(Price) + .(Tax)',
+                    'ignore_errors': False,
                     'type': 'integer',
                 },
             ],
@@ -181,12 +195,14 @@ def test_validate_formula_duplicated_input_error(
                 {
                     'to': 'Pricing',
                     'formula': '.(Price) + .(Tax)',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
                 {
                     'to': 'Pricing',
                     'formula': '.Price + .Tax + ."Additional fee"',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -220,6 +236,7 @@ def test_validate_formula_edit_formula(
                 {
                     'to': 'Price full',
                     'formula': '.(Price) + .Tax',
+                    'ignore_errors': False,
                     'type': 'string',
                 },
             ],
@@ -254,6 +271,7 @@ def test_validate_formula_non_existing_column_parenthesis(
                 {
                     'to': 'Price with Tax',
                     'formula': '.(Price) + .(Tax)',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -289,6 +307,7 @@ def test_validate_formula_non_existing_column(
                 {
                     'to': 'Price with Tax',
                     'formula': '.Price + .(Tax)',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -324,6 +343,7 @@ def test_validate_formula_non_existing_column_double_quote(
                 {
                     'to': 'Price with Tax',
                     'formula': '."Price without Tax" + ."Tax federal"',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
@@ -359,6 +379,7 @@ def test_validate_formula_invalid_formula(
                 {
                     'to': 'Price with Tax',
                     'formula': '."Price without Tax"|fill + .(Tax)',
+                    'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },

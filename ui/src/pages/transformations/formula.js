@@ -47,7 +47,16 @@ function buildSelectColumnPrecision(index) {
   `;
 }
 
-export const createFormulaRow = (parent, index, output, columnId, formula, dataType, precision) => {
+export const createFormulaRow = (
+  parent,
+  index,
+  output,
+  columnId,
+  formula,
+  ignore,
+  dataType,
+  precision,
+) => {
   const item = document.createElement('div');
   const typeSelect = buildSelectColumnType(index);
   const precisionSelect = buildSelectColumnPrecision(index);
@@ -66,7 +75,10 @@ export const createFormulaRow = (parent, index, output, columnId, formula, dataT
       <div class="input-group _mt_12 _mb_18">
           <label class="label" for="formula-${index}">Formula:</label>
           <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+          <input type="checkbox" id="ignore-${index}" name="ignore-errors-${index}"/>
+          <label for="ignore-formula-${index}">Ignore errors</label>
       </div>
+      
     `;
   parent.appendChild(item);
   suggestBox(document.getElementById(`formula-${index}`), suggestor);
@@ -82,6 +94,7 @@ export const createFormulaRow = (parent, index, output, columnId, formula, dataT
     }
   });
   document.getElementById(`datatype-${index}`).value = dataType || 'string';
+  document.getElementById(`ignore-${index}`).checked = ignore || false;
   document.getElementById(`precision-${index}`).value = precision || '2';
   document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
   document.getElementById(`datatype-${index}`).addEventListener('change', () => {
@@ -133,6 +146,7 @@ export const formula = (app) => {
           expression.to,
           columnId,
           expression.formula,
+          expression.ignore_errors,
           expression.type,
           expression.precision,
         );
@@ -162,10 +176,12 @@ export const formula = (app) => {
       const to = document.getElementById(`output-${index}`).value;
       const dataType = document.getElementById(`datatype-${index}`).value;
       const jqFormula = document.getElementById(`formula-${index}`).value;
+      const ignoreErrors = document.getElementById(`ignore-${index}`).checked;
       const expression = {
         to,
         formula: jqFormula,
         type: dataType,
+        ignore_errors: ignoreErrors,
       };
       const outputColumn = {
         name: to,
