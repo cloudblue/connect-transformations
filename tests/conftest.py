@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import pytest
+import responses as request_responses
 from connect.client import AsyncConnectClient, ConnectClient
 
 
@@ -31,3 +32,9 @@ def logger(mocker):
 @pytest.fixture
 def non_mocked_hosts() -> list:
     return ['example.org']
+
+
+@pytest.fixture
+def responses():
+    with request_responses.RequestsMock() as rsps:
+        yield rsps

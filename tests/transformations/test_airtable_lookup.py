@@ -3,18 +3,16 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-import pytest
 from connect.eaas.core.enums import ResultType
+from responses import matchers
 
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
-@pytest.mark.asyncio
-async def test_airtable_lookup(mocker, httpx_mock):
-    params = 'filterByFormula=customer_id=1&maxRecords=2'
-    httpx_mock.add_response(
-        method='GET',
-        url=f'https://api.airtable.com/v0/base_id/table_id?{params}',
+def test_airtable_lookup(mocker, responses):
+    responses.add(
+        'GET',
+        'https://api.airtable.com/v0/base_id/table_id',
         json={
             'records': [
                 {
@@ -24,6 +22,28 @@ async def test_airtable_lookup(mocker, httpx_mock):
                         'customer_id': '1',
                         'first name': 'First Name',
                         'last name': 'Last Name',
+                    },
+                },
+            ],
+            'offset': 'second_page_offset',
+        },
+    )
+
+    params = {'offset': 'second_page_offset'}
+
+    responses.add(
+        'GET',
+        'https://api.airtable.com/v0/base_id/table_id',
+        match=[matchers.query_param_matcher(params)],
+        json={
+            'records': [
+                {
+                    'id': 'some_id',
+                    'createdTime': '2023-01-01T00:0:00.000Z',
+                    'fields': {
+                        'customer_id': '2',
+                        'first name': 'First Name 2',
+                        'last name': 'Last Name 2',
                     },
                 },
             ],
@@ -61,7 +81,7 @@ async def test_airtable_lookup(mocker, httpx_mock):
         },
     }
 
-    response = await app.airtable_lookup({'id': 1})
+    response = app.airtable_lookup({'id': '1'})
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
         'Customer first name': 'First Name',
@@ -69,10 +89,10 @@ async def test_airtable_lookup(mocker, httpx_mock):
     }
 
 
-@pytest.mark.asyncio
-async def test_airtable_lookup_skip_nullable(mocker):
+def test_airtable_lookup_skip_nullable(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
+    app.airtable_data = {}
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -98,23 +118,14 @@ async def test_airtable_lookup_skip_nullable(mocker):
         },
     }
 
-    response = await app.airtable_lookup({'purchase_id': None})
+    response = app.airtable_lookup({'purchase_id': None})
     assert response.status == ResultType.SKIP
 
 
-@pytest.mark.asyncio
-async def test_airtable_lookup_no_matching_query(mocker, httpx_mock):
-    params = 'filterByFormula=customer_id=1&maxRecords=2'
-    httpx_mock.add_response(
-        method='GET',
-        url=f'https://api.airtable.com/v0/base_id/table_id?{params}',
-        json={
-            'records': [],
-        },
-    )
-
+def test_airtable_lookup_no_matching_value(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
+    app.airtable_data = {}
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -140,17 +151,15 @@ async def test_airtable_lookup_no_matching_query(mocker, httpx_mock):
         },
     }
 
-    response = await app.airtable_lookup({'id': 1})
+    response = app.airtable_lookup({'id': 1})
     assert response.status == ResultType.SKIP
 
 
-@pytest.mark.asyncio
-async def test_airtable_lookup_airtable_api_error(mocker, httpx_mock):
-    params = 'filterByFormula=customer_id=1&maxRecords=2'
-    httpx_mock.add_response(
-        method='GET',
-        url=f'https://api.airtable.com/v0/base_id/table_id?{params}',
-        status_code=400,
+def test_airtable_lookup_airtable_api_error(mocker, responses):
+    responses.add(
+        'GET',
+        'https://api.airtable.com/v0/base_id/table_id',
+        status=400,
     )
 
     m = mocker.MagicMock()
@@ -180,58 +189,6 @@ async def test_airtable_lookup_airtable_api_error(mocker, httpx_mock):
         },
     }
 
-    response = await app.airtable_lookup({'id': 1})
+    response = app.airtable_lookup({'id': 1})
     assert response.status == ResultType.FAIL
-    assert 'Error calling `base_id/table_id`' in response.output
-
-
-@pytest.mark.asyncio
-async def test_airtable_lookup_corrupted_airtable_row(mocker, httpx_mock):
-    params = 'filterByFormula=customer_id=1&maxRecords=2'
-    httpx_mock.add_response(
-        method='GET',
-        url=f'https://api.airtable.com/v0/base_id/table_id?{params}',
-        json={
-            'records': [
-                {
-                    'id': 'some_id',
-                    'createdTime': '2023-01-01T00:0:00.000Z',
-                    'fields': {
-                        'customer_id': '1',
-                        'first name': 'First Name',
-                    },
-                },
-            ],
-        },
-    )
-
-    m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
-    app.transformation_request = {
-        'transformation': {
-            'settings': {
-                'api_key': 'token',
-                'base_id': 'base_id',
-                'table_id': 'table_id',
-                'map_by': {
-                    'input_column': 'id',
-                    'airtable_column': 'customer_id',
-                },
-                'mapping': [
-                    {
-                        'from': 'first_name',
-                        'to': 'Customer first name',
-                    },
-                ],
-            },
-            'columns': {
-                'input': [
-                    {'name': 'id', 'nullable': False},
-                ],
-            },
-        },
-    }
-
-    response = await app.airtable_lookup({'id': 1})
-    assert response.status == ResultType.FAIL
-    assert "Error extracting data: 'first_name'" in response.output
+    assert '400 Client Error' in response.output
