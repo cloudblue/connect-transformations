@@ -23,12 +23,17 @@ def validate_filter_row(data):
         or settings['from'] == ''
         or 'value' not in settings
         or not isinstance(settings['value'], str)
+        or 'match_condition' not in settings
+        or not isinstance(settings['match_condition'], bool)
+        or 'additional_values' not in settings
+        or not isinstance(settings['additional_values'], list)
     ):
         return JSONResponse(
             status_code=400,
             content={
                 'error': (
-                    'The settings must have `from` and `value` fields'
+                    'The settings must have `from`, `value`, boolean `match_condition` '
+                    'and list `additional_values` fields'
                 ),
             },
         )
@@ -45,7 +50,32 @@ def validate_filter_row(data):
             },
         )
 
-    value = settings['value']
+    for condition in settings['additional_values']:
+        if (
+            'operation' not in condition
+            or condition['operation'] not in ['and', 'or']
+            or 'value' not in condition
+            or not condition['value']
+            or not isinstance(condition['value'], str)
+        ):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'Each additional value in the settings must have '
+                        'not empty `value` field and `operation` field '
+                        'equal to `or` or `and`'
+                    ),
+                },
+            )
+
+    value = f'"{settings["value"]}"'
+    for condition in settings['additional_values']:
+        value += f' {condition["operation"].upper()} "{condition["value"]}"'
+
     return {
-        'overview': f'We Keep Row If Value == "{value}"',
+        'overview': (
+            f'We Keep Row If Value of column "{settings["from"]}" '
+            f'{"==" if settings["match_condition"] else "!="} {value}'
+        ),
     }

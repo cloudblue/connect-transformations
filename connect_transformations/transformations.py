@@ -45,3 +45,4 @@ class StandardTransformationsApplication(
         self.current_exchange_rate = None
         self._attachments = defaultdict(dict)
         self._attachment_lock = asyncio.Lock()
+        self._filter_lock = threading.Lock()

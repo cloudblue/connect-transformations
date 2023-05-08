@@ -6,6 +6,8 @@
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
+// UNUSED EXPORTS: createAdditionalValue, filterRow
+
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/components.js
@@ -153,10 +155,31 @@ All rights reserved.
 
 
 
+const createAdditionalValue = (parent, index, operation, value) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <select class="list" style="width: 20%;" ${operation ? `value="${operation}"` : ''}>
+        <option value="and" ${operation && operation === 'and' ? 'selected' : ''}>AND</option>
+        <option value="or" ${operation && operation === 'or' ? 'selected' : ''}>OR</option>
+      </select>
+      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+  });
+};
+
 const filterRow = (app) => {
   if (!app) return;
 
   let columns = [];
+  let rowIndex = 0;
 
   hideComponent('loader');
   showComponent('app');
@@ -172,6 +195,8 @@ const filterRow = (app) => {
 
     columns = availableColumns;
 
+    const content = document.getElementById('content');
+
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
@@ -183,7 +208,28 @@ const filterRow = (app) => {
       document.getElementById('value').value = settings.value;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
+
+      if (settings.match_condition) {
+        document.getElementById('match').checked = true;
+      } else {
+        document.getElementById('mismatch').checked = true;
+      }
+
+      if (settings.additional_values) {
+        settings.additional_values.forEach((addVal, i) => {
+          rowIndex = i;
+          createAdditionalValue(content, rowIndex, addVal.operation, addVal.value, i);
+        });
+      }
+    } else {
+      document.getElementById('match').checked = true;
     }
+
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createAdditionalValue(content, rowIndex, columns);
+    });
+
     hideComponent('loader');
     showComponent('app');
   });
@@ -204,6 +250,7 @@ const filterRow = (app) => {
     const inputSelector = document.getElementById('column');
     const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
     const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    const matchCondition = document.getElementById('match').checked;
     data.columns.input.push(inputColumn);
     data.columns.output.push(
       {
@@ -217,7 +264,21 @@ const filterRow = (app) => {
     data.settings = {
       from: selectedColumn,
       value: inputValue.value,
+      match_condition: matchCondition,
+      additional_values: [],
     };
+
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const operation = line.getElementsByTagName('select')[0].value;
+      const val = line.getElementsByTagName('input')[0].value;
+      const addVal = {
+        operation,
+        value: val,
+      };
+      data.settings.additional_values.push(addVal);
+    }
 
     try {
       const overview = await validate('filter_row', data);
