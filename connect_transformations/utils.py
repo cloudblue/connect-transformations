@@ -13,13 +13,13 @@ def is_input_column_nullable(input_columns, column):
     raise BaseTransformationException(f'The column {column} does not exists.')
 
 
-def _to_decimal(value, precision=2):
+def _to_decimal(value, precision=None):
     value = value.replace(',', '.') if isinstance(value, str) else value
     return Decimal(
         value,
     ).quantize(
         Decimal(f'.{"1".zfill(int(precision))}'),
-    )
+    ) if precision else Decimal(value)
 
 
 def _to_boolean(value):

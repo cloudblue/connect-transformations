@@ -49,7 +49,7 @@ class FormulaTransformationMixin:
                 column_type = expression.get('type', 'string')
                 parameters = {'value': value, 'type': column_type}
                 if column_type == 'decimal':
-                    parameters['additional_parameters'] = {'precision': expression['precision']}
+                    parameters['additional_parameters'] = {'precision': expression.get('precision')}
                 result[expression['to']] = cast_value_to_type(**parameters)
             except Exception as e:
                 if not expression.get('ignore_errors'):

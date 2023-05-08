@@ -176,7 +176,9 @@ function buildSelectColumnType(index) {
 function buildSelectColumnPrecision(index) {
   return `
   <select id="precision-${index}">
-  <option value="2" selected>2 decimals</option>
+  <option value="auto" selected>Auto</option>
+  <option value="1">1 decimal</option>
+  <option value="2">2 decimals</option>
   <option value="3">3 decimals</option>
   <option value="4">4 decimals</option>
   <option value="5">5 decimals</option>
@@ -235,7 +237,8 @@ const createFormulaRow = (
   });
   document.getElementById(`datatype-${index}`).value = dataType || 'string';
   document.getElementById(`ignore-${index}`).checked = ignore || false;
-  document.getElementById(`precision-${index}`).value = precision || '2';
+
+  document.getElementById(`precision-${index}`).value = precision || 'auto';
   document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
   document.getElementById(`datatype-${index}`).addEventListener('change', () => {
     if (document.getElementById(`datatype-${index}`).value === 'decimal') {
@@ -331,8 +334,11 @@ const formula = (app) => {
       };
       if (dataType === 'decimal') {
         const precision = document.getElementById(`precision-${index}`).value;
-        expression.precision = precision;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
+
+        if (precision !== 'auto') {
+          expression.precision = precision;
+          outputColumn.constraints = { precision: parseInt(precision, 10) };
+        }
       }
       if (columnIdInput) {
         outputColumn.id = columnIdInput.value;

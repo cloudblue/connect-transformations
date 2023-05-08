@@ -113,12 +113,6 @@ def test_validate_formula_invalid_expression_field(
             'formula': '.(PriceWithoutTax) + .(Tax)',
             'to': 'somefield',
             'ignore_errors': False,
-            'type': 'decimal',
-        },
-        {
-            'formula': '.(PriceWithoutTax) + .(Tax)',
-            'to': 'somefield',
-            'ignore_errors': False,
             'type': 'invalid',
         },
     ),
@@ -149,7 +143,7 @@ def test_validate_formula_invalid_expression(
     assert data == {
         'error': (
             'Each expression must have not empty `to`, `formula`, `type` and `ignore_errors` '
-            'fields (also `precision` if the `type` is decimal).'
+            'fields.'
         ),
     }
 
