@@ -189,7 +189,6 @@ const airtable = (app) => {
 
       const outputColumn = {
         name: outputName,
-        type: 'string',
         description: '',
       };
       const setting = {
