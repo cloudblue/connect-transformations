@@ -21,6 +21,7 @@ from connect_transformations.lookup_product_items.mixins import (
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionTransformationMixin
 from connect_transformations.manual_transformation.mixins import ManualTransformationMixin
 from connect_transformations.split_column.mixins import SplitColumnTransformationMixin
+from connect_transformations.vat_rate.mixins import VATRateForEUCountryTransformationMixin
 
 
 class StandardTransformationsApplication(
@@ -34,6 +35,7 @@ class StandardTransformationsApplication(
     LookupSubscriptionTransformationMixin,
     SplitColumnTransformationMixin,
     LookupProductItemsTransformationMixin,
+    VATRateForEUCountryTransformationMixin,
 ):
 
     def __init__(self, *args, **kwargs):
@@ -46,3 +48,5 @@ class StandardTransformationsApplication(
         self._attachments = defaultdict(dict)
         self._attachment_lock = asyncio.Lock()
         self._filter_lock = threading.Lock()
+        self.current_vat_rate = None
+        self._current_vat_rate_lock = asyncio.Lock()

@@ -38,6 +38,7 @@ const pages = populateHtmlPlugins([
   "Transformations/Split Column",
   "Transformations/Formula",
   "Transformations/Filter Row",
+  "Transformations/VAT Rate",
 ]);
 
 module.exports = {
@@ -52,6 +53,7 @@ module.exports = {
     ['transformations/manual']: __dirname + "/ui/src/pages/transformations/manual.js",
     ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",
     ['transformations/attachment_lookup']: __dirname + "/ui/src/pages/transformations/attachment_lookup.js",
+    ['transformations/vat_rate']: __dirname + "/ui/src/pages/transformations/vat_rate.js",
   },
   output: {
     filename: '[name].[contenthash].js',
