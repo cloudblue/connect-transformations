@@ -29,6 +29,7 @@ const populateHtmlPlugins = (pagesArray) => {
 }
 
 const pages = populateHtmlPlugins([
+  "Transformations/Airtable Lookup",
   "Transformations/Copy",
   "Transformations/Attachment Lookup",
   "Transformations/Lookup Subscription",
@@ -44,6 +45,7 @@ const pages = populateHtmlPlugins([
 module.exports = {
   mode: 'production',
   entry: {
+    ['transformations/airtable_lookup']: __dirname + "/ui/src/pages/transformations/airtable_lookup.js",
     ['transformations/copy']: __dirname + "/ui/src/pages/transformations/copy.js",
     ['transformations/currency_conversion']: __dirname + "/ui/src/pages/transformations/currency_conversion.js",
     ['transformations/filter_row']: __dirname + "/ui/src/pages/transformations/filter_row.js",

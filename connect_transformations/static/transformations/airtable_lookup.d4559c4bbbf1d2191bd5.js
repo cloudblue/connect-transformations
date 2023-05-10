@@ -2,12 +2,17 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 /***/ 755:
+========
+/***/ 616:
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -77,6 +82,8 @@ const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`,
   },
 }).then((response) => response.json());
 
+========
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -139,7 +146,97 @@ const getDeleteButton = (index) => {
   return button;
 };
 
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 ;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
+========
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -153,14 +250,84 @@ All rights reserved.
 
 
 
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 
 const vatRate = (app) => {
   if (!app) {
     return;
+========
+const createCopyRow = (parent, index, options, input, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${column.name}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
   }
 
-  let columns = [];
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
+========
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
 
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const airtable = (app) => {
+  if (!app) return;
+  hideComponent('loader');
+  showComponent('app');
+
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
+  let columns = [];
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
+
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
   app.listen('config', config => {
     const {
       context: { available_columns: availableColumns },
@@ -175,6 +342,71 @@ const vatRate = (app) => {
       const isSelected = settings && column.name === settings.from;
       const option = isSelected ? `<option value="${column.name}" selected>${column.name}</option>` : `<option value="${column.name}">${column.name}</option>`;
       inputColumnSelect.innerHTML += option;
+========
+  app.listen('config', (config) => {
+    const baseSelect = document.getElementById('base-select');
+    const content = document.getElementById('content');
+    const tableSelect = document.getElementById('table-select');
+    const keyInput = document.getElementById('key-input');
+    let airtableBases;
+    let rowIndex = 0;
+    columns = config.context.available_columns;
+
+    keyInput.addEventListener('input', async () => {
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        showError(e);
+      }
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
+    });
+
+    baseSelect.addEventListener('change', async () => {
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', columns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = columns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
     });
 
     if (settings) {
@@ -192,6 +424,7 @@ const vatRate = (app) => {
   });
 
   app.listen('save', async () => {
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
     const inputColumnValue = document.getElementById('input-column').value;
     const inputColumn = columns.find(column => column.name === inputColumnValue);
     const outputColumnValue = document.getElementById('output-column').value;
@@ -233,15 +466,72 @@ const vatRate = (app) => {
         });
       } catch (e) {
         showError(e);
+========
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      showError('Please complete all the fields');
+
+      return;
+    }
+
+    const data = {
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
+      columns: {
+        input: [mapInputColumn],
+        output: [],
+      },
+    };
+
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
+      const outputColumn = {
+        name: outputName,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
+      data.columns.output.push(outputColumn);
+    }
+
+    try {
+      overview = await validate('airtable_lookup', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
       }
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
   .then(vatRate);
 
 
+========
+  .then(airtable);
+
+
+
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 /***/ })
 
 /******/ 	});
@@ -331,7 +621,11 @@ const vatRate = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 /******/ 			496: 0
+========
+/******/ 			18: 0
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -381,7 +675,11 @@ const vatRate = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+<<<<<<<< HEAD:connect_transformations/static/transformations/vat_rate.1d9f785291e23cd3aa59.js
 /******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
+========
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
+>>>>>>>> 43f6be8 (preload airtable lookup data):connect_transformations/static/transformations/airtable_lookup.d4559c4bbbf1d2191bd5.js
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

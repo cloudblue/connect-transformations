@@ -3,6 +3,9 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+import time
+
+import requests
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
@@ -17,6 +20,49 @@ from connect_transformations.utils import is_input_column_nullable
 
 class AirTableLookupTransformationMixin:
 
+    def preload_lookup_data_for_airtable(self, trfn_settings):  # noqa: CCR001
+        with self._sync_lock:
+            if hasattr(self, 'airtable_data'):
+                return
+
+            self.airtable_data = {}
+
+            page_count = 0
+            params = {}
+            mapped_columns = [mapping['from'] for mapping in trfn_settings['mapping']]
+            self.logger.info(f'mapped_columns: {mapped_columns}')
+            lookup_column = trfn_settings['map_by']['airtable_column']
+            while True:
+                response = requests.get(
+                    'https://api.airtable.com/v0/'
+                    f'{trfn_settings["base_id"]}/{trfn_settings["table_id"]}',
+                    headers={
+                        'Authorization': f'Bearer {trfn_settings["api_key"]}',
+                    },
+                    params=params,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                for record in data.get('records', []):
+                    lookup_value = None
+                    looked_up_data = {}
+                    for field_name, field_value in record['fields'].items():
+                        if field_name == lookup_column:
+                            lookup_value = field_value
+                            continue
+                        if field_name in mapped_columns:
+                            looked_up_data[field_name] = field_value
+                    self.airtable_data[lookup_value] = looked_up_data
+
+                if 'offset' not in data:
+                    break
+                params['offset'] = data['offset']
+                if page_count % 5 == 0:
+                    time.sleep(1)
+                page_count += 1
+        self.logger.info(f'airtable table: {self.airtable_data}')
+
     @transformation(
         name='Airtable lookup',
         description=(
@@ -30,6 +76,12 @@ class AirTableLookupTransformationMixin:
             row: dict,
     ):
         trfn_settings = self.transformation_request['transformation']['settings']
+
+        try:
+            self.preload_lookup_data_for_airtable(trfn_settings)
+        except Exception as e:
+            return RowTransformationResponse.fail(output=str(e))
+
         map_by = trfn_settings['map_by']
         input_column = self.transformation_request['transformation']['columns']['input']
 
@@ -39,35 +91,14 @@ class AirTableLookupTransformationMixin:
         ) and not row[map_by['input_column']]:
             return RowTransformationResponse.skip()
 
-        records = None
-        try:
-            params = {
-                'filterByFormula': f'{map_by["airtable_column"]}={row[map_by["input_column"]]}',
-                'maxRecords': 2,
-            }
-            records = get_airtable_data(
-                api_url=f'{trfn_settings["base_id"]}/{trfn_settings["table_id"]}',
-                token=trfn_settings['api_key'],
-                params=params,
-            )
-        except AirTableError as e:
-            return RowTransformationResponse.fail(output=str(e))
-
-        if (
-            not records
-            or 'records' not in records
-            or len(records['records']) != 1
-        ):
+        record = self.airtable_data.get(row[map_by['input_column']])
+        if not record:
             return RowTransformationResponse.skip()
 
-        try:
-            record = records['records']['field']
-            return RowTransformationResponse.done({
-                mapping['to']: record[mapping['from']]
-                for mapping in trfn_settings['mapping']
-            })
-        except ValueError as e:
-            return RowTransformationResponse.fail(output=str(e))
+        return RowTransformationResponse.done({
+            mapping['to']: record[mapping['from']]
+            for mapping in trfn_settings['mapping']
+        })
 
 
 class AirTableLookupWebAppMixin:
@@ -76,25 +107,17 @@ class AirTableLookupWebAppMixin:
         '/airtable_lookup/bases',
         summary='Get list of bases by given token',
     )
-    def get_tables(
+    async def get_bases(
         self,
-        data: dict,
+        api_key: str,
     ):
         try:
-            bases = get_airtable_data('meta/bases', data['api_key'])
-            if 'bases' in bases:
-                return [
-                    {'id': base['id'], 'name': base['name']}
-                    for base in bases['bases']
-                ]
+            bases = await get_airtable_data('meta/bases', api_key, params={})
+            return [
+                {'id': base['id'], 'name': base['name']}
+                for base in bases['bases']
+            ]
 
-            return []
-
-        except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={'error': 'api_key must be provided'},
-            )
         except AirTableError as e:
             return JSONResponse(
                 status_code=400,
@@ -105,32 +128,25 @@ class AirTableLookupWebAppMixin:
         '/airtable_lookup/tables',
         summary='Get list of tables with its columns by given base and token',
     )
-    def get_table_columns(
+    async def get_tables(
         self,
-        data: dict,
+        api_key: str,
+        base_id: str,
     ):
         try:
-            tables = get_airtable_data(
-                f'meta/bases/{data["base_id"]}/tables',
-                data['api_key'],
+            tables = await get_airtable_data(
+                f'meta/bases/{base_id}/tables',
+                api_key,
             )
-            if 'tables' in tables:
-                return [
-                    {
-                        'id': table['id'],
-                        'name': table['name'],
-                        'columns': table['fields'],
-                    }
-                    for table in tables['tables']
-                ]
+            return [
+                {
+                    'id': table['id'],
+                    'name': table['name'],
+                    'columns': table['fields'],
+                }
+                for table in tables['tables']
+            ]
 
-            return []
-
-        except ValueError:
-            return JSONResponse(
-                status_code=400,
-                content={'error': 'api_key and base_id must be provided'},
-            )
         except AirTableError as e:
             return JSONResponse(
                 status_code=400,
