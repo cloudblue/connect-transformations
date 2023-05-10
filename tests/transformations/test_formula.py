@@ -20,14 +20,14 @@ def test_formula(mocker):
                 'expressions': [
                     {
                         'to': 'Price with Tax',
-                        'formula': '.(Price without Tax) + .(Tax) + ."Additional fee"',
+                        'formula': '.["Price without Tax"] + .Tax + ."Additional fee"',
                         'ignore_errors': True,
                         'type': 'decimal',
                         'precision': 2,
                     },
                     {
                         'to': 'Tax value',
-                        'formula': '.(Tax) / .(Price without Tax)',
+                        'formula': '.Tax / ."Price without Tax"',
                         'ignore_errors': True,
                         'type': 'decimal',
                         'precision': 3,
@@ -76,7 +76,7 @@ def test_formula_using_old_config(mocker):
                 'expressions': [
                     {
                         'to': 'Price String',
-                        'formula': '.(Price without Tax)',
+                        'formula': '."Price without Tax"',
                     },
                 ],
             },
@@ -106,7 +106,7 @@ def test_formula_invalid_row(mocker):
                 'expressions': [
                     {
                         'to': 'Tax value',
-                        'formula': '.(Tax) / .(Price without Tax)',
+                        'formula': '.["Tax"] / ."Price without Tax"',
                         'ignore_errors': False,
                         'type': 'decimal',
                         'precision': '2',
@@ -136,7 +136,7 @@ def test_formula_invalid_row_ignore_errors(mocker):
                 'expressions': [
                     {
                         'to': 'Tax value',
-                        'formula': '.(Tax) / .(Price without Tax)',
+                        'formula': '.Tax / ."Price without Tax"',
                         'ignore_errors': True,
                         'type': 'decimal',
                         'precision': '2',

@@ -16,14 +16,14 @@ def test_validate_formula(
             'expressions': [
                 {
                     'to': 'Price with Tax',
-                    'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
+                    'formula': '."Price without Tax" + .Tax + ."Additional fee"',
                     'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
                 },
                 {
                     'to': 'Tax value',
-                    'formula': '.(Tax) / .(Price without Tax)',
+                    'formula': '."Tax" / ."Price without Tax"',
                     'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
@@ -45,8 +45,8 @@ def test_validate_formula(
     data = response.json()
     assert data == {
         'overview': (
-            'Price with Tax = .(Price without Tax) + .Tax + ."Additional fee"\n'
-            'Tax value = .(Tax) / .(Price without Tax)\n'
+            'Price with Tax = ."Price without Tax" + .Tax + ."Additional fee"\n'
+            'Tax value = ."Tax" / ."Price without Tax"\n'
         ),
     }
 
@@ -59,7 +59,7 @@ def test_validate_formula_invalid_input(
             'expressions': [
                 {
                     'to': 'Price with Tax',
-                    'formula': '.(Price without Tax) + .(Tax)',
+                    'formula': '."Price without Tax" + ."Tax"',
                 },
             ],
         },
@@ -82,7 +82,7 @@ def test_validate_formula_invalid_expression_field(
         'settings': {
             'expressions': {
                 'to': 'Price with Tax',
-                'formula': '.(Price without Tax) + .(Tax)',
+                'formula': '."Price without Tax" + ."Tax"',
             },
         },
         'columns': {
@@ -106,17 +106,11 @@ def test_validate_formula_invalid_expression_field(
 @pytest.mark.parametrize(
     'expression',
     (
-        {'formula': '.(Price without Tax) + .(Tax)'},
-        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield'},
-        {'formula': '.(PriceWithoutTax) + .(Tax)', 'to': 'somefield', 'ignore_errors': False},
+        {'formula': '."Price without Tax" + ."Tax"'},
+        {'formula': '."PriceWithoutTax" + .Tax', 'to': 'somefield'},
+        {'formula': '."PriceWithoutTax" + .Tax', 'to': 'somefield', 'ignore_errors': False},
         {
-            'formula': '.(PriceWithoutTax) + .(Tax)',
-            'to': 'somefield',
-            'ignore_errors': False,
-            'type': 'decimal',
-        },
-        {
-            'formula': '.(PriceWithoutTax) + .(Tax)',
+            'formula': '.PriceWithoutTax + .Tax',
             'to': 'somefield',
             'ignore_errors': False,
             'type': 'invalid',
@@ -149,7 +143,7 @@ def test_validate_formula_invalid_expression(
     assert data == {
         'error': (
             'Each expression must have not empty `to`, `formula`, `type` and `ignore_errors` '
-            'fields (also `precision` if the `type` is decimal).'
+            'fields.'
         ),
     }
 
@@ -194,7 +188,7 @@ def test_validate_formula_duplicated_input_error(
             'expressions': [
                 {
                     'to': 'Pricing',
-                    'formula': '.(Price) + .(Tax)',
+                    'formula': '.Price + .Tax',
                     'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
@@ -235,7 +229,7 @@ def test_validate_formula_edit_formula(
             'expressions': [
                 {
                     'to': 'Price full',
-                    'formula': '.(Price) + .Tax',
+                    'formula': '.Price + .Tax',
                     'ignore_errors': False,
                     'type': 'string',
                 },
@@ -258,7 +252,7 @@ def test_validate_formula_edit_formula(
     assert response.status_code == 200
     data = response.json()
     assert data == {
-        'overview': 'Price full = .(Price) + .Tax\n',
+        'overview': 'Price full = .Price + .Tax\n',
     }
 
 
@@ -270,7 +264,7 @@ def test_validate_formula_non_existing_column_parenthesis(
             'expressions': [
                 {
                     'to': 'Price with Tax',
-                    'formula': '.(Price) + .(Tax)',
+                    'formula': '.Price + .Tax',
                     'ignore_errors': False,
                     'type': 'decimal',
                     'precision': '2',
@@ -292,7 +286,7 @@ def test_validate_formula_non_existing_column_parenthesis(
     data = response.json()
     assert data == {
         'error': (
-            'Settings contains formula `.(Price) + .(Tax)` '
+            'Settings contains formula `.Price + .Tax` '
             'with column that does not exist on columns.input.'
         ),
     }
@@ -408,7 +402,7 @@ def test_extract_formula_input(
         'expressions': [
             {
                 'to': 'Price with Tax',
-                'formula': '.(Price without Tax) + .Tax + ."Additional fee"',
+                'formula': '.["Price without Tax"] + .Tax + ."Additional fee"',
                 'type': 'decimal',
                 'precision': '2',
             },
