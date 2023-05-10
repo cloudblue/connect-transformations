@@ -3,8 +3,6 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-import re
-
 import jq
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
@@ -66,16 +64,7 @@ class FormulaTransformationMixin:
             self.jq_expressions = {}
             trfn_settings = self.transformation_request['transformation']['settings']
             for expression in trfn_settings['expressions']:
-                columns = re.findall(r'\.\([^\"\)]*\)', expression['formula'])
-                formula_to_compile = expression['formula']
-
-                for column in columns:
-                    formula_to_compile = formula_to_compile.replace(
-                        column,
-                        f'."{column[2:-1]}"',
-                    )
-
-                self.jq_expressions[expression['to']] = jq.compile(formula_to_compile)
+                self.jq_expressions[expression['to']] = jq.compile(expression['formula'])
 
 
 class FormulaWebAppMixin:

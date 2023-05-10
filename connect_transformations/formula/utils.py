@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from connect_transformations.utils import _cast_mapping
 
 
-JQ_FIELDS_REGEX = re.compile(r'\.\"([^\"]*)\"|\.([^\(\)\"]\S+)|\.\(([^\"\)]*)\)')
+JQ_FIELDS_REGEX = re.compile(r'(\.([a-z_][a-z0-9_]*))|(\."(.+?)")|(\.\["(.+?)"\])', re.I)
 
 
 def error_response(error):
@@ -79,8 +79,8 @@ def validate_formula(data):  # noqa: CCR001
                 return error_response(f'Column `{expression["to"]}` already exists.')
 
         columns = [
-            (m.group(1) or m.group(2) or m.group(3))
-            for m in JQ_FIELDS_REGEX.finditer(expression['formula'])
+            r[1] or r[3] or r[5]
+            for r in JQ_FIELDS_REGEX.findall(expression['formula'])
         ]
 
         for column in columns:
@@ -92,17 +92,8 @@ def validate_formula(data):  # noqa: CCR001
                     ),
                 )
 
-        columns = re.findall(r'\.\([^\"\)]*\)', expression['formula'])
-        formula_to_compile = expression['formula']
-
-        for column in columns:
-            formula_to_compile = formula_to_compile.replace(
-                column,
-                f'."{column[2:-1]}"',
-            )
-
         try:
-            jq.compile(formula_to_compile)
+            jq.compile(expression['formula'])
         except ValueError as e:
             return error_response(
                 f'Settings contains invalid formula `{expression["formula"]}: {str(e)}`.',
@@ -136,7 +127,7 @@ def extract_input(data):
     input_columns = set()
     for expression in data['expressions']:
         input_columns.update([
-            (m.group(1) or m.group(2) or m.group(3))
-            for m in JQ_FIELDS_REGEX.finditer(expression['formula'])
+            r[1] or r[3] or r[5]
+            for r in JQ_FIELDS_REGEX.findall(expression['formula'])
         ])
     return [column for column in data['columns'] if column['name'] in input_columns]
