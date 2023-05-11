@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 262:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
 
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
@@ -158,7 +158,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -178,19 +178,10 @@ const createOutputColumnForLookup = (prefix, name) => ({
   description: '',
 });
 
-const lookupProductItem = (app) => {
+const lookupSubscription = (app) => {
   if (!app) return;
 
   let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
-    } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
-    }
-  };
 
   app.listen('config', async (config) => {
     const {
@@ -200,13 +191,8 @@ const lookupProductItem = (app) => {
 
     const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = await getLookupProductItemCriteria();
+    const criteria = await getLookupSubscriptionCriteria();
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
     hideComponent('loader');
     showComponent('app');
 
@@ -214,6 +200,9 @@ const lookupProductItem = (app) => {
       const option = document.createElement('option');
       option.value = key;
       option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
       document.getElementById('criteria').appendChild(option);
     });
 
@@ -222,93 +211,88 @@ const lookupProductItem = (app) => {
       option.value = column.id;
       option.text = column.name;
       document.getElementById('column').appendChild(option);
-
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
     });
 
     if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      Object.values(parameters).forEach((element) => {
+        Object.keys(element).forEach((key) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.text = element[key];
+          document.getElementById('parameter').appendChild(option);
+        });
+      });
     }
 
     if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
       document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
       document.getElementById('prefix').value = settings.prefix;
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('leave_empty').checked = true;
       } else {
         document.getElementById('fail').checked = true;
       }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
       } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
+        document.getElementById('param_name_group').style.display = 'none';
       }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('leave_empty').checked = true;
     }
 
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
-    }
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
   app.listen('save', async () => {
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
     const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
     const column = columns.find((c) => c.id === columnId);
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
-
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
-    }
 
     const data = {
       settings: {
-        product_id: productId,
         lookup_type: criteria,
         from: column.name,
+        parameter,
         prefix,
         action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
       },
       columns: {
-        input,
+        input: [column],
         output: [
           'product.id',
           'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
         ].map((name) => createOutputColumnForLookup(prefix, name)),
       },
     };
 
     try {
-      const overview = await validate('lookup_product_item', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -320,7 +304,7 @@ const lookupProductItem = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -412,7 +396,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -452,7 +436,7 @@ const lookupProductItem = (app) => {
 /******/ 			return __webpack_require__.O(result);
 /******/ 		}
 /******/ 		
-/******/ 		var chunkLoadingGlobal = self["webpackChunkeaas_e2e_transformations_mock"] = self["webpackChunkeaas_e2e_transformations_mock"] || [];
+/******/ 		var chunkLoadingGlobal = self["webpackChunkconnect_transformations"] = self["webpackChunkconnect_transformations"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();
@@ -462,7 +446,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

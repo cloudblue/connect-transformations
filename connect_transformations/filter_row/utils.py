@@ -52,9 +52,7 @@ def validate_filter_row(data):
 
     for condition in settings['additional_values']:
         if (
-            'operation' not in condition
-            or condition['operation'] not in ['and', 'or']
-            or 'value' not in condition
+            'value' not in condition
             or not condition['value']
             or not isinstance(condition['value'], str)
         ):
@@ -71,7 +69,7 @@ def validate_filter_row(data):
 
     value = f'"{settings["value"]}"'
     for condition in settings['additional_values']:
-        value += f' {condition["operation"].upper()} "{condition["value"]}"'
+        value += f' {"OR" if settings["match_condition"] else "AND"} "{condition["value"]}"'
 
     return {
         'overview': (

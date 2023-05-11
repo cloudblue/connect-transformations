@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "connect-transformations"
-version = "27.8"
-description = "This extension is used to add standard transformations for for CloudBlue Connect."
+version = "27.10"
+description = "This extension is used to add standard transformations for CloudBlue Connect."
 authors = ["CloudBlue LLC"]
 license = "Apache Software License 2.0"
 packages = [

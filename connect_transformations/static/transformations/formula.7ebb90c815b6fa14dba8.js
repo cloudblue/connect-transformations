@@ -1,11 +1,16 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 755:
+/***/ 506:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+"use strict";
 
+// UNUSED EXPORTS: createFormulaRow, formula
+
+// EXTERNAL MODULE: ../install_temp/node_modules/suggest-box/index.js
+var suggest_box = __webpack_require__(54);
+var suggest_box_default = /*#__PURE__*/__webpack_require__.n(suggest_box);
 // EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(243);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -156,7 +161,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -171,93 +176,226 @@ All rights reserved.
 
 
 
-const vatRate = (app) => {
-  if (!app) {
-    return;
-  }
+let suggestor = {};
 
+function buildSelectColumnType(index) {
+  return `
+  <select id="datatype-${index}">
+  <option value="string" selected>String</option>
+  <option value="integer">Integer</option>
+  <option value="decimal">Decimal</option>
+  <option value="boolean">Boolean</option>
+  <option value="datetime">Datetime</option>
+  </select>
+  `;
+}
+
+function buildSelectColumnPrecision(index) {
+  return `
+  <select id="precision-${index}">
+  <option value="auto" selected>Auto</option>
+  <option value="1">1 decimal</option>
+  <option value="2">2 decimals</option>
+  <option value="3">3 decimals</option>
+  <option value="4">4 decimals</option>
+  <option value="5">5 decimals</option>
+  <option value="6">6 decimals</option>
+  <option value="7">7 decimals</option>
+  <option value="8">8 decimals</option>
+  </select>
+  `;
+}
+
+const createFormulaRow = (
+  parent,
+  index,
+  output,
+  columnId,
+  formula,
+  ignore,
+  dataType,
+  precision,
+) => {
+  const item = document.createElement('div');
+  const typeSelect = buildSelectColumnType(index);
+  const precisionSelect = buildSelectColumnPrecision(index);
+  const columnIdInput = columnId === undefined ? '' : `<input type="text" id="columnid-${index}" value="${columnId}" hidden/>`;
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <div class="output-group">
+      ${columnIdInput}
+      <input id="output-${index}" type="text" placeholder="Output column" ${output ? `value="${output}"` : ''} />
+      ${typeSelect}
+      ${precisionSelect}
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+      </div>
+      <div class="input-group _mt_12 _mb_18">
+          <label class="label" for="formula-${index}">Formula:</label>
+          <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
+          <input type="checkbox" id="ignore-${index}" name="ignore-errors-${index}"/>
+          <label for="ignore-formula-${index}">Ignore errors</label>
+      </div>
+      
+    `;
+  parent.appendChild(item);
+  suggest_box_default()(document.getElementById(`formula-${index}`), suggestor);
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
+  });
+  document.getElementById(`datatype-${index}`).value = dataType || 'string';
+  document.getElementById(`ignore-${index}`).checked = ignore || false;
+
+  document.getElementById(`precision-${index}`).value = precision || 'auto';
+  document.getElementById(`precision-${index}`).disabled = dataType !== 'decimal';
+  document.getElementById(`datatype-${index}`).addEventListener('change', () => {
+    if (document.getElementById(`datatype-${index}`).value === 'decimal') {
+      document.getElementById(`precision-${index}`).disabled = false;
+    } else {
+      document.getElementById(`precision-${index}`).disabled = true;
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+const formula = (app) => {
+  if (!app) return;
+
+  hideComponent('loader');
+  showComponent('app');
+
+  let rowIndex = 0;
   let columns = [];
 
-  app.listen('config', config => {
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns },
       settings,
     } = config;
 
     columns = availableColumns;
+    suggestor = { '.': availableColumns.map(col => ({
+      title: col.name,
+      value: `."${col.name}"`,
+    })) };
 
-    const inputColumnSelect = document.getElementById('input-column');
-    const outputColumnInput = document.getElementById('output-column');
-    columns.forEach(column => {
-      const isSelected = settings && column.name === settings.from;
-      const option = isSelected ? `<option value="${column.name}" selected>${column.name}</option>` : `<option value="${column.name}">${column.name}</option>`;
-      inputColumnSelect.innerHTML += option;
-    });
-
-    if (settings) {
-      outputColumnInput.value = settings.to;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
-      } else {
-        document.getElementById('fail').checked = true;
-      }
+    const content = document.getElementById('content');
+    if (settings && settings.expressions) {
+      settings.expressions.forEach((expression, i) => {
+        const columnId = columns.find(col => col.name === expression.to).id;
+        rowIndex = i;
+        createFormulaRow(
+          content,
+          rowIndex,
+          expression.to,
+          columnId,
+          expression.formula,
+          expression.ignore_errors,
+          expression.type,
+          expression.precision,
+        );
+      });
     } else {
-      document.getElementById('leave_empty').checked = true;
+      createFormulaRow(content, rowIndex);
     }
-    hideComponent('loader');
-    showComponent('app');
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createFormulaRow(content, rowIndex);
+    });
   });
 
   app.listen('save', async () => {
-    const inputColumnValue = document.getElementById('input-column').value;
-    const inputColumn = columns.find(column => column.name === inputColumnValue);
-    const outputColumnValue = document.getElementById('output-column').value;
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+    const data = {
+      settings: { expressions: [] },
+      columns: {
+        input: columns,
+        output: [],
+      },
+    };
+    const form = document.getElementsByClassName('list-wrapper');
 
-    if (outputColumnValue === inputColumn.name) {
-      showError('This fields may not be equal: columns.input.name, columns.output.name.');
-    } else if (outputColumnValue === '' || outputColumnValue === null) {
-      showError('Output column name is required.');
-    } else {
-      const data = {
-        settings: {
-          from: inputColumnValue,
-          to: outputColumnValue,
-          action_if_not_found: actionIfNotFound,
-        },
-        columns: {
-          input: [
-            inputColumn,
-          ],
-          output: [
-            {
-              name: outputColumnValue,
-              type: 'integer',
-              description: '',
-            },
-          ],
-        },
+    for (let iteration = 0; iteration < form.length; iteration += 1) {
+      const index = form[iteration].id.split('-')[1];
+      const columnIdInput = document.getElementById(`columnid-${index}`);
+      const to = document.getElementById(`output-${index}`).value;
+      const dataType = document.getElementById(`datatype-${index}`).value;
+      const jqFormula = document.getElementById(`formula-${index}`).value;
+      const ignoreErrors = document.getElementById(`ignore-${index}`).checked;
+      const expression = {
+        to,
+        formula: jqFormula,
+        type: dataType,
+        ignore_errors: ignoreErrors,
       };
+      const outputColumn = {
+        name: to,
+        type: dataType,
+        nullable: true,
+        constraints: {},
+      };
+      if (dataType === 'decimal') {
+        const precision = document.getElementById(`precision-${index}`).value;
 
-      try {
-        const overview = await validate('vat_rate', data);
-        if (overview.error) {
-          throw new Error(overview.error);
+        if (precision !== 'auto') {
+          expression.precision = precision;
+          outputColumn.constraints = { precision: parseInt(precision, 10) };
         }
-        app.emit('save', {
-          data: { ...data, ...overview },
-          status: 'ok',
-        });
-      } catch (e) {
-        showError(e);
       }
+      if (columnIdInput) {
+        outputColumn.id = columnIdInput.value;
+      }
+      data.settings.expressions.push(expression);
+      data.columns.output.push(outputColumn);
+    }
+
+    try {
+      const overview = await validate('formula', data);
+      if (overview.error) {
+        throw new Error(overview.error);
+      } else {
+        const inputColumns = await getJQInput({
+          expressions: data.settings.expressions,
+          columns,
+        });
+        if (inputColumns.error) {
+          throw new Error(inputColumns.error);
+        } else {
+          data.columns.input = inputColumns;
+        }
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(vatRate);
+  .then(formula);
 
+
+/***/ }),
+
+/***/ 291:
+/***/ (() => {
+
+/* (ignored) */
 
 /***/ })
 
@@ -323,6 +461,18 @@ const vatRate = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -348,7 +498,7 @@ const vatRate = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			496: 0
+/******/ 			2: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -388,7 +538,7 @@ const vatRate = (app) => {
 /******/ 			return __webpack_require__.O(result);
 /******/ 		}
 /******/ 		
-/******/ 		var chunkLoadingGlobal = self["webpackChunkeaas_e2e_transformations_mock"] = self["webpackChunkeaas_e2e_transformations_mock"] || [];
+/******/ 		var chunkLoadingGlobal = self["webpackChunkconnect_transformations"] = self["webpackChunkconnect_transformations"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();
@@ -398,7 +548,7 @@ const vatRate = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

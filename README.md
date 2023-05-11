@@ -14,6 +14,10 @@ The current release provides the following transformations:
 * `Convert Currency`: This transformation function converts a given column value with a given currency to another.
 * `Formula`: Use this transformation to perform data manipulation using columns manipulation formula.
 * `Filter Rows`: This transformation function allows you to filter by equality of a given input column with a given string value. If it matches the row is kept, if not it is marked to be deleted.
+* `Lookup Data from AirTable`: Use this transformation to populate data from AirTable by matching column from input table with column in AirTable table.
+* `Lookup Data from a stream attached Excel`: This transformation function allows you to lookup data from Excel attachment by matching column from input table and attachment table.
+* `Filter Rows by Condition`: This transformation function allows you to filter row from the input file when a column value match/mismatch one or more values.
+* `Get standard VAT Rate for EU Country`: Lates rates from the https://exchangerate.host API will be used to perform this transformation. The input content should be either ISO 3166 alpha-2 code or country name in english. For instance ES or Spain.
 
 Overall, Connect Standard Transformations Library is a valuable extension of the CloudBlue Connect platform that provides users with a powerful set of tools for managing and manipulating data. By providing pre-built transformations that can be easily configured and executed, Connect Standard Transformations Library streamlines the data transformation process and makes it easier for users to work with their data.
 
