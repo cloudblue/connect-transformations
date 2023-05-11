@@ -51,14 +51,15 @@ class FilterRowTransformationMixin:
 
             trfn_settings = self.transformation_request['transformation']['settings']
             comparison = "==" if trfn_settings["match_condition"] else "!="
+            operation = 'or' if trfn_settings["match_condition"] else 'and'
             column = trfn_settings["from"]
             filter_expression = f'."{column}" {comparison} "{trfn_settings["value"]}"'
 
             for condition in trfn_settings['additional_values']:
                 filter_expression += (
-                    f' {condition["operation"]} ."{column}" {comparison} "{condition["value"]}"'
+                    f' {operation} ."{column}" {comparison} "{condition["value"]}"'
                 )
-
+            self.logger.info(filter_expression)
             self.filter_expression = jq.compile(filter_expression)
 
 

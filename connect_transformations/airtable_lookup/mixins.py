@@ -64,7 +64,7 @@ class AirTableLookupTransformationMixin:
         self.logger.info(f'airtable table: {self.airtable_data}')
 
     @transformation(
-        name='Airtable lookup',
+        name='Lookup Data from AirTable',
         description=(
             'Use this transformation to populate data from AirTable by '
             'matching column from input table with column in AirTable table.'

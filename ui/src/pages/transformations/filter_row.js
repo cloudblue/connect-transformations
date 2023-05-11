@@ -17,16 +17,12 @@ import {
 } from '../../utils';
 
 
-export const createAdditionalValue = (parent, index, operation, value) => {
+export const createAdditionalValue = (parent, index, value) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
   item.innerHTML = `
-      <select class="list" style="width: 20%;" ${operation ? `value="${operation}"` : ''}>
-        <option value="and" ${operation && operation === 'and' ? 'selected' : ''}>AND</option>
-        <option value="or" ${operation && operation === 'or' ? 'selected' : ''}>OR</option>
-      </select>
       <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
     `;
@@ -80,7 +76,7 @@ export const filterRow = (app) => {
       if (settings.additional_values) {
         settings.additional_values.forEach((addVal, i) => {
           rowIndex = i;
-          createAdditionalValue(content, rowIndex, addVal.operation, addVal.value, i);
+          createAdditionalValue(content, rowIndex, addVal.value, i);
         });
       }
     } else {
@@ -89,7 +85,7 @@ export const filterRow = (app) => {
 
     document.getElementById('add').addEventListener('click', () => {
       rowIndex += 1;
-      createAdditionalValue(content, rowIndex, columns);
+      createAdditionalValue(content, rowIndex);
     });
 
     hideComponent('loader');
@@ -133,10 +129,8 @@ export const filterRow = (app) => {
     const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
-      const operation = line.getElementsByTagName('select')[0].value;
       const val = line.getElementsByTagName('input')[0].value;
       const addVal = {
-        operation,
         value: val,
       };
       data.settings.additional_values.push(addVal);

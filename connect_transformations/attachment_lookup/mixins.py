@@ -67,11 +67,10 @@ class AttachmentLookupTransformationMixin:
                 input_file.close()
 
     @transformation(
-        name='Excel attachment lookup',
+        name='Lookup Data from a stream attached Excel',
         description=(
             'This transformation function allows you to populate data from excel attachment by '
             'matching column from input table and attachment table.'
-            'deleted.'
         ),
         edit_dialog_ui='/static/transformations/attachment_lookup.html',
     )
