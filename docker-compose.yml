@@ -1,5 +1,8 @@
 version: '3'
 
+volumes:
+  node_modules:
+
 services:
   eaas_transformations_dev:
     container_name: eaas_transformations_dev
@@ -9,6 +12,7 @@ services:
     command: cextrun -d -n
     volumes: 
       - .:/extension
+      - node_modules:/extension/node_modules
     env_file:
       - .eaas_transformations_dev.env
 
@@ -22,6 +26,7 @@ services:
     tty: true
     volumes:
       - .:/extension
+      - node_modules:/extension/node_modules
     env_file:
       - .eaas_transformations_dev.env
 
@@ -33,5 +38,6 @@ services:
     command: extension-test
     volumes:
       - .:/extension
+      - node_modules:/extension/node_modules
     env_file:
       - .eaas_transformations_dev.env
