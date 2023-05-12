@@ -2,14 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 262:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
-
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -158,7 +156,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -172,139 +170,145 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
-
-const lookupSubscription = (app) => {
-  if (!app) return;
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
 
   let columns = [];
+  let currencies = {};
 
-  app.listen('config', async (config) => {
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
+
+    Object.keys(currencies).forEach(currency => {
+      const currencyFullName = currencies[currency];
+      const isSelected = selectedOption && currency === selectedOption;
+      const isDisabled = disabledOption && currency === disabledOption;
+
+      const option = document.createElement('option');
+      option.value = currency;
+      option.text = `${currency} • ${currencyFullName}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
+    });
+  };
+
+  app.listen('config', async config => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = await getLookupSubscriptionCriteria();
+
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+
+      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    currencies = await getCurrencies();
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
+      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
+    }
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
 
     hideComponent('loader');
     showComponent('app');
 
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      if (hasProduct === false && key === 'params__value') {
-        option.disabled = true;
-      }
-      document.getElementById('criteria').appendChild(option);
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
     });
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (hasProduct === true) {
-      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
-      Object.values(parameters).forEach((element) => {
-        Object.keys(element).forEach((key) => {
-          const option = document.createElement('option');
-          option.value = key;
-          option.text = element[key];
-          document.getElementById('parameter').appendChild(option);
-        });
-      });
-    }
-
-    if (settings) {
-      document.getElementById('criteria').value = settings.lookup_type;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
-      } else {
-        document.getElementById('fail').checked = true;
-      }
-      if (settings.lookup_type === 'params__value') {
-        document.getElementById('parameter').value = settings.parameter.id;
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
-    } else {
-      document.getElementById('param_name_group').style.display = 'none';
-      document.getElementById('leave_empty').checked = true;
-    }
-
-    document.getElementById('criteria').addEventListener('change', () => {
-      if (document.getElementById('criteria').value === 'params__value') {
-        document.getElementById('param_name_group').style.display = 'block';
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
     });
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    let parameter = {};
-    if (document.getElementById('criteria').value === 'params__value') {
-      const select = document.getElementById('parameter');
-      const paramName = select[select.selectedIndex].text;
-      const paramID = select.value;
-      parameter = { name: paramName, id: paramID };
-    }
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-
     const data = {
-      settings: {
-        lookup_type: criteria,
-        from: column.name,
-        parameter,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-      },
+      settings: {},
       columns: {
-        input: [column],
-        output: [
-          'product.id',
-          'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        input: [],
+        output: [],
       },
     };
 
-    try {
-      const overview = await validate('lookup_subscription', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+    const formElements = document.forms.convertCurrency.elements;
+
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      };
+
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(convert);
 
 
 /***/ })
@@ -396,7 +400,7 @@ const lookupSubscription = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -446,7 +450,7 @@ const lookupSubscription = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

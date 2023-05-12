@@ -2,14 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 813:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createAdditionalValue, filterRow
-
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -158,7 +156,7 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
 }).then((response) => response.json());
 
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -172,145 +170,200 @@ All rights reserved.
 
 
 
-const createAdditionalValue = (parent, index, value) => {
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
   item.innerHTML = `
-      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${column.name}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
     `;
   parent.appendChild(item);
 
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    document.getElementById(`wrapper-${index}`).remove();
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
   });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
-const filterRow = (app) => {
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
+
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const airtable = (app) => {
   if (!app) return;
-
-  let columns = [];
-  let rowIndex = 0;
-
   hideComponent('loader');
   showComponent('app');
 
+  let columns = [];
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
+
   app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
-
-    showComponent('loader');
-    hideComponent('app');
-
-    columns = availableColumns;
-
+    const baseSelect = document.getElementById('base-select');
     const content = document.getElementById('content');
+    const tableSelect = document.getElementById('table-select');
+    const keyInput = document.getElementById('key-input');
+    let airtableBases;
+    let rowIndex = 0;
+    columns = config.context.available_columns;
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
+    keyInput.addEventListener('input', async () => {
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        showError(e);
+      }
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
     });
 
-    if (settings) {
-      document.getElementById('value').value = settings.value;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
+    baseSelect.addEventListener('change', async () => {
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
 
-      if (settings.match_condition) {
-        document.getElementById('match').checked = true;
-      } else {
-        document.getElementById('mismatch').checked = true;
-      }
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
 
-      if (settings.additional_values) {
-        settings.additional_values.forEach((addVal, i) => {
-          rowIndex = i;
-          createAdditionalValue(content, rowIndex, addVal.value, i);
-        });
-      }
-    } else {
-      document.getElementById('match').checked = true;
-    }
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
 
-    document.getElementById('add').addEventListener('click', () => {
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', columns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = columns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
       rowIndex += 1;
-      createAdditionalValue(content, rowIndex);
+      createCopyRow(content, rowIndex, airtableColumns);
     });
-
-    hideComponent('loader');
-    showComponent('app');
   });
 
   app.listen('save', async () => {
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      showError('Please complete all the fields');
+
+      return;
+    }
+
     const data = {
-      settings: {},
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
       columns: {
-        input: [],
+        input: [mapInputColumn],
         output: [],
       },
-      overview: '',
-    };
-
-    showComponent('loader');
-    hideComponent('app');
-
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    const matchCondition = document.getElementById('match').checked;
-    data.columns.input.push(inputColumn);
-    data.columns.output.push(
-      {
-        name: `${selectedColumn}_INSTRUCTIONS`,
-        type: 'string',
-        output: false,
-      },
-    );
-
-    const inputValue = document.getElementById('value');
-    data.settings = {
-      from: selectedColumn,
-      value: inputValue.value,
-      match_condition: matchCondition,
-      additional_values: [],
     };
 
     const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
-      const val = line.getElementsByTagName('input')[0].value;
-      const addVal = {
-        value: val,
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
+      const outputColumn = {
+        name: outputName,
+        description: '',
       };
-      data.settings.additional_values.push(addVal);
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
+      data.columns.output.push(outputColumn);
     }
 
     try {
-      const overview = await validate('filter_row', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
-      }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       showError(e);
-      showComponent('app');
-      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(filterRow);
+  .then(airtable);
+
 
 
 /***/ })
@@ -402,7 +455,7 @@ const filterRow = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			429: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -452,7 +505,7 @@ const filterRow = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
