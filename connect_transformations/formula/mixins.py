@@ -3,15 +3,33 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from typing import Dict, List
+
 import jq
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
+from connect_transformations.formula.models import Configuration
 from connect_transformations.formula.utils import DROP_REGEX, extract_input, validate_formula
+from connect_transformations.models import Error, StreamsColumn, ValidationResult
 from connect_transformations.utils import cast_value_to_type
 
 
 class FormulaTransformationMixin:
+
+    def precompile_jq_expressions(self):
+        with self.lock():
+            if hasattr(self, 'jq_expressions'):
+                return
+
+            self.jq_expressions = {}
+
+            trfn_settings = self.transformation_request['transformation']['settings']
+            for expression in trfn_settings['expressions']:
+                formula = expression['formula']
+                if DROP_REGEX.findall(formula):
+                    formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
+                self.jq_expressions[expression['to']] = jq.compile(formula)
 
     @transformation(
         name='Formula',
@@ -25,11 +43,11 @@ class FormulaTransformationMixin:
     )
     def formula(
         self,
-        row: dict,
+        row: Dict,
     ):
 
         try:
-            self.precompile_jq_expression()
+            self.precompile_jq_expressions()
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
 
@@ -53,6 +71,7 @@ class FormulaTransformationMixin:
             except StopIteration:
                 result[expression['to']] = None
             except Exception as e:
+                self.logger.exception('Something went wrong!')
                 if not expression.get('ignore_errors'):
                     return RowTransformationResponse.fail(output=str(e))
                 else:
@@ -60,37 +79,33 @@ class FormulaTransformationMixin:
 
         return RowTransformationResponse.done(result)
 
-    def precompile_jq_expression(self):
-        with self._sync_lock:
-            if hasattr(self, 'jq_expressions'):
-                return
-            self.jq_expressions = {}
-            trfn_settings = self.transformation_request['transformation']['settings']
-            for expression in trfn_settings['expressions']:
-                formula = expression['formula']
-                if DROP_REGEX.findall(formula):
-                    formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
-                self.jq_expressions[expression['to']] = jq.compile(formula)
-
 
 class FormulaWebAppMixin:
 
     @router.post(
-        '/validate/formula',
+        '/formula/validate',
         summary='Validate formula settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_formula_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_formula(data)
 
     @router.post(
         '/formula/extract_input',
         summary='Extract input columns',
+        response_model=List[StreamsColumn],
+        responses={
+            400: {'model': Error},
+        },
     )
     def extract_formula_input(
         self,
-        data: dict,
+        data: Dict,
     ):
         return extract_input(data)

@@ -5,74 +5,57 @@
 #
 import re
 
-from fastapi.responses import JSONResponse
+from connect_transformations.utils import (
+    build_error_response,
+    does_not_contain_required_keys,
+    has_invalid_basic_structure,
+)
 
 
 def validate_split_column(data):
-    if (
-        'settings' not in data
-        or not isinstance(data['settings'], dict)
-        or 'columns' not in data
-        or 'input' not in data['columns']
-    ):
-        return JSONResponse(status_code=400, content={'error': 'Invalid input data'})
+    data = data.dict(by_alias=True)
+
+    if has_invalid_basic_structure(data):
+        return build_error_response('Invalid input data')
 
     if (
-        'from' not in data['settings']
-        or 'regex' not in data['settings']
-        or 'pattern' not in data['settings']['regex']
-        or not isinstance(data['settings']['regex']['pattern'], str)
-        or 'groups' not in data['settings']['regex']
+        does_not_contain_required_keys(
+            data['settings'],
+            ['from', 'regex'],
+        ) or does_not_contain_required_keys(
+            data['settings']['regex'],
+            ['pattern', 'groups'],
+        ) or not isinstance(data['settings']['regex']['pattern'], str)
         or not isinstance(data['settings']['regex']['groups'], dict)
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings must have `from` and `regex` with `pattern` and `groups` '
-                    'fields'
-                ),
-            },
+        return build_error_response(
+            'The settings must have `from` and `regex` with `pattern` and `groups` '
+            'fields',
         )
 
     input_columns = data['columns']['input']
     available_input_columns = [c['name'] for c in input_columns]
     if data['settings']['from'] not in available_input_columns:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings contains an invalid `from` column name'
-                    f' "{data["settings"]["from"]}" that does not exist on '
-                    'columns.input'
-                ),
-            },
+        return build_error_response(
+            'The settings contains an invalid `from` column name'
+            f' "{data["settings"]["from"]}" that does not exist on '
+            'columns.input',
         )
 
     pattern = None
     try:
         pattern = re.compile(data['settings']['regex']['pattern'])
     except re.error:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings contains an invalid `regex` regular expression '
-                    f"{data['settings']['regex']['pattern']}"
-                ),
-            },
+        return build_error_response(
+            'The settings contains an invalid `regex` regular expression '
+            f"{data['settings']['regex']['pattern']}",
         )
 
     if pattern.groups != len(data['settings']['regex']['groups']):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings `groups` contains a different number of elements that are'
-                    ' defined in the regular expression '
-                    f"{data['settings']['regex']['pattern']}"
-                ),
-            },
+        return build_error_response(
+            'The settings `groups` contains a different number of elements that are'
+            ' defined in the regular expression '
+            f"{data['settings']['regex']['pattern']}",
         )
 
     return {

@@ -4,10 +4,14 @@
 # All rights reserved.
 #
 import httpx
-from fastapi.responses import JSONResponse
 
-from connect_transformations.exceptions import AirTableError
-from connect_transformations.utils import check_mapping
+from connect_transformations.airtable_lookup.exceptions import AirTableError
+from connect_transformations.utils import (
+    build_error_response,
+    check_mapping,
+    does_not_contain_required_keys,
+    has_invalid_basic_structure,
+)
 
 
 async def get_airtable_data(api_url, token, params=None):
@@ -22,50 +26,37 @@ async def get_airtable_data(api_url, token, params=None):
 
             return response.json()
 
-        except httpx.HTTPError:
-            raise AirTableError(f'Error calling `{api_url}`')
+        except httpx.HTTPError as e:
+            raise AirTableError(f'Error calling `{api_url}`: {str(e)}')
 
 
 def validate_airtable_lookup(data):
-    if (
-        'settings' not in data
-        or not isinstance(data['settings'], dict)
-        or 'columns' not in data
-        or 'input' not in data['columns']
-    ):
-        return JSONResponse(status_code=400, content={'error': 'Invalid input data'})
+    data = data.dict(by_alias=True)
+
+    if has_invalid_basic_structure(data):
+        return build_error_response('Invalid input data')
 
     if (
-        'api_key' not in data['settings']
-        or 'base_id' not in data['settings']
-        or 'table_id' not in data['settings']
-        or 'map_by' not in data['settings']
-        or not isinstance(data['settings']['map_by'], dict)
-        or 'mapping' not in data['settings']
+        does_not_contain_required_keys(
+            data['settings'],
+            ['api_key', 'base_id', 'table_id', 'map_by', 'mapping'],
+        ) or not isinstance(data['settings']['map_by'], dict)
         or not isinstance(data['settings']['mapping'], list)
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings must contain `api_key`, `base_id`, `table_id` '
-                    'fields, dictionary `map_by` and list `mapping` fields.'
-                ),
-            },
+        return build_error_response(
+            'The settings must contain `api_key`, `base_id`, `table_id` '
+            'fields, dictionary `map_by` and list `mapping` fields.',
         )
 
     if (
-        'input_column' not in data['settings']['map_by']
-        or 'airtable_column' not in data['settings']['map_by']
+        does_not_contain_required_keys(
+            data['settings']['map_by'],
+            ['input_column', 'airtable_column'],
+        )
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings field `map_by` must contain '
-                    '`input_column` and `airtable_column` fields in it.'
-                ),
-            },
+        return build_error_response(
+            'The settings field `map_by` must contain '
+            '`input_column` and `airtable_column` fields in it.',
         )
 
     mapping_error = check_mapping(data['settings'], data['columns'])

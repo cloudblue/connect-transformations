@@ -8,7 +8,6 @@ import '../../../styles/index.css';
 import '../../../styles/lookup.css';
 import '../../../styles/app.styl';
 import {
-  getLookupProductItemCriteria,
   validate,
 } from '../../utils';
 import {
@@ -38,7 +37,7 @@ export const lookupProductItem = (app) => {
     }
   };
 
-  app.listen('config', async (config) => {
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns, stream },
       settings,
@@ -46,7 +45,10 @@ export const lookupProductItem = (app) => {
 
     const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = await getLookupProductItemCriteria();
+    const criteria = {
+      mpn: 'CloudBlue Item MPN',
+      id: 'CloudBlue Item ID',
+    };
 
     // defaults
     document.getElementById('leave_empty').checked = true;

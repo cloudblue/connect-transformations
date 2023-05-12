@@ -33,7 +33,7 @@ def test_validate_filter_row(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/filter_row', json=data)
+    response = client.post('/api/filter_row/validate', json=data)
     assert response.status_code == 200
 
     data = response.json()
@@ -56,7 +56,7 @@ def test_validate_filter_row_invalid_input(test_client_factory, data):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/filter_row', json=data)
+    response = client.post('/api/filter_row/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {'error': 'Invalid input data'}
 
@@ -93,7 +93,7 @@ def test_validate_filter_row_invalid_format(test_client_factory, settings):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/filter_row', json=data)
+    response = client.post('/api/filter_row/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {'error': (
         'The settings must have `from`, `value`, boolean `match_condition` '
@@ -118,7 +118,7 @@ def test_validate_filter_row_invalid_column(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/filter_row', json=data)
+    response = client.post('/api/filter_row/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {
         'error': 'The settings must have a valid `from` column name',
@@ -144,7 +144,7 @@ def test_validate_filter_row_invalid_additional_value(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/filter_row', json=data)
+    response = client.post('/api/filter_row/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {
         'error': 'The settings must have a valid `from` column name',

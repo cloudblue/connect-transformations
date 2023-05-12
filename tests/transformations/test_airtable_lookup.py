@@ -92,7 +92,7 @@ def test_airtable_lookup(mocker, responses):
 def test_airtable_lookup_skip_nullable(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
-    app.airtable_data = {}
+    app.airtable_data = {'a': 'b'}
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -125,7 +125,7 @@ def test_airtable_lookup_skip_nullable(mocker):
 def test_airtable_lookup_no_matching_value(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
-    app.airtable_data = {}
+    app.airtable_data = {'a': 'b'}
     app.transformation_request = {
         'transformation': {
             'settings': {

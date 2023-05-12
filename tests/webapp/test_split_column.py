@@ -26,7 +26,7 @@ def test_validate_split_column(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
     assert response.status_code == 200
     data = response.json()
     assert data == {
@@ -45,7 +45,7 @@ def test_validate_split_column(test_client_factory):
 )
 def test_validate_split_column_settings_or_invalid(test_client_factory, data):
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -63,15 +63,15 @@ def test_validate_split_column_settings_or_invalid(test_client_factory, data):
             'from': 'column',
             'regex': {
                 'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
-                'groups': [],
+                'groups': None,
             },
         },
     ),
 )
 def test_validate_split_column_invalid_format(test_client_factory, settings):
-    data = {'settings': settings, 'columns': {'input': []}}
+    data = {'settings': settings, 'columns': {'input': [{'name': 'name'}]}}
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -100,7 +100,7 @@ def test_validate_split_column_invalid_column(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -129,7 +129,7 @@ def test_validate_split_column_invalid_regex(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -158,7 +158,7 @@ def test_validate_split_column_invalid_group_amount(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/split_column', json=data)
+    response = client.post('/api/split_column/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()

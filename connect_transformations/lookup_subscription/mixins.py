@@ -3,17 +3,18 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from typing import Dict
+
 from connect.client import AsyncConnectClient
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.inject.asynchronous import get_installation_client
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi import Depends
 
-from connect_transformations.constants import SUBSCRIPTION_LOOKUP
-from connect_transformations.lookup_subscription.utils import (
-    retrieve_subscription,
-    validate_lookup_subscription,
-)
+from connect_transformations.lookup_subscription.exceptions import SubscriptionLookupError
+from connect_transformations.lookup_subscription.models import Configuration, SubscriptionParameter
+from connect_transformations.lookup_subscription.utils import validate_lookup_subscription
+from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
 
 
@@ -29,7 +30,7 @@ class LookupSubscriptionTransformationMixin:
     )
     async def lookup_subscription(
         self,
-        row: dict,
+        row: Dict,
     ):
         trfn_settings = (
             self.transformation_request['transformation']['settings']
@@ -58,10 +59,7 @@ class LookupSubscriptionTransformationMixin:
         subscription = None
 
         try:
-            subscription = await retrieve_subscription(
-                self.installation_client,
-                self._cache,
-                self._cache_lock,
+            subscription = await self.retrieve_subscription(
                 lookup,
                 leave_empty,
             )
@@ -79,27 +77,47 @@ class LookupSubscriptionTransformationMixin:
             f'{prefix}.subscription.external_id': subscription['external_id'],
         }) if subscription else RowTransformationResponse.skip()
 
+    async def retrieve_subscription(self, lookup, leave_empty):
+        k = ''
+        for key, value in lookup.items():
+            k = k + f'{key}-{value}'
+        try:
+            return self.cache_get(k)
+        except KeyError:
+            pass
+
+        results = await self.installation_client('subscriptions').assets.filter(**lookup).count()
+        if results == 0:
+            if leave_empty:
+                return
+            raise SubscriptionLookupError(f'No result found for the filter {lookup}')
+        elif results > 1:
+            raise SubscriptionLookupError(f'Many results found for the filter {lookup}')
+        else:
+            result = await self.installation_client(
+                'subscriptions',
+            ).assets.filter(
+                **lookup,
+            ).first()
+            await self.acache_put(k, result)
+            return result
+
 
 class LookupSubscriptionWebAppMixin:
 
     @router.post(
-        '/validate/lookup_subscription',
+        '/lookup_subscription/validate',
         summary='Validate lookup subscription settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_lookup_subscription_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_lookup_subscription(data)
-
-    @router.get(
-        '/lookup_subscription/criteria',
-        summary='Return the subscription criteria options',
-    )
-    def get_subscription_criteria(
-        self,
-    ):
-        return SUBSCRIPTION_LOOKUP
 
     @router.get(
         '/lookup_subscription/parameters',
@@ -111,6 +129,9 @@ class LookupSubscriptionWebAppMixin:
         client: AsyncConnectClient = Depends(get_installation_client),
     ):
         return [
-            {parameter['id']: parameter['name']}
+            SubscriptionParameter(
+                id=parameter['id'],
+                name=parameter['name'],
+            )
             async for parameter in client.products[product_id].parameters.all()
         ]

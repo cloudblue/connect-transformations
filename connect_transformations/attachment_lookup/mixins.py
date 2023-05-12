@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 from tempfile import NamedTemporaryFile
+from typing import Dict, List
 
 from connect.client import AsyncConnectClient, ClientError
 from connect.eaas.core.decorators import router, transformation
@@ -12,19 +13,24 @@ from connect.eaas.core.responses import RowTransformationResponse
 from fastapi import Depends
 from openpyxl import load_workbook
 
+from connect_transformations.attachment_lookup.exceptions import AttachmentError
+from connect_transformations.attachment_lookup.models import Configuration, StreamAttachment
 from connect_transformations.attachment_lookup.utils import validate_attachment_lookup
-from connect_transformations.exceptions import AttachmentError
+from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
 
 
 class AttachmentLookupTransformationMixin:
 
-    async def preload_attachment_for_lookup(self):
-        async with self._attachment_lock:
+    def preload_attachment_for_lookup(self):
+        with self.lock():
+            if hasattr(self, 'excel_attachments_data'):
+                return
+
+            self.excel_attachments_data = {}
+
             settings = self.transformation_request['transformation']['settings']
             file_url = settings['file']
-            if file_url in self._attachments:
-                return
             map_by = settings['map_by']['attachment_column']
             sheet = settings.get('sheet')
             mapping = [col['from'] for col in settings['mapping']]
@@ -36,7 +42,7 @@ class AttachmentLookupTransformationMixin:
             try:
                 url = file_url.split('/public/v1/')[-1]
                 url = url[1:] if url[0] == '/' else url
-                content = await self.installation_client.get(url, follow_redirects=True)
+                content = self.installation_client.get(url)
                 input_file.write(content)
 
                 wb = load_workbook(input_file, read_only=True)
@@ -52,7 +58,7 @@ class AttachmentLookupTransformationMixin:
                             if cell.value == map_by or cell.value in mapping
                         }
                     else:
-                        self._attachments[file_url][row[lookup_columns[map_by]].value] = {
+                        self.excel_attachments_data[row[lookup_columns[map_by]].value] = {
                             col: row[lookup_columns[col]].value for col in mapping
                         }
             except ClientError as e:
@@ -74,18 +80,17 @@ class AttachmentLookupTransformationMixin:
         ),
         edit_dialog_ui='/static/transformations/attachment_lookup.html',
     )
-    async def attachment_lookup(
+    def attachment_lookup(
         self,
-        row: dict,
+        row: Dict,
     ):
         try:
-            await self.preload_attachment_for_lookup()
+            self.preload_attachment_for_lookup()
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
         trfn_settings = self.transformation_request['transformation']['settings']
         map_by = trfn_settings['map_by']
         input_column = self.transformation_request['transformation']['columns']['input']
-        file = self.transformation_request['transformation']['settings']['file']
 
         if is_input_column_nullable(
             input_column,
@@ -93,7 +98,7 @@ class AttachmentLookupTransformationMixin:
         ) and not row[map_by['input_column']]:
             return RowTransformationResponse.skip()
 
-        attachment_row = self._attachments[file].get(row[map_by['input_column']])
+        attachment_row = self.excel_attachments_data.get(row[map_by['input_column']])
         if not attachment_row:
             return RowTransformationResponse.skip()
 
@@ -107,7 +112,11 @@ class AttachmentLookupWebAppMixin:
 
     @router.get(
         '/attachment_lookup/{stream_id}',
-        summary='Get list of excel attachments',
+        summary='Get a list of Excel files attached to the current stream.',
+        response_model=List[StreamAttachment],
+        responses={
+            400: {'model': Error},
+        },
     )
     async def get_excel_attachments(
         self,
@@ -121,20 +130,24 @@ class AttachmentLookupWebAppMixin:
         )
         files = client('media')('folders').collection('streams_attachments')[stream_id].files
         return [
-            {
-                'id': file['id'],
-                'file': file['file'],
-                'name': file['name'],
-            }
+            StreamAttachment(
+                id=file['id'],
+                name=file['name'],
+                file=file['file'],
+            )
             async for file in files.filter(query)
         ]
 
     @router.post(
-        '/validate/attachment_lookup',
+        '/attachment_lookup/validate',
         summary='Validate excel attachment lookup settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_attachment_lookup_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_attachment_lookup(data)

@@ -5,7 +5,6 @@
 #
 import asyncio
 import threading
-from collections import defaultdict
 
 from cachetools import LRUCache
 from connect.eaas.core.extension import TransformationsApplicationBase
@@ -43,12 +42,22 @@ class StandardTransformationsApplication(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cache = LRUCache(128)
-        self._cache_lock = asyncio.Lock()
-        self._current_exchange_rate_lock = asyncio.Lock()
         self._sync_lock = threading.Lock()
-        self.current_exchange_rate = None
-        self._attachments = defaultdict(dict)
-        self._attachment_lock = asyncio.Lock()
-        self._filter_lock = threading.Lock()
-        self.current_vat_rate = None
-        self._current_vat_rate_lock = asyncio.Lock()
+        self._async_lock = asyncio.Lock()
+
+    def lock(self):
+        return self._sync_lock
+
+    def alock(self):
+        return self._async_lock
+
+    def cache_put(self, key, val):
+        with self.lock():
+            self._cache[key] = val
+
+    async def acache_put(self, key, val):
+        async with self.alock():
+            self._cache[key] = val
+
+    def cache_get(self, key):
+        return self._cache[key]

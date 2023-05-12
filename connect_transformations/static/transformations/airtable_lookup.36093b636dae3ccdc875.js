@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 414:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: copy, createCopyRow
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -80,26 +78,12 @@ All rights reserved.
 */
 // API calls to the backend
 /* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
 }).then((response) => response.json());
 
 const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
@@ -158,7 +142,7 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
 }).then((response) => response.json());
 
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -169,6 +153,12 @@ All rights reserved.
 
 
 
+
+
+
+const cleanCopyRows = parent => {
+  parent.innerHTML = '';
+};
 
 
 const createCopyRow = (parent, index, options, input, output) => {
@@ -209,72 +199,221 @@ const createCopyRow = (parent, index, options, input, output) => {
   }
 };
 
-const copy = (app) => {
-  if (!app) return;
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
 
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const cleanField = elem => {
+  elem.setAttribute('disabled', '');
+  elem.value = '';
+};
+
+const airtable = (app) => {
+  if (!app) return;
   hideComponent('loader');
   showComponent('app');
 
-  let rowIndex = 0;
-  let columns = [];
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const baseSelect = document.getElementById('base-select');
+  const content = document.getElementById('content');
+  const tableSelect = document.getElementById('table-select');
+  const keyInput = document.getElementById('key-input');
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
 
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
       context: { available_columns: availableColumns },
-      columns: { input: inputColumns, output: outputColumns },
+      columns: { output: outputColumns },
       settings,
     } = config;
 
-    columns = availableColumns;
+    let airtableBases;
+    let rowIndex = 0;
 
-    const content = document.getElementById('content');
-    if (!settings) {
-      createCopyRow(content, rowIndex, columns);
-    } else {
-      settings.forEach((setting, i) => {
-        const inputColumn = inputColumns.find((column) => column.name === setting.from);
-        const outputColumn = outputColumns.find((column) => column.name === setting.to);
-        rowIndex = i;
-        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
-      });
-    }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createCopyRow(content, rowIndex, columns);
+    keyInput.addEventListener('input', async () => {
+      cleanField(baseSelect);
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        showError(e);
+      }
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
     });
+
+    baseSelect.addEventListener('change', async () => {
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+    });
+
+    if (settings) {
+      showComponent('loader');
+      apiKey = settings.api_key;
+      baseId = settings.base_id;
+      tableId = settings.table_id;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        tables = await getAirtableTables(apiKey, settings.base_id);
+
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        showError(e);
+      }
+
+      const currentTable = tables.find(x => x.id === settings.table_id);
+      airtableColumns = currentTable.columns;
+
+      createOptions('base-select', airtableBases);
+      createOptions('table-select', tables);
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+
+      keyInput.value = settings.api_key;
+      baseSelect.value = settings.base_id;
+      tableSelect.value = settings.table_id;
+
+      mapInputColumn = availableColumns
+        .find((column) => column.name === settings.map_by.input_column);
+      inputColumnSelect.value = mapInputColumn.id;
+
+      mapAirtableColumn = airtableColumns
+        .find((column) => column.name === settings.map_by.airtable_column);
+      airtableFieldSelect.value = mapAirtableColumn.id;
+
+      removeDisabled('base-select');
+      removeDisabled('table-select');
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+      removeDisabled('add');
+
+      settings.mapping.forEach((mapping, i) => {
+        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
+        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
+        rowIndex = i;
+        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
+      });
+      hideComponent('loader');
+    }
   });
 
   app.listen('save', async () => {
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      showError('Please complete all the fields');
+
+      return;
+    }
+
     const data = {
-      settings: [],
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
       columns: {
-        input: [],
+        input: [mapInputColumn],
         output: [],
       },
     };
+
     const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
       const inputId = line.getElementsByTagName('select')[0].value;
       const outputName = line.getElementsByTagName('input')[0].value;
 
-      const inputColumn = columns.find((column) => column.id === inputId);
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
       const outputColumn = {
         name: outputName,
-        type: inputColumn.type,
         description: '',
       };
       const setting = {
         from: inputColumn.name,
         to: outputName,
       };
-      data.settings.push(setting);
-      data.columns.input.push(inputColumn);
+      data.settings.mapping.push(setting);
       data.columns.output.push(outputColumn);
     }
 
     try {
-      const overview = await validate('copy_columns', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -285,9 +424,9 @@ const copy = (app) => {
   });
 };
 
-
 (0,dist/* default */.ZP)({ })
-  .then(copy);
+  .then(airtable);
+
 
 
 /***/ })
@@ -379,7 +518,7 @@ const copy = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			61: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -429,7 +568,7 @@ const copy = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(414)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

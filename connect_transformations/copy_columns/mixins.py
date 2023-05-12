@@ -3,10 +3,14 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from typing import Dict
+
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
+from connect_transformations.copy_columns.models import Configuration
 from connect_transformations.copy_columns.utils import validate_copy_columns
+from connect_transformations.models import Error, ValidationResult
 
 
 class CopyColumnTransformationMixin:
@@ -22,27 +26,35 @@ class CopyColumnTransformationMixin:
     )
     def copy_columns(
         self,
-        row: dict,
+        row: Dict,
+        row_styles: Dict = None,
     ):
         trfn_settings = (
             self.transformation_request['transformation']['settings']
         )
         result = {}
+        result_styles = {}
 
         for setting in trfn_settings:
             result[setting['to']] = row[setting['from']]
+            if row_styles:
+                result_styles[setting['to']] = row_styles[setting['from']]
 
-        return RowTransformationResponse.done(result)
+        return RowTransformationResponse.done(result, result_styles)
 
 
 class CopyColumnWebAppMixin:
 
     @router.post(
-        '/validate/copy_columns',
+        '/copy_columns/validate',
         summary='Validate copy columns settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_copy_columns_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_copy_columns(data)

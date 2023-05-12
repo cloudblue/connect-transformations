@@ -30,14 +30,13 @@ const convert = (app) => {
     const selectCurrencyColumnSelect = document.getElementById(elemId);
     selectCurrencyColumnSelect.innerHTML = '';
 
-    Object.keys(currencies).forEach(currency => {
-      const currencyFullName = currencies[currency];
-      const isSelected = selectedOption && currency === selectedOption;
-      const isDisabled = disabledOption && currency === disabledOption;
+    currencies.forEach(currency => {
+      const isSelected = selectedOption && currency.code === selectedOption;
+      const isDisabled = disabledOption && currency.code === disabledOption;
 
       const option = document.createElement('option');
-      option.value = currency;
-      option.text = `${currency} • ${currencyFullName}`;
+      option.value = currency.code;
+      option.text = `${currency.code} • ${currency.description}`;
       option.selected = isSelected;
       option.disabled = isDisabled;
       selectCurrencyColumnSelect.appendChild(option);
@@ -74,8 +73,8 @@ const convert = (app) => {
       selectedFromCurrency = settings.from.currency;
       selectedToCurrency = settings.to.currency;
     } else {
-      [selectedFromCurrency] = Object.keys(currencies).slice(0, 1);
-      [selectedToCurrency] = Object.keys(currencies).slice(1, 2);
+      [selectedFromCurrency] = [currencies[0].code];
+      [selectedToCurrency] = [currencies[1].code];
     }
 
     createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);

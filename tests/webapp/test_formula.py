@@ -5,6 +5,7 @@
 #
 import pytest
 
+from connect_transformations.models import StreamsColumn
 from connect_transformations.webapp import TransformationsWebApplication
 
 
@@ -46,7 +47,7 @@ def test_validate_formula(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
     assert response.status_code == 200
     data = response.json()
     assert data == {
@@ -73,12 +74,12 @@ def test_validate_formula_invalid_input(
         'columns': {},
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'Invalid input data.',
+        'error': 'Invalid input data',
     }
 
 
@@ -97,16 +98,16 @@ def test_validate_formula_invalid_expression_field(
                 {'id': 'COL-1', 'name': 'Price without Tax', 'nullable': False},
                 {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
             ],
-            'output': [],
+            'output': [{'name': 'Price with Tax'}],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'The settings must have `expressions` field which contains list of formulas.',
+        'error': 'value is not a valid list (settings.expressions)',
     }
 
 
@@ -143,7 +144,7 @@ def test_validate_formula_invalid_expression(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -178,7 +179,7 @@ def test_validate_formula_unique_error(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -219,7 +220,7 @@ def test_validate_formula_duplicated_input_error(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -254,7 +255,7 @@ def test_validate_formula_edit_formula(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -287,7 +288,7 @@ def test_validate_formula_non_existing_column_parenthesis(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -323,7 +324,7 @@ def test_validate_formula_non_existing_column(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -359,7 +360,7 @@ def test_validate_formula_non_existing_column_double_quote(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -395,7 +396,7 @@ def test_validate_formula_invalid_formula(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/formula', json=data)
+    response = client.post('/api/formula/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -428,9 +429,9 @@ def test_extract_formula_input(
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    assert {'name': 'Price without Tax', 'nullable': False} in data
-    assert {'name': 'Tax', 'nullable': False} in data
-    assert {'name': 'Additional fee', 'nullable': False} in data
+    assert StreamsColumn(**{'name': 'Price without Tax', 'nullable': False}).dict() in data
+    assert StreamsColumn(**{'name': 'Tax', 'nullable': False}).dict() in data
+    assert StreamsColumn(**{'name': 'Additional fee', 'nullable': False}).dict() in data
 
 
 def test_extract_formula_input_invalid_expressions(

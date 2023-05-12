@@ -31,7 +31,7 @@ def test_validate_copy_columns(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/copy_columns', json=data)
+    response = client.post('/api/copy_columns/validate', json=data)
     assert response.status_code == 200
 
     data = response.json()
@@ -44,7 +44,7 @@ def test_validate_copy_columns(test_client_factory):
     'data',
     (
         {},
-        {'settings': {}},
+        {'settings': None},
         {'settings': []},
         {'settings': [], 'columns': {}},
     ),
@@ -53,7 +53,7 @@ def test_validate_copy_columns_missing_settings_or_invalid(test_client_factory, 
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/copy_columns', json=data)
+    response = client.post('/api/copy_columns/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {'error': 'Invalid input data'}
 
@@ -63,7 +63,7 @@ def test_validate_copy_columns_invalid_settings(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/copy_columns', json=data)
+    response = client.post('/api/copy_columns/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {'error': 'Invalid settings format'}
 
@@ -73,7 +73,7 @@ def test_validate_copy_columns_invalid_from(test_client_factory):
 
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/copy_columns', json=data)
+    response = client.post('/api/copy_columns/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {'error': 'The input column Hola does not exists'}
 
@@ -109,7 +109,7 @@ def test_validate_copy_columns_invalid_from(test_client_factory):
 def test_validate_copy_columns_not_unique_name(test_client_factory, data):
     client = test_client_factory(TransformationsWebApplication)
 
-    response = client.post('/api/validate/copy_columns', json=data)
+    response = client.post('/api/copy_columns/validate', json=data)
     assert response.status_code == 400
     assert response.json() == {
         'error': 'Invalid column name C. The to field should be unique',
