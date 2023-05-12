@@ -2,14 +2,98 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 355:
+/***/ 755:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createManualOutputRow, manual
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/utils.js
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/validate/${functionName}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionCriteria = () => fetch('/api/lookup_subscription/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupProductItemCriteria = () => fetch('/api/lookup_product_item/criteria', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -72,7 +156,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -85,140 +169,94 @@ All rights reserved.
 
 
 
-const createManualOutputRow = (parent, index, output) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '450px';
-  item.innerHTML = `
-      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-};
 
-const manual = (app) => {
+
+const vatRate = (app) => {
   if (!app) {
     return;
   }
 
-  hideComponent('app');
-  hideComponent('loader');
+  let columns = [];
 
-  let availableColumns;
-  let rowIndex = 0;
-
-  const descriptionElement = document.getElementById('description-text');
-  const settingsElement = document.getElementById('settings-text');
-
-  app.listen('config', (config) => {
+  app.listen('config', config => {
     const {
-      columns: { input: inputColumns, output: outputColumns },
-      context: { available_columns }, // eslint-disable-line camelcase
-      overview,
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    availableColumns = available_columns; // eslint-disable-line camelcase
+    columns = availableColumns;
 
-    descriptionElement.value = overview || '';
-    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
-
-    const inputColumnsEditElement = document.getElementById('edit-input-columns');
-    availableColumns.forEach((column) => {
-      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
-      const inputColumnRow = document.createElement('tr');
-      inputColumnRow.innerHTML = `
-        <td>${column.id.slice(-3)}</td>
-        <td>${column.name}</td>
-        <td>${column.type}</td>
-        <td>${column.description ? column.description : '-'}</td>
-        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
-      `;
-      inputColumnsEditElement.appendChild(inputColumnRow);
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from;
+      const option = isSelected ? `<option value="${column.name}" selected>${column.name}</option>` : `<option value="${column.name}">${column.name}</option>`;
+      inputColumnSelect.innerHTML += option;
     });
 
-    const outputColumnsElement = document.getElementById('output-columns');
-
-    if (outputColumns.length > 0) {
-      outputColumns.forEach((outputColumn, index) => {
-        rowIndex = index;
-        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
-      });
+    if (settings) {
+      outputColumnInput.value = settings.to;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
     } else {
-      createManualOutputRow(outputColumnsElement, rowIndex);
+      document.getElementById('leave_empty').checked = true;
     }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    });
-
     hideComponent('loader');
     showComponent('app');
   });
 
-  app.listen('save', () => {
-    const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
-      },
-      overview: '',
-    };
+  app.listen('save', async () => {
+    const inputColumnValue = document.getElementById('input-column').value;
+    const inputColumn = columns.find(column => column.name === inputColumnValue);
+    const outputColumnValue = document.getElementById('output-column').value;
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
-    try {
-      data.overview = descriptionElement.value;
-      data.settings = JSON.parse(settingsElement.value);
-      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
-      inputColumns.forEach((inputColumn) => {
-        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
-        data.columns.input.push(availableColumn);
-      });
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const data = {
+        settings: {
+          from: inputColumnValue,
+          to: outputColumnValue,
+          action_if_not_found: actionIfNotFound,
+        },
+        columns: {
+          input: [
+            inputColumn,
+          ],
+          output: [
+            {
+              name: outputColumnValue,
+              type: 'integer',
+              description: '',
+            },
+          ],
+        },
+      };
 
-      const outputColumnsElements = document.getElementsByClassName('output-column-name');
-      // eslint-disable-next-line no-restricted-syntax
-      for (const outputColumnElement of outputColumnsElements) {
-        const outputColumn = {
-          name: outputColumnElement.value,
-          type: 'string',
-          description: '',
-        };
-        data.columns.output.push(outputColumn);
+      try {
+        const overview = await validate('vat_rate', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-
-      app.emit('save', {
-        data,
-        status: 'ok',
-      });
-    } catch (e) {
-      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(vatRate);
 
 
 /***/ })
@@ -310,7 +348,7 @@ const manual = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			496: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -360,7 +398,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(355)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

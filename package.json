@@ -19,7 +19,8 @@
     "@cloudblueconnect/connect-ui-toolkit": "^26",
     "@fontsource/roboto": "^4.5.8",
     "css-minimizer-webpack-plugin": "^4.2.2",
-    "suggest-box": "^2.2.3"
+    "hyperscript": "~1.4.2",
+    "textarea-caret-position": "^0.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.18.0",

@@ -2,14 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 414:
+/***/ 33:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: copy, createCopyRow
+// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
 
-// EXTERNAL MODULE: ../install_temp/node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
-var dist = __webpack_require__(243);
+// EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
+var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -158,7 +158,7 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
 }).then((response) => response.json());
 
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -171,123 +171,188 @@ All rights reserved.
 
 
 
-const createCopyRow = (parent, index, options, input, output) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
-        ${options.map((column) => `
-          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
-            ${column.name}
-          </option>`).join(' ')}
-      </select>
-      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
+
+const getRequiredValue = (id, errorMessage) => {
+  const { value } = document.getElementById(id);
+  if (!value) {
+    throw new Error(errorMessage);
   }
+
+  return value;
 };
 
-const copy = (app) => {
+const fillSelect = (options, id, value) => {
+  const select = document.getElementById(id);
+  if (value) {
+    select.value = value;
+  }
+  select.innerHTML = '';
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.text = item.name;
+    if (item.id === value) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+};
+
+const createMappingRow = (index, from, to) => {
+  let lastRowIndex = 0;
+  // remove existing ADD button and add REMOVE button to last col of the row
+  const addButton = document.getElementById('add-button');
+  if (addButton) {
+    // get data-row-index from the ADD button and add delete button to this row
+    lastRowIndex = addButton.getAttribute('data-row-index');
+    addButton.remove();
+    document
+      .getElementById(`row-${lastRowIndex}`)
+      .children[3]
+      .appendChild(getDeleteButton(lastRowIndex));
+  }
+
+  const row = document.createElement('div');
+  row.classList.add('row');
+  row.id = `row-${index}`;
+  row.innerHTML = `
+    <div class="col button-col">
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Input column" value="${from || ''}" />
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Output column" value="${to || ''}" />
+    </div>
+    <div class="col button-col">
+    </div>`;
+  row.children[0].appendChild(getAddButton(index));
+  document.getElementById('mapping').appendChild(row);
+
+  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      document.getElementById(`row-${lastRowIndex}`).remove();
+      // replace delete button with add button if there is only one row left
+      if (document.getElementsByClassName('row').length === 1) {
+        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+      }
+    });
+  }
+  document.getElementById('add-button').addEventListener('click', () => {
+    createMappingRow(index + 1);
+  });
+};
+
+const loockupSpreadsheet = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
-
-  let rowIndex = 0;
+  let attachments = [];
   let columns = [];
 
-  app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      columns: { input: inputColumns, output: outputColumns },
-      settings,
-    } = config;
+  app.listen('config', async (config) => {
+    try {
+      const {
+        context: {
+          stream: { id: streamId },
+          available_columns: availableColumns,
+        },
+        settings,
+      } = config;
 
-    columns = availableColumns;
+      attachments = await getAttachments(streamId);
+      columns = availableColumns;
 
-    const content = document.getElementById('content');
-    if (!settings) {
-      createCopyRow(content, rowIndex, columns);
-    } else {
-      settings.forEach((setting, i) => {
-        const inputColumn = inputColumns.find((column) => column.name === setting.from);
-        const outputColumn = outputColumns.find((column) => column.name === setting.to);
-        rowIndex = i;
-        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
-      });
+      if (settings) {
+        const {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumnName,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        } = settings;
+
+        const inputColumn = columns.find((item) => item.name === inputColumnName);
+        fillSelect(columns, 'input-column', inputColumn.id);
+        const fileId = attachments.find((item) => item.file === file).id;
+        fillSelect(attachments, 'attachment', fileId);
+        document.getElementById('attachment-column').value = attachmentColumn;
+        document.getElementById('sheet').value = sheet;
+        mapping.forEach((item, index) => {
+          createMappingRow(index, item.from, item.to);
+        });
+      } else {
+        fillSelect(columns, 'input-column');
+        fillSelect(attachments, 'attachment');
+        createMappingRow(0);
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      hideComponent('loader');
+      showComponent('app');
     }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createCopyRow(content, rowIndex, columns);
-    });
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: [],
-      columns: {
-        input: [],
-        output: [],
-      },
-    };
-    const form = document.getElementsByClassName('list-wrapper');
-    // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const inputId = line.getElementsByTagName('select')[0].value;
-      const outputName = line.getElementsByTagName('input')[0].value;
-
-      const inputColumn = columns.find((column) => column.id === inputId);
-      const outputColumn = {
-        name: outputName,
-        type: inputColumn.type,
-        description: '',
-      };
-      const setting = {
-        from: inputColumn.name,
-        to: outputName,
-      };
-      data.settings.push(setting);
-      data.columns.input.push(inputColumn);
-      data.columns.output.push(outputColumn);
-    }
+    hideError();
 
     try {
-      const overview = await validate('copy_columns', data);
+      const fileId = getRequiredValue('attachment', 'Please select attachment');
+      const { file } = attachments.find((item) => item.id === fileId);
+      const sheet = document.getElementById('sheet').value;
+      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
+      const inputColumn = columns.find((item) => item.id === inputColumnId);
+      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+
+      const outputColumns = [];
+      const mapping = [];
+      const rows = document.querySelectorAll('#mapping .row');
+      rows.forEach((row) => {
+        const from = row.children[1].children[0].value;
+        const to = row.children[2].children[0].value;
+        if (from && to) {
+          mapping.push({ from, to });
+          outputColumns.push({
+            name: to,
+          });
+        } else {
+          showError('Please fill all mapping rows');
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const data = {
+        settings: {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumn.name,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        },
+        columns: {
+          input: [inputColumn],
+          output: outputColumns,
+        },
+      };
+
+      const overview = await validate('attachment_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
+    } catch (error) {
+      showError(error);
     }
   });
 };
 
-
-(0,dist/* default */.ZP)({ })
-  .then(copy);
+(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
 
 
 /***/ })
@@ -379,7 +444,7 @@ const copy = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			61: 0
+/******/ 			264: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -429,7 +494,7 @@ const copy = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(414)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
