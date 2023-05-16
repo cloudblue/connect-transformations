@@ -49,6 +49,8 @@ class FormulaTransformationMixin:
                 if column_type == 'decimal':
                     parameters['additional_parameters'] = {'precision': expression.get('precision')}
                 result[expression['to']] = cast_value_to_type(**parameters)
+            except StopIteration:
+                result[expression['to']] = None
             except Exception as e:
                 if not expression.get('ignore_errors'):
                     return RowTransformationResponse.fail(output=str(e))

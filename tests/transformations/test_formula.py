@@ -154,3 +154,32 @@ def test_formula_invalid_row_ignore_errors(mocker):
 
     response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
     assert response.status == ResultType.SUCCESS
+
+
+def test_formula_no_output(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Tax value',
+                        'formula': 'select(.Tax == "one") | "Drop Column"',
+                        'ignore_errors': True,
+                        'type': 'string',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+
+    response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
+    assert response.status == ResultType.SUCCESS
+    assert response.output is None
