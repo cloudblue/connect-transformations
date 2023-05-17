@@ -7,7 +7,7 @@ import jq
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
-from connect_transformations.formula.utils import extract_input, validate_formula
+from connect_transformations.formula.utils import DROP_REGEX, extract_input, validate_formula
 from connect_transformations.utils import cast_value_to_type
 
 
@@ -17,7 +17,8 @@ class FormulaTransformationMixin:
         name='Formula',
         description=(
             'Use this transformation to perform data manipulation '
-            'using columns manipulation formula. '
+            'using columns manipulation formula. Also it is possible '
+            'to use reserved function drop_row to delete row.'
             '(see https://stedolan.github.io/jq/manual/)'
         ),
         edit_dialog_ui='/static/transformations/formula.html',
@@ -66,7 +67,10 @@ class FormulaTransformationMixin:
             self.jq_expressions = {}
             trfn_settings = self.transformation_request['transformation']['settings']
             for expression in trfn_settings['expressions']:
-                self.jq_expressions[expression['to']] = jq.compile(expression['formula'])
+                formula = expression['formula']
+                if DROP_REGEX.findall(formula):
+                    formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
+                self.jq_expressions[expression['to']] = jq.compile(formula)
 
 
 class FormulaWebAppMixin:
