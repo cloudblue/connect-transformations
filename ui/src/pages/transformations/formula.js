@@ -133,10 +133,16 @@ export const formula = (app) => {
     } = config;
 
     columns = availableColumns;
-    suggestor = { '.': availableColumns.map(col => ({
-      title: col.name,
-      value: `."${col.name}"`,
-    })) };
+    /* eslint-disable-next-line */
+    const pattern = /[ .,|*:;{}[\]+\/%]/;
+    suggestor = { '.': availableColumns.map(col => {
+      const needsQuotes = pattern.test(col.name);
+
+      return {
+        title: col.name,
+        value: needsQuotes ? `."${col.name}"` : `.${col.name}`,
+      };
+    }) };
 
     const content = document.getElementById('content');
     if (settings && settings.expressions) {
