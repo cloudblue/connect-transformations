@@ -28,6 +28,12 @@ def test_validate_formula(
                     'type': 'decimal',
                     'precision': '2',
                 },
+                {
+                    'to': 'Drop',
+                    'formula': 'if .Tax > 10 then drop_row else "OK" end',
+                    'ignore_errors': False,
+                    'type': 'string',
+                },
             ],
         },
         'columns': {
@@ -47,6 +53,7 @@ def test_validate_formula(
         'overview': (
             'Price with Tax = ."Price without Tax" + .Tax + ."Additional fee"\n'
             'Tax value = ."Tax" / ."Price without Tax"\n'
+            'Drop = if .Tax > 10 then drop_row else "OK" end\n'
         ),
     }
 

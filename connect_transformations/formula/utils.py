@@ -12,6 +12,7 @@ from connect_transformations.utils import _cast_mapping
 
 
 JQ_FIELDS_REGEX = re.compile(r'(\.([a-z_][a-z0-9_]*))|(\."(.+?)")|(\.\["(.+?)"\])', re.I)
+DROP_REGEX = re.compile(r'(?<![."])drop_row(?![."])', re.I)
 
 
 def error_response(error):
@@ -93,7 +94,10 @@ def validate_formula(data):  # noqa: CCR001
                 )
 
         try:
-            jq.compile(expression['formula'])
+            formula = expression['formula']
+            if DROP_REGEX.findall(formula):
+                formula = f'def drop_row: "#DROP_ROW"; {formula}'
+            jq.compile(formula)
         except ValueError as e:
             return error_response(
                 f'Settings contains invalid formula `{expression["formula"]}: {str(e)}`.',

@@ -183,3 +183,40 @@ def test_formula_no_output(mocker):
     response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
     assert response.status == ResultType.SUCCESS
     assert response.output is None
+
+
+def test_formula_drop_row(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Tax rate',
+                        'formula': 'if .Tax > 10 then drop_row else "OK" end',
+                        'ignore_errors': True,
+                        'type': 'string',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                    {'name': 'Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+
+    response = app.formula({'Price without Tax': 100, 'Tax': 20})
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'Tax rate': '#INSTRUCTION/DELETE_ROW',
+    }
+
+    response = app.formula({'Price without Tax': 100, 'Tax': 8})
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'Tax rate': 'OK',
+    }
