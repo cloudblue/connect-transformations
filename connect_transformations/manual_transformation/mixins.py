@@ -3,6 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from typing import Dict
+
 from connect.eaas.core.decorators import manual_transformation, transformation
 
 
@@ -20,6 +22,6 @@ class ManualTransformationMixin:
     @manual_transformation()
     def manual_transformation(
         self,
-        row: dict,
+        row: Dict,
     ):  # pragma: no cover
         pass

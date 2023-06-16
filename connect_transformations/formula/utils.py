@@ -8,54 +8,47 @@ import re
 import jq
 from fastapi.responses import JSONResponse
 
-from connect_transformations.utils import _cast_mapping
+from connect_transformations.utils import (
+    _cast_mapping,
+    build_error_response,
+    does_not_contain_required_keys,
+    has_invalid_basic_structure,
+)
 
 
 JQ_FIELDS_REGEX = re.compile(r'(\.([a-z_][a-z0-9_]*))|(\."(.+?)")|(\.\["(.+?)"\])', re.I)
 DROP_REGEX = re.compile(r'(?<![."])drop_row(?![."])', re.I)
 
 
-def error_response(error):
-    return JSONResponse(
-        status_code=400,
-        content={
-            'error': error,
-        },
-    )
-
-
 def validate_formula(data):  # noqa: CCR001
-    if (
-        'settings' not in data
-        or not isinstance(data['settings'], dict)
-        or 'columns' not in data
-        or 'input' not in data['columns']
-        or 'output' not in data['columns']
-    ):
-        return error_response('Invalid input data.')
+    data = data.dict(by_alias=True)
 
     if (
-        'expressions' not in data['settings']
+        has_invalid_basic_structure(data)
+        or does_not_contain_required_keys(data['columns'], ['output'])
+    ):
+        print('error')
+        return build_error_response('Invalid input data')
+
+    if (
+        does_not_contain_required_keys(data['settings'], ['expressions'])
         or not isinstance(data['settings']['expressions'], list)
     ):
-        return error_response(
+        return build_error_response(
             'The settings must have `expressions` field which contains list of formulas.',
         )
 
     for expression in data['settings']['expressions']:
         if (
-            'to' not in expression
-            or not expression['to']
-            or not isinstance(expression['to'], str)
-            or not expression['formula']
-            or 'formula' not in expression
+            does_not_contain_required_keys(
+                expression,
+                ['to', 'formula', 'type', 'ignore_errors'],
+            ) or not isinstance(expression['to'], str)
             or not isinstance(expression['formula'], str)
-            or 'type' not in expression
             or expression['type'] not in _cast_mapping.keys()
-            or 'ignore_errors' not in expression
             or not isinstance(expression['ignore_errors'], bool)
         ):
-            return error_response(
+            return build_error_response(
                 'Each expression must have not empty `to`, `formula`, `type` '
                 'and `ignore_errors` fields.',
             )
@@ -65,7 +58,7 @@ def validate_formula(data):  # noqa: CCR001
 
     for expression in data['settings']['expressions']:
         if expression['to'] in output_columns:
-            return error_response('Each `output column` must be unique.')
+            return build_error_response('Each `output column` must be unique.')
 
         if expression['to'] in available_columns:
             output_column = list(filter(
@@ -77,7 +70,7 @@ def validate_formula(data):  # noqa: CCR001
                 or not output_column[0].get('id')
                 or output_column[0]['id'] != available_columns[expression['to']]
             ):
-                return error_response(f'Column `{expression["to"]}` already exists.')
+                return build_error_response(f'Column `{expression["to"]}` already exists.')
 
         columns = [
             r[1] or r[3] or r[5]
@@ -86,7 +79,7 @@ def validate_formula(data):  # noqa: CCR001
 
         for column in columns:
             if column not in available_columns:
-                return error_response(
+                return build_error_response(
                     (
                         f'Settings contains formula `{expression["formula"]}` '
                         'with column that does not exist on columns.input.'
@@ -99,7 +92,7 @@ def validate_formula(data):  # noqa: CCR001
                 formula = f'def drop_row: "#DROP_ROW"; {formula}'
             jq.compile(formula)
         except ValueError as e:
-            return error_response(
+            return build_error_response(
                 f'Settings contains invalid formula `{expression["formula"]}: {str(e)}`.',
             )
 

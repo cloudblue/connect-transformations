@@ -5,7 +5,7 @@
 #
 import pytest
 
-from connect_transformations.constants import SUBSCRIPTION_LOOKUP
+from connect_transformations.lookup_subscription.utils import SUBSCRIPTION_LOOKUP
 from connect_transformations.webapp import TransformationsWebApplication
 
 
@@ -26,7 +26,7 @@ def test_validate_lookup_subscription(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -55,7 +55,7 @@ def test_validate_lookup_subscription_external_id(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -85,7 +85,7 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -107,7 +107,7 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
 )
 def test_validate_lookup_subscription_settings_or_invalid(test_client_factory, data):
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -125,16 +125,14 @@ def test_validate_lookup_subscription_settings_or_invalid(test_client_factory, d
         {'lookup_type': 'x', 'from': 'x', 'prefix': None},
         {'lookup_type': 'x', 'from': 'x', 'prefix': 3.33},
         {'lookup_type': 'x', 'from': 'x', 'prefix': 333},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': []},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': {}},
         {'lookup_type': 'x', 'from': 'x', 'prefix': ''},
         {'lookup_type': 'x', 'from': 'x', 'prefix': 'pref'},
     ),
 )
 def test_validate_lookup_subscription_invalid_format(test_client_factory, settings):
-    data = {'settings': settings, 'columns': {'input': []}}
+    data = {'settings': settings, 'columns': {'input': [{'name': 'name'}]}}
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -146,17 +144,10 @@ def test_validate_lookup_subscription_invalid_format(test_client_factory, settin
     }
 
 
-@pytest.mark.parametrize(
-    'lookup_type',
-    (
-        'invalidtype',
-        '',
-    ),
-)
-def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory, lookup_type):
+def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory):
     data = {
         'settings': {
-            'lookup_type': lookup_type,
+            'lookup_type': 'invalidtype',
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
@@ -169,7 +160,7 @@ def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory, l
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -179,23 +170,15 @@ def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory, l
     }
 
 
-@pytest.mark.parametrize(
-    'action_if_not_found',
-    (
-        'invalidtype',
-        '',
-    ),
-)
 def test_validate_lookup_subscription_invalid_action_if_not_found(
     test_client_factory,
-    action_if_not_found,
 ):
     data = {
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
             'prefix': 'PREFIX',
-            'action_if_not_found': action_if_not_found,
+            'action_if_not_found': 'invalidtype',
         },
         'columns': {
             'input': [
@@ -205,7 +188,7 @@ def test_validate_lookup_subscription_invalid_action_if_not_found(
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -242,7 +225,7 @@ def test_validate_lookup_subscription_invalid_parameter(test_client_factory, par
     if parameter is not None:
         data['settings']['parameter'] = parameter
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -277,7 +260,7 @@ def test_validate_lookup_subscription_invalid_column(test_client_factory, lookup
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -302,37 +285,13 @@ def test_validate_lookup_subscription_invalid_prefix(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/lookup_subscription', json=data)
+    response = client.post('/api/lookup_subscription/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
     assert data == {
         'error': 'The settings `prefix` max length is 10',
     }
-
-
-def test_get_subscription_criteria(test_client_factory):
-    data = {
-        'settings': {
-            'lookup_type': 'id',
-            'from': 'column',
-            'prefix': 'PREFIX',
-            'action_if_not_found': 'leave_empty',
-        },
-        'columns': {
-            'input': [
-                {'name': 'column'},
-            ],
-            'output': [],
-        },
-    }
-
-    client = test_client_factory(TransformationsWebApplication)
-    response = client.get('/api/lookup_subscription/criteria')
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data == SUBSCRIPTION_LOOKUP
 
 
 @pytest.mark.asyncio
@@ -368,6 +327,6 @@ async def test_get_subscription_parameters(
     assert response.status_code == 200
     data = response.json()
     assert data == [
-        {'P-123': 'param_a'},
-        {'P-321': 'param_b'},
+        {'id': 'P-123', 'name': 'param_a'},
+        {'id': 'P-321', 'name': 'param_b'},
     ]

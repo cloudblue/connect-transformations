@@ -12,6 +12,7 @@ from connect_transformations.copy_columns.mixins import CopyColumnWebAppMixin
 from connect_transformations.currency_conversion.mixins import CurrencyConversionWebAppMixin
 from connect_transformations.filter_row.mixins import FilterRowWebAppMixin
 from connect_transformations.formula.mixins import FormulaWebAppMixin
+from connect_transformations.handlers import CustomExceptionHandlers
 from connect_transformations.lookup_product_items.mixins import LookupProductItemsWebAppMixin
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionWebAppMixin
 from connect_transformations.split_column.mixins import SplitColumnWebAppMixin
@@ -21,6 +22,7 @@ from connect_transformations.vat_rate.mixins import VATRateForEUCountryWebAppMix
 @web_app(router)
 class TransformationsWebApplication(
     WebApplicationBase,
+    CustomExceptionHandlers,
     AirTableLookupWebAppMixin,
     AttachmentLookupWebAppMixin,
     CopyColumnWebAppMixin,

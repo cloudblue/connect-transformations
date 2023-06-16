@@ -26,7 +26,7 @@ def test_validate_vat_rate(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/vat_rate', json=data)
+    response = client.post('/api/vat_rate/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -49,7 +49,7 @@ def test_validate_vat_rate(test_client_factory):
 )
 def test_validate_vat_rate_settings_or_invalid(test_client_factory, data):
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/vat_rate', json=data)
+    response = client.post('/api/vat_rate/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -62,14 +62,14 @@ def test_validate_vat_rate_settings_or_invalid(test_client_factory, data):
     'settings',
     (
         {},
-        {'from': {}},
-        {'from': {}, 'to': {}},
+        {'from': ''},
+        {'from': '', 'to': ''},
     ),
 )
 def test_validate_vat_rate_invalid_format(test_client_factory, settings):
-    data = {'settings': settings, 'columns': {'input': []}}
+    data = {'settings': settings, 'columns': {'input': [{'name': 'name'}]}}
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/vat_rate', json=data)
+    response = client.post('/api/vat_rate/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -96,7 +96,7 @@ def test_validate_vat_rate_invalid_column(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/vat_rate', json=data)
+    response = client.post('/api/vat_rate/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()

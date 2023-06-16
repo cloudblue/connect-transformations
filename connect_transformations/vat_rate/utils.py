@@ -3,45 +3,35 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-from fastapi.responses import JSONResponse
+from connect_transformations.utils import (
+    build_error_response,
+    does_not_contain_required_keys,
+    has_invalid_basic_structure,
+)
 
 
 def validate_vat_rate(data):
-    if (
-        'settings' not in data
-        or not isinstance(data['settings'], dict)
-        or 'columns' not in data
-        or 'input' not in data['columns']
-    ):
-        return JSONResponse(status_code=400, content={'error': 'Invalid input data'})
+    data = data.dict(by_alias=True)
+
+    if has_invalid_basic_structure(data):
+        return build_error_response('Invalid input data')
 
     input_columns = data['columns']['input']
     available_input_columns = [c['name'] for c in input_columns]
-    if (
-        'from' not in data['settings']
-        or 'to' not in data['settings']
-        or 'action_if_not_found' not in data['settings']
+    if does_not_contain_required_keys(
+        data['settings'],
+        ['from', 'to', 'action_if_not_found'],
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings must have `from`, `to` and `action_if_not_found` '
-                    'fields'
-                ),
-            },
+        return build_error_response(
+            'The settings must have `from`, `to` and `action_if_not_found` '
+            'fields',
         )
 
     if data['settings']['from'] not in available_input_columns:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings contains an invalid `from` column name'
-                    f' "{data["settings"]["from"]}" that does not exist on '
-                    'columns.input'
-                ),
-            },
+        return build_error_response(
+            'The settings contains an invalid `from` column name'
+            f' "{data["settings"]["from"]}" that does not exist on '
+            'columns.input',
         )
 
     return {

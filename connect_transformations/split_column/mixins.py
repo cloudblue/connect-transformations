@@ -4,11 +4,18 @@
 # All rights reserved.
 #
 import re
+from typing import Dict
 
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
+from connect_transformations.models import Error, ValidationResult
+from connect_transformations.split_column.models import (
+    CapturingGroup,
+    CapturingGroups,
+    Configuration,
+)
 from connect_transformations.split_column.utils import merge_groups, validate_split_column
 from connect_transformations.utils import cast_value_to_type
 
@@ -19,12 +26,12 @@ class SplitColumnTransformationMixin:
         name='Split Column',
         description=(
             'This transformation function allows you to copy values from Input to Output columns,'
-            ' which might be handy if you’d like to change column name in the output data for for'
+            ' which might be handy if you\'d like to change column name in the output data for for'
             ' some other reason create a copy of values in table.'
         ),
         edit_dialog_ui='/static/transformations/split_column.html',
     )
-    async def split_column(
+    def split_column(
         self,
         row,
     ):
@@ -54,21 +61,28 @@ class SplitColumnTransformationMixin:
 class SplitColumnWebAppMixin:
 
     @router.post(
-        '/validate/split_column',
+        '/split_column/validate',
         summary='Validate split column settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_split_column_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_split_column(data)
 
     @router.post(
         '/split_column/extract_groups',
         summary='Get group names for a given regular expression',
-        response_model=dict,
+        response_model=CapturingGroups,
+        responses={
+            400: {'model': Error},
+        },
     )
-    async def get_groups(self, data: dict):
+    def get_split_column_groups(self, data: Dict):
         if 'pattern' not in data:
             return JSONResponse(
                 status_code=400,
@@ -86,15 +100,15 @@ class SplitColumnWebAppMixin:
         try:
             pattern = re.compile(data['pattern'])
             named_groups = {
-                str(v): {'name': k, 'type': 'string'}
+                str(v): CapturingGroup(**{'name': k, 'type': 'string'})
                 for k, v in dict(pattern.groupindex).items()
             }
             for n in range(1, pattern.groups + 1):
                 n = str(n)
                 if n not in named_groups:
-                    named_groups[n] = {'name': f'group_{n}', 'type': 'string'}
+                    named_groups[n] = CapturingGroup(**{'name': f'group_{n}', 'type': 'string'})
             merge_groups(named_groups, data.get('groups', None))
-            return {'groups': named_groups}
+            return CapturingGroups(**{'groups': named_groups})
         except re.error:
             return JSONResponse(
                 status_code=400,

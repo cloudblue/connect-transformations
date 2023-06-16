@@ -8,7 +8,6 @@ import '../../../styles/index.css';
 import '../../../styles/lookup.css';
 import '../../../styles/app.styl';
 import {
-  getLookupSubscriptionCriteria,
   getLookupSubscriptionParameters,
   validate,
 } from '../../utils';
@@ -38,7 +37,11 @@ export const lookupSubscription = (app) => {
 
     const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = await getLookupSubscriptionCriteria();
+    const criteria = {
+      external_id: 'CloudBlue Subscription External ID',
+      id: 'CloudBlue Subscription ID',
+      params__value: 'Parameter Value',
+    };
 
     hideComponent('loader');
     showComponent('app');
@@ -62,13 +65,11 @@ export const lookupSubscription = (app) => {
 
     if (hasProduct === true) {
       const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
-      Object.values(parameters).forEach((element) => {
-        Object.keys(element).forEach((key) => {
-          const option = document.createElement('option');
-          option.value = key;
-          option.text = element[key];
-          document.getElementById('parameter').appendChild(option);
-        });
+      parameters.forEach((element) => {
+        const option = document.createElement('option');
+        option.value = element.id;
+        option.text = element.name;
+        document.getElementById('parameter').appendChild(option);
       });
     }
 

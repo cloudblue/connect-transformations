@@ -44,6 +44,7 @@ async def test_lookup_product_item(mocker, async_connect_client, async_client_mo
     response = await app.lookup_product_items({
         'ColumnA': 'PRD-000-000-001-0001',
     })
+
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
         'PREFIX.product.id': 'PRD-000-000-001',
@@ -392,7 +393,7 @@ async def test_lookup_product_item_no_product_and_no_skip(
     })
     assert response.status == ResultType.FAIL
     assert response.transformed_row is None
-    assert response.output == 'Product not found'
+    assert response.output == 'Error retrieving the product PRD-000-000-001: 404 Not Found'
 
 
 @pytest.mark.asyncio

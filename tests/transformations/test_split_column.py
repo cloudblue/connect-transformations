@@ -12,8 +12,7 @@ from dateutil.parser import parse
 from connect_transformations.transformations import StandardTransformationsApplication
 
 
-@pytest.mark.asyncio
-async def test_split_column_string(mocker):
+def test_split_column_string(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -31,7 +30,7 @@ async def test_split_column_string(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'X Name Surname',
     })
     assert response.status == ResultType.SUCCESS
@@ -42,8 +41,7 @@ async def test_split_column_string(mocker):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_integer(mocker):
+def test_split_column_integer(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -60,7 +58,7 @@ async def test_split_column_integer(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'street 22',
     })
     assert response.status == ResultType.SUCCESS
@@ -70,8 +68,7 @@ async def test_split_column_integer(mocker):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_decimal(mocker):
+def test_split_column_decimal(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -89,7 +86,7 @@ async def test_split_column_decimal(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'euro 22.44 3,4333',
     })
     assert response.status == ResultType.SUCCESS
@@ -119,8 +116,7 @@ async def test_split_column_decimal(mocker):
         (None, None),
     ),
 )
-@pytest.mark.asyncio
-async def test_split_column_boolean(mocker, value, result):
+def test_split_column_boolean(mocker, value, result):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -136,7 +132,7 @@ async def test_split_column_boolean(mocker, value, result):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': value,
     })
     assert response.status == ResultType.SUCCESS
@@ -152,8 +148,7 @@ async def test_split_column_boolean(mocker, value, result):
         '2022-01-19 12:31:00 UTC',
     ),
 )
-@pytest.mark.asyncio
-async def test_split_column_datetime(mocker, value):
+def test_split_column_datetime(mocker, value):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -169,7 +164,7 @@ async def test_split_column_datetime(mocker, value):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': value,
     })
     assert response.status == ResultType.SUCCESS
@@ -178,8 +173,7 @@ async def test_split_column_datetime(mocker, value):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_not_match_regex(mocker):
+def test_split_column_not_match_regex(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -197,7 +191,7 @@ async def test_split_column_not_match_regex(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'Name Surname',
     })
     assert response.status == ResultType.SUCCESS
@@ -208,8 +202,7 @@ async def test_split_column_not_match_regex(mocker):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_match_partially(mocker):
+def test_split_column_match_partially(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -226,7 +219,7 @@ async def test_split_column_match_partially(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'Name Surname Othername',
     })
     assert response.status == ResultType.SUCCESS
@@ -236,8 +229,7 @@ async def test_split_column_match_partially(mocker):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_match_optional(mocker):
+def test_split_column_match_optional(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -254,7 +246,7 @@ async def test_split_column_match_optional(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'Name ',
     })
 
@@ -265,8 +257,7 @@ async def test_split_column_match_optional(mocker):
     }
 
 
-@pytest.mark.asyncio
-async def test_split_column_old_config(mocker):
+def test_split_column_old_config(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -284,7 +275,7 @@ async def test_split_column_old_config(mocker):
             },
         },
     }
-    response = await app.split_column({
+    response = app.split_column({
         'column': 'X Name Surname',
     })
     assert response.status == ResultType.SUCCESS

@@ -3,49 +3,40 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-from fastapi.responses import JSONResponse
-
-from connect_transformations.utils import check_mapping
+from connect_transformations.utils import (
+    build_error_response,
+    check_mapping,
+    does_not_contain_required_keys,
+    has_invalid_basic_structure,
+)
 
 
 def validate_attachment_lookup(data):
-    if (
-        'settings' not in data
-        or not isinstance(data['settings'], dict)
-        or 'columns' not in data
-        or 'input' not in data['columns']
-    ):
-        return JSONResponse(status_code=400, content={'error': 'Invalid input data'})
+    data = data.dict(by_alias=True)
+
+    if has_invalid_basic_structure(data):
+        return build_error_response('Invalid input data')
 
     if (
-        'file' not in data['settings']
-        or 'map_by' not in data['settings']
+        does_not_contain_required_keys(
+            data['settings'],
+            ['file', 'map_by', 'mapping'],
+        )
         or not isinstance(data['settings']['map_by'], dict)
-        or 'mapping' not in data['settings']
         or not isinstance(data['settings']['mapping'], list)
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings must contain `file` and optional `sheet` '
-                    'fields and dictionary `map_by` and list `mapping` fields.'
-                ),
-            },
+        return build_error_response(
+            'The settings must contain `file` and optional `sheet` '
+            'fields and dictionary `map_by` and list `mapping` fields.',
         )
 
-    if (
-        'input_column' not in data['settings']['map_by']
-        or 'attachment_column' not in data['settings']['map_by']
+    if does_not_contain_required_keys(
+        data['settings']['map_by'],
+        ['input_column', 'attachment_column'],
     ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings field `map_by` must contain '
-                    '`input_column` and `attachment_column` fields in it.'
-                ),
-            },
+        return build_error_response(
+            'The settings field `map_by` must contain '
+            '`input_column` and `attachment_column` fields in it.',
         )
 
     mapping_error = check_mapping(data['settings'], data['columns'])

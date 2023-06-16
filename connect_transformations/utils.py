@@ -63,9 +63,11 @@ def check_mapping(settings, columns):
 
     for mapping in settings['mapping']:
         if (
-                not isinstance(mapping, dict)
-                or 'from' not in mapping
-                or 'to' not in mapping
+            not isinstance(mapping, dict)
+            or 'from' not in mapping
+            or not mapping['from']
+            or 'to' not in mapping
+            or not mapping['to']
         ):
             return JSONResponse(
                 status_code=400,
@@ -76,3 +78,22 @@ def check_mapping(settings, columns):
                     ),
                 },
             )
+
+
+def does_not_contain_required_keys(data, required_keys):
+    for key in required_keys:
+        if key not in data or data[key] is None:
+            return True
+    return False
+
+
+def has_invalid_basic_structure(data, data_type=dict):
+    return (
+        does_not_contain_required_keys(data, ['settings', 'columns'])
+        or not isinstance(data['settings'], data_type)
+        or does_not_contain_required_keys(data['columns'], ['input'])
+    )
+
+
+def build_error_response(message):
+    return JSONResponse(status_code=400, content={'error': message})

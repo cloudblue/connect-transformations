@@ -91,7 +91,7 @@ def test_validate_attachment_lookup_invalid_data(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -124,7 +124,7 @@ def test_validate_attachment_lookup_invalid_settings(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -161,7 +161,7 @@ def test_validate_attachment_lookup_invalid_map_by(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -198,7 +198,7 @@ def test_validate_attachment_lookup_invalid_mapping(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -235,7 +235,7 @@ def test_validate_attachment_lookup_not_existing_column(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -272,7 +272,7 @@ def test_validate_attachment_lookup_ok(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/attachment_lookup', json=data)
+    response = client.post('/api/attachment_lookup/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()

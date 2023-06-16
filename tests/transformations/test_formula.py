@@ -210,6 +210,7 @@ def test_formula_drop_row(mocker):
     }
 
     response = app.formula({'Price without Tax': 100, 'Tax': 20})
+    print(response.output)
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
         'Tax rate': '#INSTRUCTION/DELETE_ROW',

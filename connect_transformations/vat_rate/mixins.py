@@ -3,45 +3,43 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-import httpx
+import requests
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
-from connect_transformations.exceptions import VATRateError
+from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
+from connect_transformations.vat_rate.exceptions import VATRateError
+from connect_transformations.vat_rate.models import Configuration
 from connect_transformations.vat_rate.utils import validate_vat_rate
 
 
 class VATRateForEUCountryTransformationMixin:
 
-    def _process_rates(self, rates):
-        result = {}
-        for key, rate in rates.items():
-            value = rate['standard_rate']
-            result[key] = value
-            result[rate['country_name']] = value
-        return result
+    def preload_eu_vat_rates(self):
+        with self.lock():
+            if hasattr(self, 'eu_vat_rates'):
+                return
 
-    async def _generate_vat_rate(self):
-        if not self.current_vat_rate:
-            async with self._current_vat_rate_lock:
-                if not self.current_vat_rate:
-                    try:
-                        url = 'https://api.exchangerate.host/vat_rates'
-                        with httpx.Client(
-                            transport=httpx.HTTPTransport(retries=3),
-                        ) as client:
-                            response = client.get(url)
-                            data = response.json()
-                            if response.status_code != 200 or not data['success']:
-                                raise VATRateError(
-                                    f'Unexpected response calling {url}',
-                                )
-                            self.current_vat_rate = self._process_rates(data['rates'])
-                    except httpx.RequestError as exc:
-                        raise VATRateError(
-                            f'An error occurred while requesting {url}: {exc}',
-                        )
+            self.eu_vat_rates = {}
+
+            try:
+                url = 'https://api.exchangerate.host/vat_rates'
+                response = requests.get(url)
+                response.raise_for_status()
+                data = response.json()
+                if not data['success']:
+                    raise VATRateError(
+                        f'Unexpected response calling {url}',
+                    )
+                for key, rate in data['rates'].items():
+                    value = rate['standard_rate']
+                    self.eu_vat_rates[key] = value
+                    self.eu_vat_rates[rate['country_name']] = value
+            except requests.RequestException as exc:
+                raise VATRateError(
+                    f'An error occurred while requesting {url}: {exc}',
+                )
 
     @transformation(
         name='Get standard VAT Rate for EU Country',
@@ -52,7 +50,7 @@ class VATRateForEUCountryTransformationMixin:
         ),
         edit_dialog_ui='/static/transformations/vat_rate.html',
     )
-    async def get_vat_rate(
+    def get_vat_rate(
         self,
         row,
     ):
@@ -62,7 +60,7 @@ class VATRateForEUCountryTransformationMixin:
         leave_empty = trfn_settings['action_if_not_found'] == 'leave_empty'
 
         try:
-            await self._generate_vat_rate()
+            self.preload_eu_vat_rates()
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
 
@@ -71,29 +69,33 @@ class VATRateForEUCountryTransformationMixin:
                 self.transformation_request['transformation']['columns']['input'],
                 trfn_settings['from'],
             ) and not country
-            or country not in self.current_vat_rate
+            or country not in self.eu_vat_rates
             and leave_empty
         ):
             return RowTransformationResponse.skip()
 
-        if country not in self.current_vat_rate and not leave_empty:
+        if country not in self.eu_vat_rates and not leave_empty:
             return RowTransformationResponse.fail(
                 output=f'Country {country} not found',
             )
 
         return RowTransformationResponse.done({
-            column_to: self.current_vat_rate[country],
+            column_to: self.eu_vat_rates[country],
         })
 
 
 class VATRateForEUCountryWebAppMixin:
 
     @router.post(
-        '/validate/vat_rate',
+        '/vat_rate/validate',
         summary='Validate VAT rate settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_get_vat_rate_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_vat_rate(data)

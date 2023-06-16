@@ -4,7 +4,6 @@
 # All rights reserved.
 #
 import pytest
-from connect.client.testing import get_httpx_mocker
 
 from connect_transformations.webapp import TransformationsWebApplication
 
@@ -24,7 +23,7 @@ def test_validate_currency_conversion(test_client_factory):
     }
 
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/currency_conversion', json=data)
+    response = client.post('/api/currency_conversion/validate', json=data)
 
     assert response.status_code == 200
     data = response.json()
@@ -48,7 +47,7 @@ def test_validate_currency_conversion(test_client_factory):
 )
 def test_validate_currency_conversion_settings_or_invalid(test_client_factory, data):
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/currency_conversion', json=data)
+    response = client.post('/api/currency_conversion/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -69,7 +68,7 @@ def test_validate_currency_conversion_settings_or_invalid(test_client_factory, d
 def test_validate_currency_conversion_invalid_format(test_client_factory, settings):
     data = {'settings': settings, 'columns': {'input': []}}
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/currency_conversion', json=data)
+    response = client.post('/api/currency_conversion/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -97,7 +96,7 @@ def test_validate_currency_conversion_equal_currencies(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/currency_conversion', json=data)
+    response = client.post('/api/currency_conversion/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -122,7 +121,7 @@ def test_validate_currency_conversion_invalid_column(test_client_factory):
         },
     }
     client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/validate/currency_conversion', json=data)
+    response = client.post('/api/currency_conversion/validate', json=data)
 
     assert response.status_code == 400
     data = response.json()
@@ -136,8 +135,8 @@ def test_validate_currency_conversion_invalid_column(test_client_factory):
 
 def test_get_available_rates(
     test_client_factory,
+    httpx_mock,
 ):
-    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -154,16 +153,22 @@ def test_get_available_rates(
 
     assert response.status_code == 200
     data = response.json()
-    assert data == {
-        'EUR': 'Euro',
-        'USD': "United States Dollar's",
-    }
+    assert data == [
+        {
+            'code': 'EUR',
+            'description': 'Euro',
+        },
+        {
+            'code': 'USD',
+            'description': "United States Dollar's",
+        },
+    ]
 
 
 def test_get_available_rates_invalid_response(
     test_client_factory,
+    httpx_mock,
 ):
-    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -177,13 +182,13 @@ def test_get_available_rates_invalid_response(
 
     assert response.status_code == 200
     data = response.json()
-    assert data == {}
+    assert data == []
 
 
 def test_get_available_rates_invalid_status_code(
     test_client_factory,
+    httpx_mock,
 ):
-    httpx_mock = get_httpx_mocker()
     httpx_mock.add_response(
         method='GET',
         url='https://api.exchangerate.host/symbols',
@@ -194,7 +199,7 @@ def test_get_available_rates_invalid_status_code(
 
     assert response.status_code == 200
     data = response.json()
-    assert data == {}
+    assert data == []
 
 
 def test_get_available_rates_code_exception(
@@ -211,4 +216,4 @@ def test_get_available_rates_code_exception(
 
     assert response.status_code == 200
     data = response.json()
-    assert data == {}
+    assert data == []

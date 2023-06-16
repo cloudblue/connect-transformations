@@ -4,24 +4,32 @@
 # All rights reserved.
 #
 import time
+from typing import Dict, List
 
 import requests
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi.responses import JSONResponse
 
+from connect_transformations.airtable_lookup.exceptions import AirTableError
+from connect_transformations.airtable_lookup.models import (
+    AirTableBase,
+    AirTableColumn,
+    AirTableTable,
+    Configuration,
+)
 from connect_transformations.airtable_lookup.utils import (
     get_airtable_data,
     validate_airtable_lookup,
 )
-from connect_transformations.exceptions import AirTableError
+from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
 
 
 class AirTableLookupTransformationMixin:
 
     def preload_lookup_data_for_airtable(self, trfn_settings):  # noqa: CCR001
-        with self._sync_lock:
+        with self.lock():
             if hasattr(self, 'airtable_data'):
                 return
 
@@ -30,7 +38,6 @@ class AirTableLookupTransformationMixin:
             page_count = 0
             params = {}
             mapped_columns = [mapping['from'] for mapping in trfn_settings['mapping']]
-            self.logger.info(f'mapped_columns: {mapped_columns}')
             lookup_column = trfn_settings['map_by']['airtable_column']
             while True:
                 response = requests.get(
@@ -61,7 +68,6 @@ class AirTableLookupTransformationMixin:
                 if page_count % 5 == 0:
                     time.sleep(1)
                 page_count += 1
-        self.logger.info(f'airtable table: {self.airtable_data}')
 
     @transformation(
         name='Lookup Data from AirTable',
@@ -73,7 +79,7 @@ class AirTableLookupTransformationMixin:
     )
     def airtable_lookup(
             self,
-            row: dict,
+            row: Dict,
     ):
         trfn_settings = self.transformation_request['transformation']['settings']
 
@@ -105,30 +111,35 @@ class AirTableLookupWebAppMixin:
 
     @router.get(
         '/airtable_lookup/bases',
-        summary='Get list of bases by given token',
+        summary='Get list of AirTable bases.',
+        response_model=List[AirTableBase],
+        responses={
+            400: {'model': Error},
+        },
     )
-    async def get_bases(
+    async def get_airtable_bases(
         self,
         api_key: str,
     ):
         try:
             bases = await get_airtable_data('meta/bases', api_key, params={})
             return [
-                {'id': base['id'], 'name': base['name']}
+                AirTableBase(id=base['id'], name=base['name'])
                 for base in bases['bases']
             ]
 
         except AirTableError as e:
-            return JSONResponse(
-                status_code=400,
-                content={'error': f'{e}'},
-            )
+            return JSONResponse(status_code=400, content={'error': str(e)})
 
     @router.get(
         '/airtable_lookup/tables',
-        summary='Get list of tables with its columns by given base and token',
+        summary='Get list of AirTable tables within a given base.',
+        response_model=List[AirTableTable],
+        responses={
+            400: {'model': Error},
+        },
     )
-    async def get_tables(
+    async def get_airtable_tables(
         self,
         api_key: str,
         base_id: str,
@@ -139,26 +150,37 @@ class AirTableLookupWebAppMixin:
                 api_key,
             )
             return [
-                {
-                    'id': table['id'],
-                    'name': table['name'],
-                    'columns': table['fields'],
-                }
+                AirTableTable(
+                    id=table['id'],
+                    name=table['name'],
+                    columns=[
+                        AirTableColumn(
+                            id=col['id'],
+                            name=col['name'],
+                            type=col['type'],
+                        )
+                        for col in table['fields']
+                    ],
+                )
                 for table in tables['tables']
             ]
 
         except AirTableError as e:
             return JSONResponse(
                 status_code=400,
-                content={'error': f'{e}'},
+                content={'error': str(e)},
             )
 
     @router.post(
-        '/validate/airtable_lookup',
+        '/airtable_lookup/validate',
         summary='Validate airtable lookup settings',
+        response_model=ValidationResult,
+        responses={
+            400: {'model': Error},
+        },
     )
     def validate_airtable_lookup_settings(
         self,
-        data: dict,
+        data: Configuration,
     ):
         return validate_airtable_lookup(data)
