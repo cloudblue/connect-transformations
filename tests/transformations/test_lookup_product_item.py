@@ -22,6 +22,10 @@ async def test_lookup_product_item(mocker, async_connect_client, async_client_mo
         'unit': {"name": "Gb"},
         'period': 'monthly',
         'mpn': 'MPN-A',
+        'commitment': {
+            'multiplier': 'billing_period',
+            'count': 1,
+        },
     })
 
     m = mocker.MagicMock()
@@ -54,7 +58,8 @@ async def test_lookup_product_item(mocker, async_connect_client, async_client_mo
         'PREFIX.item.unit': 'Gb',
         'PREFIX.item.period': 'monthly',
         'PREFIX.item.mpn': 'MPN-A',
-    }
+        'PREFIX.item.commitment': 1,
+    }, response.transformed_row
 
 
 @pytest.mark.asyncio
@@ -99,6 +104,7 @@ async def test_lookup_product_item_cached(mocker):
         'PREFIX.item.unit': 'Gb',
         'PREFIX.item.period': 'monthly',
         'PREFIX.item.mpn': 'MPN-A',
+        'PREFIX.item.commitment': None,
     }
 
 
@@ -154,6 +160,10 @@ async def test_lookup_product_item_by_mpn(
         'unit': {"name": "Gb"},
         'period': 'monthly',
         'mpn': 'MPN-A',
+        'commitment': {
+            'multiplier': 'billing_period',
+            'count': 2,
+        },
     }])
 
     m = mocker.MagicMock()
@@ -186,6 +196,7 @@ async def test_lookup_product_item_by_mpn(
         'PREFIX.item.unit': 'Gb',
         'PREFIX.item.period': 'monthly',
         'PREFIX.item.mpn': 'MPN-A',
+        'PREFIX.item.commitment': 2,
     }
 
 
@@ -488,5 +499,6 @@ async def test_lookup_product_item_product_column(
         'PREFIX.item.unit': 'Gb',
         'PREFIX.item.period': 'monthly',
         'PREFIX.item.mpn': 'MPN-A',
+        'PREFIX.item.commitment': None,
     }
     assert response.output is None
