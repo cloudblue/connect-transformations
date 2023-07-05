@@ -151,6 +151,7 @@ export const lookupProductItem = (app) => {
           'item.unit',
           'item.period',
           'item.mpn',
+          'item.commitment',
         ].map((name) => createOutputColumnForLookup(prefix, name)),
       },
     };

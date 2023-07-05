@@ -111,6 +111,7 @@ def generate_transformation_response(trfn_settings, product_item):
         f'{prefix}.item.unit': product_item['unit']['name'],
         f'{prefix}.item.period': product_item['period'],
         f'{prefix}.item.mpn': product_item['mpn'],
+        f'{prefix}.item.commitment': product_item.get('commitment', {}).get('count'),
     }
 
     return RowTransformationResponse.done(output_data)
