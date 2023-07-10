@@ -97,3 +97,13 @@ def has_invalid_basic_structure(data, data_type=dict):
 
 def build_error_response(message):
     return JSONResponse(status_code=400, content={'error': message})
+
+
+def deep_convert_type(original, type_to_convert, converter):
+    if isinstance(original, type_to_convert):
+        return converter(original)
+    elif isinstance(original, dict):
+        return {k: deep_convert_type(v, type_to_convert, converter) for k, v in original.items()}
+    elif isinstance(original, list):
+        return [deep_convert_type(v, type_to_convert, converter) for v in original]
+    return original

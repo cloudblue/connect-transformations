@@ -15,6 +15,25 @@ def test_formula(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {
+            'id': 'STR-3920-1626-6382',
+            'name': 'Stream',
+            'context': {
+                'listing': {
+                    'id': 'LST-1113-3453-3429',
+                },
+            },
+        },
+        'batch': {
+            'id': 'BAT-1211-1123-2423-2342',
+            'name': 'Batch',
+            'context': {
+                'period': {
+                    'start': datetime.datetime(2023, 1, 1, 0, 0, 0),
+                    'end': datetime.datetime(2023, 1, 31, 23, 59, 59),
+                },
+            },
+        },
         'transformation': {
             'settings': {
                 'expressions': [
@@ -37,6 +56,10 @@ def test_formula(mocker):
                         'formula': '.Created',
                         'ignore_errors': True,
                         'type': 'string',
+                    },
+                    {
+                        'to': 'Billing period',
+                        'formula': '.meta.batch.context.period.start',
                     },
                 ],
             },
@@ -64,6 +87,7 @@ def test_formula(mocker):
             Decimal('.001'),
         ),
         'Copy date': str(date),
+        'Billing period': '2023-01-01 00:00:00',
     }
 
 
@@ -71,6 +95,25 @@ def test_formula_using_old_config(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {
+            'id': 'STR-3920-1626-6382',
+            'name': 'Stream',
+            'context': {
+                'listing': {
+                    'id': 'LST-1113-3453-3429',
+                },
+            },
+        },
+        'batch': {
+            'id': 'BAT-1211-1123-2423-2342',
+            'name': 'Batch',
+            'context': {
+                'period': {
+                    'start': datetime.datetime(2023, 1, 1, 0, 0, 0),
+                    'end': datetime.datetime(2023, 1, 31, 23, 59, 59),
+                },
+            },
+        },
         'transformation': {
             'settings': {
                 'expressions': [
@@ -101,6 +144,8 @@ def test_formula_invalid_row(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {},
+        'batch': {},
         'transformation': {
             'settings': {
                 'expressions': [
@@ -131,6 +176,8 @@ def test_formula_invalid_row_ignore_errors(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {},
+        'batch': {},
         'transformation': {
             'settings': {
                 'expressions': [
@@ -160,6 +207,8 @@ def test_formula_no_output(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {},
+        'batch': {},
         'transformation': {
             'settings': {
                 'expressions': [
@@ -189,6 +238,8 @@ def test_formula_drop_row(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
+        'stream': {},
+        'batch': {},
         'transformation': {
             'settings': {
                 'expressions': [
