@@ -126,7 +126,14 @@ export const loockupSpreadsheet = (app) => {
 
         const inputColumn = columns.find((item) => item.name === inputColumnName);
         fillSelect(columns, 'input-column', inputColumn.id);
-        const fileId = attachments.find((item) => item.file === file).id;
+        const attachmentFound = attachments.find((item) => item.file === file);
+        let fileId = null;
+        if (attachmentFound == null) {
+          const fileName = file.split('/').pop();
+          showError(`The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
+        } else {
+          fileId = attachmentFound.id;
+        }
         fillSelect(attachments, 'attachment', fileId);
         document.getElementById('attachment-column').value = attachmentColumn;
         document.getElementById('sheet').value = sheet;
