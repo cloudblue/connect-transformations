@@ -3,6 +3,7 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from datetime import datetime
 from typing import Dict, List
 
 import jq
@@ -12,12 +13,12 @@ from connect.eaas.core.responses import RowTransformationResponse
 from connect_transformations.formula.models import Configuration
 from connect_transformations.formula.utils import DROP_REGEX, extract_input, validate_formula
 from connect_transformations.models import Error, StreamsColumn, ValidationResult
-from connect_transformations.utils import cast_value_to_type
+from connect_transformations.utils import cast_value_to_type, deep_convert_type
 
 
 class FormulaTransformationMixin:
 
-    def precompile_jq_expressions(self):
+    def precompile(self, row: Dict):
         with self.lock():
             if hasattr(self, 'jq_expressions'):
                 return
@@ -30,6 +31,29 @@ class FormulaTransformationMixin:
                 if DROP_REGEX.findall(formula):
                     formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
                 self.jq_expressions[expression['to']] = jq.compile(formula)
+
+            self.column_converters = []
+
+            input_columns = self.transformation_request['transformation']['columns']['input']
+            columns_types = {column['name']: column.get('type') for column in input_columns}
+            for col_name in row:
+                if columns_types[col_name] == 'datetime':
+                    self.column_converters.append((col_name, str))
+
+            self.meta = deep_convert_type(
+                {
+                    'meta': {
+                        'stream': {
+                            'context': self.transformation_request['stream'].get('context'),
+                        },
+                        'batch': {
+                            'context': self.transformation_request['batch'].get('context'),
+                        },
+                    },
+                },
+                datetime,
+                str,
+            )
 
     @transformation(
         name='Formula',
@@ -47,22 +71,21 @@ class FormulaTransformationMixin:
     ):
 
         try:
-            self.precompile_jq_expressions()
+            self.precompile(row)
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
 
         trfn_settings = self.transformation_request['transformation']['settings']
-        input_columns = self.transformation_request['transformation']['columns']['input']
-        columns_types = {column['name']: column.get('type') for column in input_columns}
 
-        for column in row:
-            if columns_types[column] == 'datetime':
-                row[column] = str(row[column])
+        formula_input = {**self.meta, **row}
+
+        for col_name, converter in self.column_converters:
+            formula_input[col_name] = converter(formula_input[col_name])
 
         result = {}
         for expression in trfn_settings['expressions']:
             try:
-                value = self.jq_expressions[expression['to']].input(row).first()
+                value = self.jq_expressions[expression['to']].input(formula_input).first()
                 column_type = expression.get('type', 'string')
                 parameters = {'value': value, 'type': column_type}
                 if column_type == 'decimal':

@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from connect_transformations.utils import cast_value_to_type
+from connect_transformations.utils import cast_value_to_type, deep_convert_type
 
 
 @pytest.mark.parametrize(
@@ -70,3 +70,24 @@ def test_cast_to_bool(value, expected):
 )
 def test_cast_to_datetime(value, expected):
     assert cast_value_to_type(value, 'datetime') == expected
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    (
+        ('1', '1'),
+        (None, None),
+        (datetime(2022, 1, 1), '2022-01-01 00:00:00'),
+        (
+            [datetime(2022, 1, 1), 1, datetime(2020, 1, 12)],
+            ['2022-01-01 00:00:00', 1, '2020-01-12 00:00:00'],
+        ),
+        (
+            {'a': datetime(2022, 1, 2), 'b': 'str', 'c': {'d': datetime(2021, 1, 2)}},
+            {'a': '2022-01-02 00:00:00', 'b': 'str', 'c': {'d': '2021-01-02 00:00:00'}},
+        ),
+    ),
+)
+def test_deep_convert_type(value, expected):
+    result = deep_convert_type(value, datetime, str)
+    assert result == expected
