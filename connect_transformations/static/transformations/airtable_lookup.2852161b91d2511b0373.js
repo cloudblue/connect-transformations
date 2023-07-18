@@ -141,6 +141,12 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
 
 ;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
@@ -170,7 +176,7 @@ const createCopyRow = (parent, index, options, input, output) => {
       <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
         ${options.map((column) => `
           <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
-            ${column.name}
+            ${getColumnLabel(column)}
           </option>`).join(' ')}
       </select>
       <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
@@ -426,7 +432,6 @@ const airtable = (app) => {
 
 (0,dist/* default */.ZP)({ })
   .then(airtable);
-
 
 
 /***/ })

@@ -18,6 +18,7 @@ import {
 
 import {
   getAttachments,
+  getColumnLabel,
   validate,
 } from '../../utils';
 
@@ -40,7 +41,7 @@ export const fillSelect = (options, id, value) => {
   options.forEach((item) => {
     const option = document.createElement('option');
     option.value = item.id;
-    option.text = item.name;
+    option.text = getColumnLabel(item);
     if (item.id === value) {
       option.selected = true;
     }

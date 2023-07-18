@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 755:
+/***/ 262:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -79,6 +81,12 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
@@ -142,7 +150,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -156,93 +164,141 @@ All rights reserved.
 
 
 
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
 
-const vatRate = (app) => {
-  if (!app) {
-    return;
-  }
+const lookupSubscription = (app) => {
+  if (!app) return;
 
   let columns = [];
 
-  app.listen('config', config => {
+  app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
+    const criteria = {
+      external_id: 'CloudBlue Subscription External ID',
+      id: 'CloudBlue Subscription ID',
+      params__value: 'Parameter Value',
+    };
 
-    const inputColumnSelect = document.getElementById('input-column');
-    const outputColumnInput = document.getElementById('output-column');
-    columns.forEach(column => {
-      const isSelected = settings && column.name === settings.from;
-      const option = isSelected ? `<option value="${column.name}" selected>${column.name}</option>` : `<option value="${column.name}">${column.name}</option>`;
-      inputColumnSelect.innerHTML += option;
+    hideComponent('loader');
+    showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
+      document.getElementById('criteria').appendChild(option);
     });
 
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      parameters.forEach((element) => {
+        const option = document.createElement('option');
+        option.value = element.id;
+        option.text = element.name;
+        document.getElementById('parameter').appendChild(option);
+      });
+    }
+
     if (settings) {
-      outputColumnInput.value = settings.to;
+      document.getElementById('criteria').value = settings.lookup_type;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      document.getElementById('prefix').value = settings.prefix;
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('leave_empty').checked = true;
       } else {
         document.getElementById('fail').checked = true;
       }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
     } else {
+      document.getElementById('param_name_group').style.display = 'none';
       document.getElementById('leave_empty').checked = true;
     }
-    hideComponent('loader');
-    showComponent('app');
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
   app.listen('save', async () => {
-    const inputColumnValue = document.getElementById('input-column').value;
-    const inputColumn = columns.find(column => column.name === inputColumnValue);
-    const outputColumnValue = document.getElementById('output-column').value;
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
+    const column = columns.find((c) => c.id === columnId);
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
-    if (outputColumnValue === inputColumn.name) {
-      showError('This fields may not be equal: columns.input.name, columns.output.name.');
-    } else if (outputColumnValue === '' || outputColumnValue === null) {
-      showError('Output column name is required.');
-    } else {
-      const data = {
-        settings: {
-          from: inputColumnValue,
-          to: outputColumnValue,
-          action_if_not_found: actionIfNotFound,
-        },
-        columns: {
-          input: [
-            inputColumn,
-          ],
-          output: [
-            {
-              name: outputColumnValue,
-              type: 'integer',
-              description: '',
-            },
-          ],
-        },
-      };
+    const data = {
+      settings: {
+        lookup_type: criteria,
+        from: column.name,
+        parameter,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+      },
+      columns: {
+        input: [column],
+        output: [
+          'product.id',
+          'product.name',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
+    };
 
-      try {
-        const overview = await validate('vat_rate', data);
-        if (overview.error) {
-          throw new Error(overview.error);
-        }
-        app.emit('save', {
-          data: { ...data, ...overview },
-          status: 'ok',
-        });
-      } catch (e) {
-        showError(e);
+    try {
+      const overview = await validate('lookup_subscription', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(vatRate);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -334,7 +390,7 @@ const vatRate = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			496: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -384,7 +440,7 @@ const vatRate = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

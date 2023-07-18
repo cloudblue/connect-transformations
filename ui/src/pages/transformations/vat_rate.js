@@ -8,6 +8,7 @@ import '../../../styles/index.css';
 import '../../../styles/app.styl';
 import '../../../styles/vat_rate.css';
 import {
+  getColumnLabel,
   validate,
 } from '../../utils';
 
@@ -36,8 +37,11 @@ const vatRate = (app) => {
     const inputColumnSelect = document.getElementById('input-column');
     const outputColumnInput = document.getElementById('output-column');
     columns.forEach(column => {
-      const isSelected = settings && column.name === settings.from;
-      const option = isSelected ? `<option value="${column.name}" selected>${column.name}</option>` : `<option value="${column.name}">${column.name}</option>`;
+      const isSelected = settings && column.id === settings.from;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected
+        ? `<option value="${column.id}" selected>${colLabel}</option>`
+        : `<option value="${column.id}">${colLabel}</option>`;
       inputColumnSelect.innerHTML += option;
     });
 
@@ -57,7 +61,7 @@ const vatRate = (app) => {
 
   app.listen('save', async () => {
     const inputColumnValue = document.getElementById('input-column').value;
-    const inputColumn = columns.find(column => column.name === inputColumnValue);
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
     const outputColumnValue = document.getElementById('output-column').value;
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
@@ -68,7 +72,7 @@ const vatRate = (app) => {
     } else {
       const data = {
         settings: {
-          from: inputColumnValue,
+          from: inputColumn.name,
           to: outputColumnValue,
           action_if_not_found: actionIfNotFound,
         },

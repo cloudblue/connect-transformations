@@ -2,14 +2,76 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 262:
+/***/ 813:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
+// UNUSED EXPORTS: createAdditionalValue, filterRow
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -81,70 +143,14 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
 
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
+  return `${column.name} (C${colIdSuffix})`;
 };
 
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -158,141 +164,144 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
+const createAdditionalValue = (parent, index, value) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = `
+      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
 
-const lookupSubscription = (app) => {
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+  });
+};
+
+const filterRow = (app) => {
   if (!app) return;
 
   let columns = [];
+  let rowIndex = 0;
 
-  app.listen('config', async (config) => {
+  hideComponent('loader');
+  showComponent('app');
+
+  app.listen('config', (config) => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
+    showComponent('loader');
+    hideComponent('app');
+
     columns = availableColumns;
-    const criteria = {
-      external_id: 'CloudBlue Subscription External ID',
-      id: 'CloudBlue Subscription ID',
-      params__value: 'Parameter Value',
-    };
 
-    hideComponent('loader');
-    showComponent('app');
-
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      if (hasProduct === false && key === 'params__value') {
-        option.disabled = true;
-      }
-      document.getElementById('criteria').appendChild(option);
-    });
+    const content = document.getElementById('content');
 
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
-      option.text = column.name;
+      option.text = getColumnLabel(column);
       document.getElementById('column').appendChild(option);
     });
 
-    if (hasProduct === true) {
-      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
-      parameters.forEach((element) => {
-        const option = document.createElement('option');
-        option.value = element.id;
-        option.text = element.name;
-        document.getElementById('parameter').appendChild(option);
-      });
-    }
-
     if (settings) {
-      document.getElementById('criteria').value = settings.lookup_type;
+      document.getElementById('value').value = settings.value;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
+
+      if (settings.match_condition) {
+        document.getElementById('match').checked = true;
       } else {
-        document.getElementById('fail').checked = true;
+        document.getElementById('mismatch').checked = true;
       }
-      if (settings.lookup_type === 'params__value') {
-        document.getElementById('parameter').value = settings.parameter.id;
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
+
+      if (settings.additional_values) {
+        settings.additional_values.forEach((addVal, i) => {
+          rowIndex = i;
+          createAdditionalValue(content, rowIndex, addVal.value, i);
+        });
       }
     } else {
-      document.getElementById('param_name_group').style.display = 'none';
-      document.getElementById('leave_empty').checked = true;
+      document.getElementById('match').checked = true;
     }
 
-    document.getElementById('criteria').addEventListener('change', () => {
-      if (document.getElementById('criteria').value === 'params__value') {
-        document.getElementById('param_name_group').style.display = 'block';
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createAdditionalValue(content, rowIndex);
     });
+
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    let parameter = {};
-    if (document.getElementById('criteria').value === 'params__value') {
-      const select = document.getElementById('parameter');
-      const paramName = select[select.selectedIndex].text;
-      const paramID = select.value;
-      parameter = { name: paramName, id: paramID };
-    }
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-
     const data = {
-      settings: {
-        lookup_type: criteria,
-        from: column.name,
-        parameter,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-      },
+      settings: {},
       columns: {
-        input: [column],
-        output: [
-          'product.id',
-          'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        input: [],
+        output: [],
       },
+      overview: '',
     };
 
+    showComponent('loader');
+    hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    const matchCondition = document.getElementById('match').checked;
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${inputColumn.name}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: inputColumn.name,
+      value: inputValue.value,
+      match_condition: matchCondition,
+      additional_values: [],
+    };
+
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const val = line.getElementsByTagName('input')[0].value;
+      const addVal = {
+        value: val,
+      };
+      data.settings.additional_values.push(addVal);
+    }
+
     try {
-      const overview = await validate('lookup_subscription', data);
+      const overview = await validate('filter_row', data);
       if (overview.error) {
         throw new Error(overview.error);
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       showError(e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(filterRow);
 
 
 /***/ })
@@ -384,7 +393,7 @@ const lookupSubscription = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -434,7 +443,7 @@ const lookupSubscription = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

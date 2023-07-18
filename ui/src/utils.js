@@ -68,3 +68,9 @@ export const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/ta
   },
 }).then((response) => response.json());
 
+export const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};

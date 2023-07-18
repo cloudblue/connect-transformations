@@ -16,8 +16,6 @@ def validate_vat_rate(data):
     if has_invalid_basic_structure(data):
         return build_error_response('Invalid input data')
 
-    input_columns = data['columns']['input']
-    available_input_columns = [c['name'] for c in input_columns]
     if does_not_contain_required_keys(
         data['settings'],
         ['from', 'to', 'action_if_not_found'],
@@ -27,7 +25,7 @@ def validate_vat_rate(data):
             'fields',
         )
 
-    if data['settings']['from'] not in available_input_columns:
+    if all(c['name'] != data['settings']['from'] for c in data['columns']['input']):
         return build_error_response(
             'The settings contains an invalid `from` column name'
             f' "{data["settings"]["from"]}" that does not exist on '

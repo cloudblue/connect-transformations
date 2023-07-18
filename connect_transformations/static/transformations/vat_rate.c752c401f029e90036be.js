@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 118:
+/***/ 755:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createGroupRows, splitColumn
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -81,6 +79,12 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
@@ -144,7 +148,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_column.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -158,224 +162,96 @@ All rights reserved.
 
 
 
-function getCurrentGroups(parent) {
-  const descendents = parent.getElementsByTagName('input');
-  const currentGroups = {};
-  for (let i = 0; i < descendents.length; i += 1) {
-    const element = descendents[i];
-    const dataType = document.getElementById(`datatype-${element.id}`);
-    if (dataType && dataType.value === 'decimal') {
-      const precision = document.getElementById(`precision-${element.id}`).value;
-      currentGroups[element.id] = {
-        name: element.value,
-        type: dataType.value,
-        precision,
-      };
-    } else {
-      currentGroups[element.id] = { name: element.value, type: dataType.value };
-    }
+
+const vatRate = (app) => {
+  if (!app) {
+    return;
   }
-
-  return currentGroups;
-}
-
-function buildSelectColumnType(groupKey) {
-  return `
-  <select id="datatype-${groupKey}">
-  <option value="string" selected>String</option>
-  <option value="integer">Integer</option>
-  <option value="decimal">Decimal</option>
-  <option value="boolean">Boolean</option>
-  <option value="datetime">Datetime</option>
-  </select>
-  `;
-}
-
-function buildSelectColumnPrecision(groupKey) {
-  return `
-  <select id="precision-${groupKey}">
-  <option value="2" selected>2 decimals</option>
-  <option value="3">3 decimals</option>
-  <option value="4">4 decimals</option>
-  <option value="5">5 decimals</option>
-  <option value="6">6 decimals</option>
-  <option value="7">7 decimals</option>
-  <option value="8">8 decimals</option>
-  </select>
-  `;
-}
-
-function buildGroups(groups) {
-  const parent = document.getElementById('output');
-  parent.innerHTML = '';
-  if (Object.keys(groups).length > 0) {
-    const item = document.createElement('div');
-    item.setAttribute('class', 'wrapper output-header');
-    item.innerHTML = `
-    <div>
-    Name
-    </div>
-    <div>
-    Type
-    </div>
-    <div>
-    Precision
-    </div>
-    `;
-    parent.appendChild(item);
-  }
-  Object.keys(groups).forEach(groupKey => {
-    const groupValue = groups[groupKey];
-    const item = document.createElement('div');
-    item.className = 'wrapper';
-    const selectType = buildSelectColumnType(groupKey);
-    const selectPrecision = buildSelectColumnPrecision(groupKey);
-    item.innerHTML = `
-    <div>
-    <input 
-    type="text" 
-    class="output-input" 
-    id="${groupKey}"
-    placeholder="${groupKey} group name" 
-    value="${groupValue.name}"/>
-    </div>
-    <div>
-    ${selectType}
-    </div>
-    <div>
-    ${selectPrecision}
-    </div>
-    `;
-    parent.appendChild(item);
-    document.getElementById(`datatype-${groupKey}`).value = groupValue.type;
-    const precisionSelect = document.getElementById(`precision-${groupKey}`);
-    precisionSelect.disabled = groupValue.type !== 'decimal';
-    precisionSelect.value = groupValue.precision || '2';
-    document.getElementById(`datatype-${groupKey}`).addEventListener('change', () => {
-      if (document.getElementById(`datatype-${groupKey}`).value === 'decimal') {
-        document.getElementById(`precision-${groupKey}`).disabled = false;
-      } else {
-        document.getElementById(`precision-${groupKey}`).disabled = true;
-      }
-    });
-  });
-}
-
-const createGroupRows = async () => {
-  const parent = document.getElementById('output');
-  const groups = getCurrentGroups(parent);
-  const pattern = document.getElementById('pattern').value;
-  if (pattern) {
-    const body = { pattern, groups };
-    const response = await getGroups(body);
-    if (response.error) {
-      showError(response.error);
-    } else {
-      buildGroups(response.groups);
-    }
-  } else {
-    showError('The regular expression is empty');
-  }
-};
-
-const splitColumn = (app) => {
-  if (!app) return;
 
   let columns = [];
 
-  app.listen('config', (config) => {
+  app.listen('config', config => {
     const {
       context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    showComponent('loader');
-    hideComponent('app');
-
     columns = availableColumns;
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+    columns.forEach(column => {
+      const isSelected = settings && column.id === settings.from;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected
+        ? `<option value="${column.id}" selected>${colLabel}</option>`
+        : `<option value="${column.id}">${colLabel}</option>`;
+      inputColumnSelect.innerHTML += option;
     });
 
     if (settings) {
-      document.getElementById('pattern').value = settings.regex.pattern;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      buildGroups(settings.regex.groups);
+      outputColumnInput.value = settings.to;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+    } else {
+      document.getElementById('leave_empty').checked = true;
     }
-
-    document.getElementById('refresh').addEventListener('click', () => {
-      createGroupRows();
-    });
     hideComponent('loader');
     showComponent('app');
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
-      },
-      overview: '',
-    };
-    showComponent('loader');
-    hideComponent('app');
+    const inputColumnValue = document.getElementById('input-column').value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+    const outputColumnValue = document.getElementById('output-column').value;
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
-    const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    data.columns.input.push(inputColumn);
-
-    const selector = document.getElementById('output');
-    const options = selector.getElementsByTagName('input');
-    for (let i = 0; i < options.length; i += 1) {
-      const option = options[i];
-      const dataType = document.getElementById(`datatype-${option.id}`).value;
-      const outputColumn = {
-        name: option.value,
-        type: dataType,
-        description: '',
-        constraints: {},
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const data = {
+        settings: {
+          from: inputColumn.name,
+          to: outputColumnValue,
+          action_if_not_found: actionIfNotFound,
+        },
+        columns: {
+          input: [
+            inputColumn,
+          ],
+          output: [
+            {
+              name: outputColumnValue,
+              type: 'integer',
+              description: '',
+            },
+          ],
+        },
       };
-      if (dataType === 'decimal') {
-        const precision = document.getElementById(`precision-${option.id}`).value;
-        outputColumn.constraints = { precision: parseInt(precision, 10) };
-      }
-      data.columns.output.push(outputColumn);
-    }
 
-    data.settings = {
-      from: selectedColumn,
-      regex: {
-        pattern: document.getElementById('pattern').value,
-        groups: getCurrentGroups(document.getElementById('output')),
-      },
-    };
-
-    try {
-      const overview = await validate('split_column', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      try {
+        const overview = await validate('vat_rate', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
-      }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(splitColumn);
+  .then(vatRate);
 
 
 /***/ })
@@ -467,7 +343,7 @@ const splitColumn = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			12: 0
+/******/ 			496: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -517,7 +393,7 @@ const splitColumn = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(118)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
