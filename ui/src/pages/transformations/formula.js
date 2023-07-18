@@ -9,6 +9,7 @@ import '../../../styles/index.css';
 import '../../../styles/app.styl';
 import '../../../styles/formula.css';
 import {
+  getColumnLabel,
   getJQInput,
   validate,
 } from '../../utils';
@@ -136,11 +137,11 @@ export const formula = (app) => {
     /* eslint-disable-next-line */
     const pattern = /[ .,|*:;{}[\]+\/%]/;
     suggestor = { '.': availableColumns.map(col => {
-      const needsQuotes = pattern.test(col.name);
+      const colLabel = getColumnLabel(col);
 
       return {
-        title: col.name,
-        value: needsQuotes ? `."${col.name}"` : `.${col.name}`,
+        title: colLabel,
+        value: `."${colLabel}"`,
       };
     }) };
 

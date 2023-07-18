@@ -11,7 +11,12 @@ from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
 from connect_transformations.formula.models import Configuration
-from connect_transformations.formula.utils import DROP_REGEX, extract_input, validate_formula
+from connect_transformations.formula.utils import (
+    DROP_REGEX,
+    clear_formula,
+    extract_input,
+    validate_formula,
+)
 from connect_transformations.models import Error, StreamsColumn, ValidationResult
 from connect_transformations.utils import cast_value_to_type, deep_convert_type
 
@@ -30,7 +35,8 @@ class FormulaTransformationMixin:
                 formula = expression['formula']
                 if DROP_REGEX.findall(formula):
                     formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
-                self.jq_expressions[expression['to']] = jq.compile(formula)
+                clean_formula = clear_formula(formula)
+                self.jq_expressions[expression['to']] = jq.compile(clean_formula)
 
             self.column_converters = []
 

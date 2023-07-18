@@ -59,6 +59,40 @@ def test_validate_formula(
     }
 
 
+def test_validate_formula_the_same_name(
+    test_client_factory,
+):
+    data = {
+        'settings': {
+            'expressions': [
+                {
+                    'to': 'Price',
+                    'formula': '."Price (C001)" + .Tax',
+                    'ignore_errors': False,
+                    'type': 'integer',
+                },
+            ],
+        },
+        'columns': {
+            'input': [
+                {'id': 'COL-111-001', 'name': 'Price', 'nullable': False},
+                {'id': 'COL-111-002', 'name': 'Tax', 'nullable': False},
+            ],
+            'output': [],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/formula/validate', json=data)
+
+    assert response.status_code == 200, response.content
+    data = response.json()
+    assert data == {
+        'overview': (
+            'Price = ."Price (C001)" + .Tax\n'
+        ),
+    }
+
+
 def test_validate_formula_invalid_input(
     test_client_factory,
 ):
@@ -153,38 +187,6 @@ def test_validate_formula_invalid_expression(
             'Each expression must have not empty `to`, `formula`, `type` and `ignore_errors` '
             'fields.'
         ),
-    }
-
-
-def test_validate_formula_unique_error(
-    test_client_factory,
-):
-    data = {
-        'settings': {
-            'expressions': [
-                {
-                    'to': 'Price',
-                    'formula': '.(Price) + .(Tax)',
-                    'ignore_errors': False,
-                    'type': 'integer',
-                },
-            ],
-        },
-        'columns': {
-            'input': [
-                {'id': 'COL-1', 'name': 'Price', 'nullable': False},
-                {'id': 'COL-2', 'name': 'Tax', 'nullable': False},
-            ],
-            'output': [],
-        },
-    }
-    client = test_client_factory(TransformationsWebApplication)
-    response = client.post('/api/formula/validate', json=data)
-
-    assert response.status_code == 400
-    data = response.json()
-    assert data == {
-        'error': 'Column `Price` already exists.',
     }
 
 
@@ -295,7 +297,7 @@ def test_validate_formula_non_existing_column_parenthesis(
     assert data == {
         'error': (
             'Settings contains formula `.Price + .Tax` '
-            'with column that does not exist on columns.input.'
+            'with column `Price` that does not exist on columns.input.'
         ),
     }
 
@@ -331,7 +333,7 @@ def test_validate_formula_non_existing_column(
     assert data == {
         'error': (
             'Settings contains formula `.Price + .(Tax)` '
-            'with column that does not exist on columns.input.'
+            'with column `Price` that does not exist on columns.input.'
         ),
     }
 
@@ -367,7 +369,7 @@ def test_validate_formula_non_existing_column_double_quote(
     assert data == {
         'error': (
             'Settings contains formula `."Price without Tax" + ."Tax federal"` '
-            'with column that does not exist on columns.input.'
+            'with column `Tax federal` that does not exist on columns.input.'
         ),
     }
 
@@ -410,17 +412,23 @@ def test_extract_formula_input(
         'expressions': [
             {
                 'to': 'Price with Tax',
-                'formula': '.["Price without Tax"] + .Tax + ."Additional fee"',
+                'formula': '.["Price without Tax"] + .Tax + ."Fee"',
+                'type': 'decimal',
+                'precision': '2',
+            },
+            {
+                'to': 'MSRP',
+                'formula': '.["Price without Tax (C001)"] * 1.05 + ."Tax (C002)" + ."Fee"',
                 'type': 'decimal',
                 'precision': '2',
             },
         ],
         'columns': [
-            {'name': 'Price without Tax', 'nullable': False},
-            {'name': 'Tax', 'nullable': False},
-            {'name': 'Additional fee', 'nullable': False},
-            {'name': 'Created', 'nullable': False},
-            {'name': 'Purchase', 'nullable': False},
+            {'id': 'C-1-001', 'name': 'Price without Tax', 'nullable': False},
+            {'id': 'C-1-002', 'name': 'Tax', 'nullable': False},
+            {'id': 'C-1-003', 'name': 'Fee', 'nullable': False},
+            {'id': 'C-1-004', 'name': 'Created', 'nullable': False},
+            {'id': 'C-1-005', 'name': 'Purchase', 'nullable': False},
         ],
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -429,9 +437,61 @@ def test_extract_formula_input(
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 3
-    assert StreamsColumn(**{'name': 'Price without Tax', 'nullable': False}).dict() in data
-    assert StreamsColumn(**{'name': 'Tax', 'nullable': False}).dict() in data
-    assert StreamsColumn(**{'name': 'Additional fee', 'nullable': False}).dict() in data
+    assert StreamsColumn(**{'id': 'C-1-001', 'name': 'Price without Tax', 'nullable': False}).dict()
+    assert StreamsColumn(**{'id': 'C-1-002', 'name': 'Tax', 'nullable': False}).dict() in data
+    assert StreamsColumn(**{'id': 'C-1-003', 'name': 'Fee', 'nullable': False}).dict() in data
+
+
+def test_extract_formula_input_dup_name_wo_suffix(
+    test_client_factory,
+):
+    data = {
+        'expressions': [
+            {
+                'to': 'Price with Tax',
+                'formula': '.["Price"]',
+                'type': 'decimal',
+                'precision': '2',
+            },
+        ],
+        'columns': [
+            {'id': 'COL-111-001', 'name': 'Price', 'nullable': False},
+            {'id': 'COL-111-002', 'name': 'Price', 'nullable': False},
+        ],
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/formula/extract_input', json=data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert StreamsColumn(**{'id': 'COL-111-002', 'name': 'Price', 'nullable': False}).dict() in data
+
+
+def test_extract_formula_input_dup_name_w_suffix(
+    test_client_factory,
+):
+    data = {
+        'expressions': [
+            {
+                'to': 'Price with Tax',
+                'formula': '."Price (C001)"',
+                'type': 'decimal',
+                'precision': '2',
+            },
+        ],
+        'columns': [
+            {'id': 'COL-111-001', 'name': 'Price', 'nullable': False},
+            {'id': 'COL-111-002', 'name': 'Price', 'nullable': False},
+        ],
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/formula/extract_input', json=data)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert StreamsColumn(**{'id': 'COL-111-001', 'name': 'Price', 'nullable': False}).dict() in data
 
 
 def test_extract_formula_input_invalid_expressions(

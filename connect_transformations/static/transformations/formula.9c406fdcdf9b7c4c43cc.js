@@ -440,6 +440,12 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
 
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
@@ -635,11 +641,11 @@ const formula = (app) => {
     /* eslint-disable-next-line */
     const pattern = /[ .,|*:;{}[\]+\/%]/;
     suggestor = { '.': availableColumns.map(col => {
-      const needsQuotes = pattern.test(col.name);
+      const colLabel = getColumnLabel(col);
 
       return {
-        title: col.name,
-        value: needsQuotes ? `."${col.name}"` : `.${col.name}`,
+        title: colLabel,
+        value: `."${colLabel}"`,
       };
     }) };
 

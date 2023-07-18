@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import re
+from collections import defaultdict
 
 import jq
 from fastapi.responses import JSONResponse
@@ -18,6 +19,7 @@ from connect_transformations.utils import (
 
 JQ_FIELDS_REGEX = re.compile(r'(\.([a-z_][a-z0-9_]*))|(\."(.+?)")|(\.\["(.+?)"\])', re.I)
 DROP_REGEX = re.compile(r'(?<![."])drop_row(?![."])', re.I)
+COL_ID_REGEX = re.compile(r'\."([^"]+) \(C\d{3,4}\)"')
 
 
 def validate_formula(data):  # noqa: CCR001
@@ -54,38 +56,22 @@ def validate_formula(data):  # noqa: CCR001
             )
 
     output_columns = []
-    available_columns = {col['name']: col['id'] for col in data['columns']['input']}
+    column_converter = get_expression_column_converter(data['columns']['input'])
 
     for expression in data['settings']['expressions']:
         if expression['to'] in output_columns:
             return build_error_response('Each `output column` must be unique.')
 
-        if expression['to'] in available_columns:
-            output_column = list(filter(
-                lambda col: col['name'] == expression['to'],
-                data['columns']['output'],
-            ))
-            if (
-                len(output_column) != 1
-                or not output_column[0].get('id')
-                or output_column[0]['id'] != available_columns[expression['to']]
-            ):
-                return build_error_response(f'Column `{expression["to"]}` already exists.')
-
-        columns = [
-            r[1] or r[3] or r[5]
-            for r in JQ_FIELDS_REGEX.findall(expression['formula'])
-        ]
-
-        for column in columns:
-            if column not in available_columns:
+        for match in JQ_FIELDS_REGEX.findall(expression['formula']):
+            var_name = match[1] or match[3] or match[5]
+            var = column_converter(var_name)
+            if not var:
                 return build_error_response(
                     (
                         f'Settings contains formula `{expression["formula"]}` '
-                        'with column that does not exist on columns.input.'
+                        f'with column `{var_name}` that does not exist on columns.input.'
                     ),
                 )
-
         try:
             formula = expression['formula']
             if DROP_REGEX.findall(formula):
@@ -121,10 +107,53 @@ def extract_input(data):
             },
         )
 
-    input_columns = set()
+    input_columns = []
+    added_columns = {}
+
+    column_converter = get_expression_column_converter(data['columns'])
+
     for expression in data['expressions']:
-        input_columns.update([
-            r[1] or r[3] or r[5]
-            for r in JQ_FIELDS_REGEX.findall(expression['formula'])
-        ])
-    return [column for column in data['columns'] if column['name'] in input_columns]
+        for match in JQ_FIELDS_REGEX.findall(expression['formula']):
+            col_value = match[1] or match[3] or match[5]
+            col = column_converter(col_value)
+            if not col:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        'error': f'{col_value} not found in input columns',
+                    },
+                )
+
+            if col['name'] not in added_columns:
+                input_columns.append(col)
+                added_columns[col['name']] = col['id']
+
+    return input_columns
+
+
+def get_expression_column_converter(columns):
+    cols_by_name = defaultdict(list)
+    cols_by_id = {}
+
+    for column in columns:
+        id_suffix = column['id'].split('-')[-1]
+        cols_by_name[column['name']].append(column)
+        cols_by_id[f'(C{id_suffix})'] = column
+
+    def converter(col_name):
+        if col_name in cols_by_name:
+            return cols_by_name[col_name][-1]
+
+        col_name_parts = col_name.split()
+        if (
+            len(col_name_parts) > 1
+            and col_name_parts[-1] in cols_by_id
+            and cols_by_id[col_name_parts[-1]]['name'] == ' '.join(col_name_parts[:-1])
+        ):
+            return cols_by_id[col_name_parts[-1]]
+
+    return converter
+
+
+def clear_formula(expression):
+    return COL_ID_REGEX.sub(r'."\1"', expression)

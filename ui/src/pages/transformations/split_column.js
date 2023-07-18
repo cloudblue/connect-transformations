@@ -8,6 +8,7 @@ import '../../../styles/index.css';
 import '../../../styles/split_column.css';
 import '../../../styles/app.styl';
 import {
+  getColumnLabel,
   getGroups,
   validate,
 } from '../../utils';
@@ -157,7 +158,7 @@ export const splitColumn = (app) => {
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
-      option.text = column.name;
+      option.text = getColumnLabel(column);
       document.getElementById('column').appendChild(option);
     });
 
@@ -188,7 +189,6 @@ export const splitColumn = (app) => {
     hideComponent('app');
 
     const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
     const inputColumn = columns.find((column) => column.id === inputSelector.value);
     data.columns.input.push(inputColumn);
 
@@ -211,7 +211,7 @@ export const splitColumn = (app) => {
     }
 
     data.settings = {
-      from: selectedColumn,
+      from: inputColumn.name,
       regex: {
         pattern: document.getElementById('pattern').value,
         groups: getCurrentGroups(document.getElementById('output')),

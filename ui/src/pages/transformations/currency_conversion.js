@@ -7,6 +7,7 @@ import '@fontsource/roboto/500.css';
 import '../../../styles/index.css';
 import '../../../styles/app.styl';
 import {
+  getColumnLabel,
   getCurrencies,
   validate,
 } from '../../utils';
@@ -56,8 +57,8 @@ const convert = (app) => {
 
     columns.forEach(column => {
       const isSelected = settings && column.name === settings.from.column;
-
-      const option = isSelected ? `<option value="${column.id}" selected>${column.name}</option>` : `<option value="${column.id}">${column.name}</option>`;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
 
       inputColumnSelect.innerHTML += option;
     });

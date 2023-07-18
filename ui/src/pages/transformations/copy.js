@@ -12,6 +12,7 @@ import {
   showError,
 } from '../../components';
 import {
+  getColumnLabel,
   validate,
 } from '../../utils';
 
@@ -25,7 +26,7 @@ export const createCopyRow = (parent, index, options, input, output) => {
       <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
         ${options.map((column) => `
           <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
-            ${column.name}
+            ${getColumnLabel(column)}
           </option>`).join(' ')}
       </select>
       <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />

@@ -2,14 +2,76 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 33:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
+// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -81,70 +143,14 @@ const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?ap
   },
 }).then((response) => response.json());
 
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
 
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
+  return `${column.name} (C${colIdSuffix})`;
 };
 
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -158,159 +164,194 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
 
-const lookupProductItem = (app) => {
+const getRequiredValue = (id, errorMessage) => {
+  const { value } = document.getElementById(id);
+  if (!value) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+};
+
+const fillSelect = (options, id, value) => {
+  const select = document.getElementById(id);
+  if (value) {
+    select.value = value;
+  }
+  select.innerHTML = '';
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.text = getColumnLabel(item);
+    if (item.id === value) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+};
+
+const createMappingRow = (index, from, to) => {
+  let lastRowIndex = 0;
+  // remove existing ADD button and add REMOVE button to last col of the row
+  const addButton = document.getElementById('add-button');
+  if (addButton) {
+    // get data-row-index from the ADD button and add delete button to this row
+    lastRowIndex = addButton.getAttribute('data-row-index');
+    addButton.remove();
+    document
+      .getElementById(`row-${lastRowIndex}`)
+      .children[3]
+      .appendChild(getDeleteButton(lastRowIndex));
+  }
+
+  const row = document.createElement('div');
+  row.classList.add('row');
+  row.id = `row-${index}`;
+  row.innerHTML = `
+    <div class="col button-col">
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Input column" value="${from || ''}" />
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Output column" value="${to || ''}" />
+    </div>
+    <div class="col button-col">
+    </div>`;
+  row.children[0].appendChild(getAddButton(index));
+  document.getElementById('mapping').appendChild(row);
+
+  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      document.getElementById(`row-${lastRowIndex}`).remove();
+      // replace delete button with add button if there is only one row left
+      if (document.getElementsByClassName('row').length === 1) {
+        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+      }
+    });
+  }
+  document.getElementById('add-button').addEventListener('click', () => {
+    createMappingRow(index + 1);
+  });
+};
+
+const loockupSpreadsheet = (app) => {
   if (!app) return;
 
+  let attachments = [];
   let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
-    } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
-    }
-  };
 
-  app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns, stream },
-      settings,
-    } = config;
+  app.listen('config', async (config) => {
+    try {
+      const {
+        context: {
+          stream: { id: streamId },
+          available_columns: availableColumns,
+        },
+        settings,
+      } = config;
 
-    const hasProduct = 'product' in stream.context;
-    columns = availableColumns;
-    const criteria = {
-      mpn: 'CloudBlue Item MPN',
-      id: 'CloudBlue Item ID',
-    };
+      attachments = await getAttachments(streamId);
+      columns = availableColumns;
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
-    hideComponent('loader');
-    showComponent('app');
+      if (settings) {
+        const {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumnName,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        } = settings;
 
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
-    });
-
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = column.name;
-      document.getElementById('column').appendChild(option);
-
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
-    });
-
-    if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
-    }
-
-    if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
-      document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
+        const inputColumn = columns.find((item) => item.name === inputColumnName);
+        fillSelect(columns, 'input-column', inputColumn.id);
+        const attachmentFound = attachments.find((item) => item.file === file);
+        let fileId = null;
+        if (attachmentFound == null) {
+          const fileName = file.split('/').pop();
+          showError(`The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
+        } else {
+          fileId = attachmentFound.id;
+        }
+        fillSelect(attachments, 'attachment', fileId);
+        document.getElementById('attachment-column').value = attachmentColumn;
+        document.getElementById('sheet').value = sheet;
+        mapping.forEach((item, index) => {
+          createMappingRow(index, item.from, item.to);
+        });
       } else {
-        document.getElementById('fail').checked = true;
+        fillSelect(columns, 'input-column');
+        fillSelect(attachments, 'attachment');
+        createMappingRow(0);
       }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
-      } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
-      }
-    }
-
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
+    } catch (error) {
+      showError(error);
+    } finally {
+      hideComponent('loader');
+      showComponent('app');
     }
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
-
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
-    }
-
-    const data = {
-      settings: {
-        product_id: productId,
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
-      },
-      columns: {
-        input,
-        output: [
-          'product.id',
-          'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
-          'item.commitment',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
-      },
-    };
+    hideError();
 
     try {
-      const overview = await validate('lookup_product_item', data);
+      const fileId = getRequiredValue('attachment', 'Please select attachment');
+      const { file } = attachments.find((item) => item.id === fileId);
+      const sheet = document.getElementById('sheet').value;
+      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
+      const inputColumn = columns.find((item) => item.id === inputColumnId);
+      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+
+      const outputColumns = [];
+      const mapping = [];
+      const rows = document.querySelectorAll('#mapping .row');
+      rows.forEach((row) => {
+        const from = row.children[1].children[0].value;
+        const to = row.children[2].children[0].value;
+        if (from && to) {
+          mapping.push({ from, to });
+          outputColumns.push({
+            name: to,
+          });
+        } else {
+          showError('Please fill all mapping rows');
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const data = {
+        settings: {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumn.name,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        },
+        columns: {
+          input: [inputColumn],
+          output: outputColumns,
+        },
+      };
+
+      const overview = await validate('attachment_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
+    } catch (error) {
+      showError(error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
 
 
 /***/ })
@@ -402,7 +443,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			264: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -452,7 +493,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

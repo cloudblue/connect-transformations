@@ -13,6 +13,7 @@ import {
   showError,
 } from '../../components';
 import {
+  getColumnLabel,
   validate,
 } from '../../utils';
 
@@ -58,7 +59,7 @@ export const filterRow = (app) => {
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
-      option.text = column.name;
+      option.text = getColumnLabel(column);
       document.getElementById('column').appendChild(option);
     });
 
@@ -106,13 +107,12 @@ export const filterRow = (app) => {
     hideComponent('app');
 
     const inputSelector = document.getElementById('column');
-    const selectedColumn = inputSelector.options[inputSelector.selectedIndex].text;
     const inputColumn = columns.find((column) => column.id === inputSelector.value);
     const matchCondition = document.getElementById('match').checked;
     data.columns.input.push(inputColumn);
     data.columns.output.push(
       {
-        name: `${selectedColumn}_INSTRUCTIONS`,
+        name: `${inputColumn.name}_INSTRUCTIONS`,
         type: 'string',
         output: false,
       },
@@ -120,7 +120,7 @@ export const filterRow = (app) => {
 
     const inputValue = document.getElementById('value');
     data.settings = {
-      from: selectedColumn,
+      from: inputColumn.name,
       value: inputValue.value,
       match_condition: matchCondition,
       additional_values: [],

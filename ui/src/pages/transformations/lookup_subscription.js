@@ -8,6 +8,7 @@ import '../../../styles/index.css';
 import '../../../styles/lookup.css';
 import '../../../styles/app.styl';
 import {
+  getColumnLabel,
   getLookupSubscriptionParameters,
   validate,
 } from '../../utils';
@@ -59,7 +60,7 @@ export const lookupSubscription = (app) => {
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
-      option.text = column.name;
+      option.text = getColumnLabel(column);
       document.getElementById('column').appendChild(option);
     });
 
