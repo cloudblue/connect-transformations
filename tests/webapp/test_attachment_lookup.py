@@ -61,11 +61,15 @@ async def test_get_excel_attachments(
     data = response.json()
     assert len(data) == 2
     assert {
-        'file': '/some/path/to/file.xlsx', 'id': 'MFL-0001', 'name': 'file.xlsx',
-    } in data
+        'file': '/public/v1/media/folders/streams_attachments/stream_id/files/MFL-0001',
+        'id': 'MFL-0001',
+        'name': 'file.xlsx',
+    } in data, data
     assert {
-        'id': 'MFL-0002', 'file': '/another/path/to/file-002.xlsx', 'name': 'file-002.xlsx',
-    } in data
+        'id': 'MFL-0002',
+        'file': '/public/v1/media/folders/streams_attachments/stream_id/files/MFL-0002',
+        'name': 'file-002.xlsx',
+    } in data, data
 
 
 def test_validate_attachment_lookup_invalid_data(test_client_factory):
