@@ -133,7 +133,7 @@ class AttachmentLookupWebAppMixin:
             StreamAttachment(
                 id=file['id'],
                 name=file['name'],
-                file=file['file'],
+                file=f'/public/v1/media/folders/streams_attachments/{stream_id}/files/{file["id"]}',
             )
             async for file in files.filter(query)
         ]
