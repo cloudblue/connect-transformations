@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -88,6 +86,38 @@ const getColumnLabel = (column) => {
   return `${column.name} (C${colIdSuffix})`;
 };
 
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -150,7 +180,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -164,159 +194,144 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
-
-const lookupProductItem = (app) => {
-  if (!app) return;
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
 
   let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
-    } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
-    }
+  let currencies = {};
+
+  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
+    const selectCurrencyColumnSelect = document.getElementById(elemId);
+    selectCurrencyColumnSelect.innerHTML = '';
+
+    currencies.forEach(currency => {
+      const isSelected = selectedOption && currency.code === selectedOption;
+      const isDisabled = disabledOption && currency.code === disabledOption;
+
+      const option = document.createElement('option');
+      option.value = currency.code;
+      option.text = `${currency.code} • ${currency.description}`;
+      option.selected = isSelected;
+      option.disabled = isDisabled;
+      selectCurrencyColumnSelect.appendChild(option);
+    });
   };
 
-  app.listen('config', (config) => {
+  app.listen('config', async config => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = {
-      mpn: 'CloudBlue Item MPN',
-      id: 'CloudBlue Item ID',
-    };
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+
+    columns.forEach(column => {
+      const isSelected = settings && column.name === settings.from.column;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
+
+      inputColumnSelect.innerHTML += option;
+    });
+
+    let selectedToCurrency;
+    let selectedFromCurrency;
+
+    currencies = await getCurrencies();
+
+    if (settings) {
+      outputColumnInput.value = settings.to.column;
+
+      selectedFromCurrency = settings.from.currency;
+      selectedToCurrency = settings.to.currency;
+    } else {
+      [selectedFromCurrency] = [currencies[0].code];
+      [selectedToCurrency] = [currencies[1].code];
+    }
+
+    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
+    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
+
     hideComponent('loader');
     showComponent('app');
 
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+
+    fromCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
     });
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
-
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
+    toCurrency.addEventListener('change', () => {
+      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
     });
-
-    if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
-    }
-
-    if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
-      document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
-      } else {
-        document.getElementById('fail').checked = true;
-      }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
-      } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
-      }
-    }
-
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
-    }
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
-
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
-    }
-
     const data = {
-      settings: {
-        product_id: productId,
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
-      },
+      settings: {},
       columns: {
-        input,
-        output: [
-          'product.id',
-          'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
-          'item.commitment',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        input: [],
+        output: [],
       },
     };
 
-    try {
-      const overview = await validate('lookup_product_item', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+    const formElements = document.forms.convertCurrency.elements;
+
+    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+    const outputColumnValue = formElements.outputColumn.value;
+
+    if (outputColumnValue === inputColumn.name) {
+      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      showError('Output column name is required.');
+    } else {
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings = {
+        from: {
+          currency: currencyFromValue,
+          column: inputColumn.name,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      };
+
+      try {
+        const overview = await validate('currency_conversion', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        showError(e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+  .then(convert);
 
 
 /***/ })
@@ -408,7 +423,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -458,7 +473,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

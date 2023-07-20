@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 491:
+/***/ 755:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -86,6 +86,38 @@ const getColumnLabel = (column) => {
   return `${column.name} (C${colIdSuffix})`;
 };
 
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -148,7 +180,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -162,32 +194,15 @@ All rights reserved.
 
 
 
-const convert = (app) => {
+
+const vatRate = (app) => {
   if (!app) {
     return;
   }
 
   let columns = [];
-  let currencies = {};
 
-  const createCurrencyColumnOptions = (elemId, selectedOption, disabledOption) => {
-    const selectCurrencyColumnSelect = document.getElementById(elemId);
-    selectCurrencyColumnSelect.innerHTML = '';
-
-    currencies.forEach(currency => {
-      const isSelected = selectedOption && currency.code === selectedOption;
-      const isDisabled = disabledOption && currency.code === disabledOption;
-
-      const option = document.createElement('option');
-      option.value = currency.code;
-      option.text = `${currency.code} • ${currency.description}`;
-      option.selected = isSelected;
-      option.disabled = isDisabled;
-      selectCurrencyColumnSelect.appendChild(option);
-    });
-  };
-
-  app.listen('config', async config => {
+  app.listen('config', config => {
     const {
       context: { available_columns: availableColumns },
       settings,
@@ -197,93 +212,62 @@ const convert = (app) => {
 
     const inputColumnSelect = document.getElementById('input-column');
     const outputColumnInput = document.getElementById('output-column');
-
     columns.forEach(column => {
-      const isSelected = settings && column.name === settings.from.column;
+      const isSelected = settings && column.id === settings.from;
       const colLabel = getColumnLabel(column);
-      const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
-
+      const option = isSelected
+        ? `<option value="${column.id}" selected>${colLabel}</option>`
+        : `<option value="${column.id}">${colLabel}</option>`;
       inputColumnSelect.innerHTML += option;
     });
 
-    let selectedToCurrency;
-    let selectedFromCurrency;
-
-    currencies = await getCurrencies();
-
     if (settings) {
-      outputColumnInput.value = settings.to.column;
-
-      selectedFromCurrency = settings.from.currency;
-      selectedToCurrency = settings.to.currency;
+      outputColumnInput.value = settings.to;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
     } else {
-      [selectedFromCurrency] = [currencies[0].code];
-      [selectedToCurrency] = [currencies[1].code];
+      document.getElementById('leave_empty').checked = true;
     }
-
-    createCurrencyColumnOptions('from-currency', selectedFromCurrency, selectedToCurrency);
-    createCurrencyColumnOptions('to-currency', selectedToCurrency, selectedFromCurrency);
-
     hideComponent('loader');
     showComponent('app');
-
-    const fromCurrency = document.getElementById('from-currency');
-    const toCurrency = document.getElementById('to-currency');
-
-    fromCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('to-currency', toCurrency.value, fromCurrency.value);
-    });
-
-    toCurrency.addEventListener('change', () => {
-      createCurrencyColumnOptions('from-currency', fromCurrency.value, toCurrency.value);
-    });
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
-      },
-    };
-
-    const formElements = document.forms.convertCurrency.elements;
-
-    const inputColumnValue = formElements.inputColumn.value;
+    const inputColumnValue = document.getElementById('input-column').value;
     const inputColumn = columns.find(column => column.id === inputColumnValue);
-
-    const outputColumnValue = formElements.outputColumn.value;
+    const outputColumnValue = document.getElementById('output-column').value;
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
     if (outputColumnValue === inputColumn.name) {
       showError('This fields may not be equal: columns.input.name, columns.output.name.');
     } else if (outputColumnValue === '' || outputColumnValue === null) {
       showError('Output column name is required.');
     } else {
-      const outputColumn = {
-        name: outputColumnValue,
-        type: 'decimal',
-        description: '',
-      };
-
-      const currencyFromValue = formElements.fromCurrency.value;
-      const currencyToValue = formElements.toCurrency.value;
-
-      data.columns.input.push(inputColumn);
-      data.columns.output.push(outputColumn);
-      data.settings = {
-        from: {
-          currency: currencyFromValue,
-          column: inputColumn.name,
+      const data = {
+        settings: {
+          from: inputColumn.name,
+          to: outputColumnValue,
+          action_if_not_found: actionIfNotFound,
         },
-        to: {
-          currency: currencyToValue,
-          column: outputColumn.name,
+        columns: {
+          input: [
+            inputColumn,
+          ],
+          output: [
+            {
+              name: outputColumnValue,
+              type: 'integer',
+              description: '',
+            },
+          ],
         },
       };
 
       try {
-        const overview = await validate('currency_conversion', data);
+        const overview = await validate('vat_rate', data);
         if (overview.error) {
           throw new Error(overview.error);
         }
@@ -299,7 +283,7 @@ const convert = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(vatRate);
 
 
 /***/ })
@@ -391,7 +375,7 @@ const convert = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			496: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -441,7 +425,7 @@ const convert = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

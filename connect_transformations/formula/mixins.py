@@ -3,10 +3,8 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-from datetime import datetime
 from typing import Dict, List
 
-import jq
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
@@ -14,11 +12,12 @@ from connect_transformations.formula.models import Configuration
 from connect_transformations.formula.utils import (
     DROP_REGEX,
     clear_formula,
+    compile_formula,
     extract_input,
     validate_formula,
 )
 from connect_transformations.models import Error, StreamsColumn, ValidationResult
-from connect_transformations.utils import cast_value_to_type, deep_convert_type
+from connect_transformations.utils import cast_value_to_type
 
 
 class FormulaTransformationMixin:
@@ -36,7 +35,11 @@ class FormulaTransformationMixin:
                 if DROP_REGEX.findall(formula):
                     formula = f'def drop_row: "#INSTRUCTION/DELETE_ROW"; {formula}'
                 clean_formula = clear_formula(formula)
-                self.jq_expressions[expression['to']] = jq.compile(clean_formula)
+                self.jq_expressions[expression['to']] = compile_formula(
+                    clean_formula,
+                    stream=self.transformation_request['stream'],
+                    batch=self.transformation_request['batch'],
+                )
 
             self.column_converters = []
 
@@ -45,21 +48,6 @@ class FormulaTransformationMixin:
             for col_name in row:
                 if columns_types[col_name] == 'datetime':
                     self.column_converters.append((col_name, str))
-
-            self.meta = deep_convert_type(
-                {
-                    'meta': {
-                        'stream': {
-                            'context': self.transformation_request['stream'].get('context'),
-                        },
-                        'batch': {
-                            'context': self.transformation_request['batch'].get('context'),
-                        },
-                    },
-                },
-                datetime,
-                str,
-            )
 
     @transformation(
         name='Formula',
@@ -83,15 +71,13 @@ class FormulaTransformationMixin:
 
         trfn_settings = self.transformation_request['transformation']['settings']
 
-        formula_input = {**self.meta, **row}
-
         for col_name, converter in self.column_converters:
-            formula_input[col_name] = converter(formula_input[col_name])
+            row[col_name] = converter(row[col_name])
 
         result = {}
         for expression in trfn_settings['expressions']:
             try:
-                value = self.jq_expressions[expression['to']].input(formula_input).first()
+                value = self.jq_expressions[expression['to']].input(row).first()
                 column_type = expression.get('type', 'string')
                 parameters = {'value': value, 'type': column_type}
                 if column_type == 'decimal':

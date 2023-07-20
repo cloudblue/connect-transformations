@@ -447,6 +447,38 @@ const getColumnLabel = (column) => {
   return `${column.name} (C${colIdSuffix})`;
 };
 
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -630,24 +662,32 @@ const formula = (app) => {
 
   let rowIndex = 0;
   let columns = [];
+  let stream = null;
 
   app.listen('config', (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { stream: currentStream, available_columns: availableColumns },
       settings,
     } = config;
 
     columns = availableColumns;
-    /* eslint-disable-next-line */
-    const pattern = /[ .,|*:;{}[\]+\/%]/;
-    suggestor = { '.': availableColumns.map(col => {
-      const colLabel = getColumnLabel(col);
+    stream = currentStream;
+    const variables = getContextVariables(stream);
 
-      return {
-        title: colLabel,
-        value: `."${colLabel}"`,
-      };
-    }) };
+    suggestor = {
+      '.': availableColumns.map(col => {
+        const colLabel = getColumnLabel(col);
+
+        return {
+          title: colLabel,
+          value: `."${colLabel}"`,
+        };
+      }),
+      $: variables.map(variable => ({
+        title: variable,
+        value: `$${variable}`,
+      })),
+    };
 
     const content = document.getElementById('content');
     if (settings && settings.expressions) {
@@ -677,6 +717,7 @@ const formula = (app) => {
   app.listen('save', async () => {
     const data = {
       settings: { expressions: [] },
+      stream,
       columns: {
         input: columns,
         output: [],

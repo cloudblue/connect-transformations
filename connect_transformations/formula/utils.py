@@ -5,6 +5,7 @@
 #
 import re
 from collections import defaultdict
+from datetime import datetime
 
 import jq
 from fastapi.responses import JSONResponse
@@ -12,12 +13,18 @@ from fastapi.responses import JSONResponse
 from connect_transformations.utils import (
     _cast_mapping,
     build_error_response,
+    deep_convert_type,
     does_not_contain_required_keys,
     has_invalid_basic_structure,
 )
 
 
-JQ_FIELDS_REGEX = re.compile(r'(\.([a-z_][a-z0-9_]*))|(\."(.+?)")|(\.\["(.+?)"\])', re.I)
+COLUMN_PATTERN = '|'.join([
+    r'(\.([a-z_][a-z0-9_]*))',
+    r'(\."(.+?)")',
+    r'(\.\["(.+?)"\])',
+])
+JQ_FIELDS_REGEX = re.compile(rf'(^|[^\w]){COLUMN_PATTERN}', re.I)
 DROP_REGEX = re.compile(r'(?<![."])drop_row(?![."])', re.I)
 COL_ID_REGEX = re.compile(r'\."([^"]+) \(C\d{3,4}\)"')
 
@@ -62,21 +69,20 @@ def validate_formula(data):  # noqa: CCR001
         if expression['to'] in output_columns:
             return build_error_response('Each `output column` must be unique.')
 
-        for match in JQ_FIELDS_REGEX.findall(expression['formula']):
-            var_name = match[1] or match[3] or match[5]
-            var = column_converter(var_name)
-            if not var:
+        for col_value in find_all_columns(expression['formula']):
+            col = column_converter(col_value)
+            if not col:
                 return build_error_response(
                     (
                         f'Settings contains formula `{expression["formula"]}` '
-                        f'with column `{var_name}` that does not exist on columns.input.'
+                        f'with column `{col_value}` that does not exist on columns.input.'
                     ),
                 )
         try:
             formula = expression['formula']
             if DROP_REGEX.findall(formula):
                 formula = f'def drop_row: "#DROP_ROW"; {formula}'
-            jq.compile(formula)
+            compile_formula(formula, data['stream'])
         except ValueError as e:
             return build_error_response(
                 f'Settings contains invalid formula `{expression["formula"]}: {str(e)}`.',
@@ -113,8 +119,7 @@ def extract_input(data):
     column_converter = get_expression_column_converter(data['columns'])
 
     for expression in data['expressions']:
-        for match in JQ_FIELDS_REGEX.findall(expression['formula']):
-            col_value = match[1] or match[3] or match[5]
+        for col_value in find_all_columns(expression['formula']):
             col = column_converter(col_value)
             if not col:
                 return JSONResponse(
@@ -157,3 +162,39 @@ def get_expression_column_converter(columns):
 
 def clear_formula(expression):
     return COL_ID_REGEX.sub(r'."\1"', expression)
+
+
+def compile_formula(expression, stream, batch=None):
+    return jq.compile(
+        expression,
+        args=get_context_variables(stream, batch),
+    )
+
+
+def get_context_variables(stream, batch):
+    context = stream.get('context', {})
+
+    if batch:
+        context.update(batch.get('context'))
+    elif stream.get('type') == 'billing':
+        context.update({
+            'period': {
+                'start': datetime.now(),
+                'end': datetime.now(),
+            },
+        })
+    elif stream.get('context', {}).get('pricelist'):
+        context.update({
+            'pricelist_version': {
+                'id': 'id',
+            },
+        })
+
+    context = deep_convert_type(context, datetime, str)
+
+    return {'context': context}
+
+
+def find_all_columns(formula):
+    for match in JQ_FIELDS_REGEX.findall(formula):
+        yield match[2] or match[4] or match[6]
