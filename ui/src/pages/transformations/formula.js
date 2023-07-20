@@ -10,6 +10,7 @@ import '../../../styles/app.styl';
 import '../../../styles/formula.css';
 import {
   getColumnLabel,
+  getContextVariables,
   getJQInput,
   validate,
 } from '../../utils';
@@ -126,24 +127,32 @@ export const formula = (app) => {
 
   let rowIndex = 0;
   let columns = [];
+  let stream = null;
 
   app.listen('config', (config) => {
     const {
-      context: { available_columns: availableColumns },
+      context: { stream: currentStream, available_columns: availableColumns },
       settings,
     } = config;
 
     columns = availableColumns;
-    /* eslint-disable-next-line */
-    const pattern = /[ .,|*:;{}[\]+\/%]/;
-    suggestor = { '.': availableColumns.map(col => {
-      const colLabel = getColumnLabel(col);
+    stream = currentStream;
+    const variables = getContextVariables(stream);
 
-      return {
-        title: colLabel,
-        value: `."${colLabel}"`,
-      };
-    }) };
+    suggestor = {
+      '.': availableColumns.map(col => {
+        const colLabel = getColumnLabel(col);
+
+        return {
+          title: colLabel,
+          value: `."${colLabel}"`,
+        };
+      }),
+      $: variables.map(variable => ({
+        title: variable,
+        value: `$${variable}`,
+      })),
+    };
 
     const content = document.getElementById('content');
     if (settings && settings.expressions) {
@@ -173,6 +182,7 @@ export const formula = (app) => {
   app.listen('save', async () => {
     const data = {
       settings: { expressions: [] },
+      stream,
       columns: {
         input: columns,
         output: [],

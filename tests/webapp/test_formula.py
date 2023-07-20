@@ -9,10 +9,24 @@ from connect_transformations.models import StreamsColumn
 from connect_transformations.webapp import TransformationsWebApplication
 
 
+COMMON_BODY = {
+    'stream': {
+        'id': 'STR-123',
+        'type': 'billing',
+        'context': {
+            'account': {
+                'id': 'ACC-1',
+            },
+        },
+    },
+}
+
+
 def test_validate_formula(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -63,6 +77,7 @@ def test_validate_formula_the_same_name(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -97,6 +112,7 @@ def test_validate_formula_invalid_input(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -121,6 +137,7 @@ def test_validate_formula_invalid_expression_field(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': {
                 'to': 'Price with Tax',
@@ -164,6 +181,7 @@ def test_validate_formula_invalid_expression(
     expression,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 expression,
@@ -194,6 +212,7 @@ def test_validate_formula_duplicated_input_error(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -235,6 +254,7 @@ def test_validate_formula_edit_formula(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -270,6 +290,7 @@ def test_validate_formula_non_existing_column_parenthesis(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -306,6 +327,7 @@ def test_validate_formula_non_existing_column(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -342,6 +364,7 @@ def test_validate_formula_non_existing_column_double_quote(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'settings': {
             'expressions': [
                 {
@@ -378,6 +401,16 @@ def test_validate_formula_invalid_formula(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
+        'stream': {
+            'id': 'STR-123',
+            'type': 'billing',
+            'context': {
+                'account': {
+                    'id': 'ACC-1',
+                },
+            },
+        },
         'settings': {
             'expressions': [
                 {
@@ -402,13 +435,14 @@ def test_validate_formula_invalid_formula(
 
     assert response.status_code == 400
     data = response.json()
-    assert 'jq: error:' in data['error']
+    assert 'jq: error:' in data['error'], data['error']
 
 
 def test_extract_formula_input(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'expressions': [
             {
                 'to': 'Price with Tax',
@@ -446,6 +480,7 @@ def test_extract_formula_input_dup_name_wo_suffix(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'expressions': [
             {
                 'to': 'Price with Tax',
@@ -472,6 +507,7 @@ def test_extract_formula_input_dup_name_w_suffix(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'expressions': [
             {
                 'to': 'Price with Tax',
@@ -498,6 +534,7 @@ def test_extract_formula_input_invalid_expressions(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'expressions': {
             'to': 'Price with Tax',
             'formula': '.(Price without Tax) + .(Tax)',
@@ -521,6 +558,7 @@ def test_extract_formula_input_missing_columns(
     test_client_factory,
 ):
     data = {
+        **COMMON_BODY,
         'expressions': [
             {
                 'to': 'Price with Tax',

@@ -2,76 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 414:
+/***/ 262:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: copy, createCopyRow
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
-
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -150,7 +88,101 @@ const getColumnLabel = (column) => {
   return `${column.name} (C${colIdSuffix})`;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -163,110 +195,130 @@ All rights reserved.
 
 
 
-const createCopyRow = (parent, index, options, input, output) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
-        ${options.map((column) => `
-          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
-            ${getColumnLabel(column)}
-          </option>`).join(' ')}
-      </select>
-      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-};
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
 
-const copy = (app) => {
+const lookupSubscription = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
-
-  let rowIndex = 0;
   let columns = [];
 
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns },
-      columns: { input: inputColumns, output: outputColumns },
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
+    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
+    const criteria = {
+      external_id: 'CloudBlue Subscription External ID',
+      id: 'CloudBlue Subscription ID',
+      params__value: 'Parameter Value',
+    };
 
-    const content = document.getElementById('content');
-    if (!settings) {
-      createCopyRow(content, rowIndex, columns);
-    } else {
-      settings.forEach((setting, i) => {
-        const inputColumn = inputColumns.find((column) => column.name === setting.from);
-        const outputColumn = outputColumns.find((column) => column.name === setting.to);
-        rowIndex = i;
-        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
+    hideComponent('loader');
+    showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
+      document.getElementById('criteria').appendChild(option);
+    });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      parameters.forEach((element) => {
+        const option = document.createElement('option');
+        option.value = element.id;
+        option.text = element.name;
+        document.getElementById('parameter').appendChild(option);
       });
     }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createCopyRow(content, rowIndex, columns);
+
+    if (settings) {
+      document.getElementById('criteria').value = settings.lookup_type;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
+      } else {
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('leave_empty').checked = true;
+    }
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
     });
   });
 
   app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
+    const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+
     const data = {
-      settings: [],
+      settings: {
+        lookup_type: criteria,
+        from: column.name,
+        parameter,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+      },
       columns: {
-        input: [],
-        output: [],
+        input: [column],
+        output: [
+          'product.id',
+          'product.name',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
       },
     };
-    const form = document.getElementsByClassName('list-wrapper');
-    // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const inputId = line.getElementsByTagName('select')[0].value;
-      const outputName = line.getElementsByTagName('input')[0].value;
-
-      const inputColumn = columns.find((column) => column.id === inputId);
-      const outputColumn = {
-        name: outputName,
-        type: inputColumn.type,
-        description: '',
-      };
-      const setting = {
-        from: inputColumn.name,
-        to: outputName,
-      };
-      data.settings.push(setting);
-      data.columns.input.push(inputColumn);
-      data.columns.output.push(outputColumn);
-    }
 
     try {
-      const overview = await validate('copy_columns', data);
+      const overview = await validate('lookup_subscription', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -277,9 +329,8 @@ const copy = (app) => {
   });
 };
 
-
 (0,dist/* default */.ZP)({ })
-  .then(copy);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -371,7 +422,7 @@ const copy = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			61: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -421,7 +472,7 @@ const copy = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(414)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

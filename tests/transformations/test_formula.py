@@ -6,9 +6,24 @@
 import datetime
 from decimal import Decimal
 
+import pytest
 from connect.eaas.core.enums import ResultType
 
+from connect_transformations.formula.utils import find_all_columns
 from connect_transformations.transformations import StandardTransformationsApplication
+
+
+@pytest.mark.parametrize('formula,columns', (
+    ('.a .b', ['a', 'b']),
+    ('."a.b.c" .d', ['a.b.c', 'd']),
+    ('."a.b.c" .["qwe"]', ['a.b.c', 'qwe']),
+    ('."a.b.c" .["qwe"]', ['a.b.c', 'qwe']),
+    ('."as.d"*.qwe', ['as.d', 'qwe']),
+    ('$a.b.c + .a', ['a']),
+
+))
+def test_find_all_columns(formula, columns):
+    assert list(find_all_columns(formula)) == columns
 
 
 def test_formula(mocker):
@@ -59,7 +74,7 @@ def test_formula(mocker):
                     },
                     {
                         'to': 'Billing period',
-                        'formula': '.meta.batch.context.period.start',
+                        'formula': '$context.period.start',
                     },
                 ],
             },
@@ -140,7 +155,7 @@ def test_formula_using_old_config(mocker):
     }
 
 
-def test_formula_invalid_row(mocker):
+def test_formula_invalid_operation(mocker):
     m = mocker.MagicMock()
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
@@ -170,6 +185,37 @@ def test_formula_invalid_row(mocker):
     response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
     assert response.status == ResultType.FAIL
     assert 'string ("twenty") and number (100) cannot be divided' in response.output
+
+
+def test_formula_invalid_variable(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'stream': {},
+        'batch': {},
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'Tax value',
+                        'formula': '$a / ."Price without Tax"',
+                        'ignore_errors': False,
+                        'type': 'decimal',
+                        'precision': '2',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Price without Tax', 'nullable': False},
+                ],
+            },
+        },
+    }
+
+    response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
+    assert response.status == ResultType.FAIL
+    assert 'jq: error: $a is not defined at <top-level>, line 1:' in response.output
 
 
 def test_formula_invalid_row_ignore_errors(mocker):
