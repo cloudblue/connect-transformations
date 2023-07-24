@@ -30,13 +30,12 @@ class AttachmentLookupTransformationMixin:
             self.excel_attachments_data = {}
 
             settings = self.transformation_request['transformation']['settings']
-            file_url = settings['file']
             map_by = settings['map_by']['attachment_column']
             sheet = settings.get('sheet')
             mapping = [col['from'] for col in settings['mapping']]
 
             file_url = settings['file']
-            input_file = NamedTemporaryFile(suffix=f'.{file_url.split(".")[-1]}')
+            input_file = NamedTemporaryFile(suffix='.xlsx')
             wb = None
 
             try:
