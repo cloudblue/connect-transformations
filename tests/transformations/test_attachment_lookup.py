@@ -13,7 +13,7 @@ def test_attachment_lookup(mocker, connect_client, responses):
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -23,7 +23,7 @@ def test_attachment_lookup(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
                 'map_by': {
                     'input_column': 'id',
@@ -59,7 +59,7 @@ def test_attachment_lookup_no_sheet(mocker, connect_client, responses):
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -69,7 +69,7 @@ def test_attachment_lookup_no_sheet(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'map_by': {
                     'input_column': 'id',
                     'attachment_column': 'id',
@@ -110,7 +110,7 @@ def test_attachment_lookup_api_error(mocker, connect_client, responses):
     connect_client.endpoint = 'https://cnct.example.org/public/v1'
     responses.add(
         'GET',
-        f'{connect_client.endpoint}/path/to/input.xlsx',
+        f'{connect_client.endpoint}/path/to/MFL-123-123',
         status=400,
     )
 
@@ -120,7 +120,7 @@ def test_attachment_lookup_api_error(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
                 'map_by': {
                     'input_column': 'id',
@@ -153,7 +153,7 @@ def test_attachment_lookup_invalid_sheet(mocker, connect_client, responses):
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -163,7 +163,7 @@ def test_attachment_lookup_invalid_sheet(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Daaaata',
                 'map_by': {
                     'input_column': 'id',
@@ -196,7 +196,7 @@ def test_attachment_lookup_empty(mocker, connect_client, responses):
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -206,7 +206,7 @@ def test_attachment_lookup_empty(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
                 'map_by': {
                     'input_column': 'id',
@@ -238,7 +238,7 @@ def test_attachment_lookup_map_not_found(mocker, connect_client, responses):
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -248,7 +248,7 @@ def test_attachment_lookup_map_not_found(mocker, connect_client, responses):
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
                 'map_by': {
                     'input_column': 'id',
@@ -284,7 +284,7 @@ def test_attachment_lookup_map_invalid_attachment_columns(
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
         responses.add(
             'GET',
-            f'{connect_client.endpoint}/path/to/input.xlsx',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
             body=input_file.read(),
         )
 
@@ -294,7 +294,7 @@ def test_attachment_lookup_map_invalid_attachment_columns(
     app.transformation_request = {
         'transformation': {
             'settings': {
-                'file': '/path/to/input.xlsx',
+                'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
                 'map_by': {
                     'input_column': 'id',
