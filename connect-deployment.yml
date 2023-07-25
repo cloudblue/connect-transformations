@@ -1,0 +1,9 @@
+env: production
+type: multiaccount
+package_id: com.cloudblue.transformations.stdlib
+name: CloudBlue Standard Transformations Library
+description: Standard set of transformations to be applied to the Billing Stream by CloudBlue
+overview: overview.md
+website: https://connect.cloudblue.com
+icon: icon.png
+category: Data Stream Transformations
