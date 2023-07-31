@@ -1,5 +1,5 @@
 env: production
-type: multiaccount
+type: transformations
 package_id: com.cloudblue.transformations.stdlib
 name: CloudBlue Standard Transformations Library
 description: Standard set of transformations to be applied to the Billing Stream by CloudBlue
