@@ -10,13 +10,20 @@ from connect_transformations.webapp import TransformationsWebApplication
 
 def test_validate_currency_conversion(test_client_factory):
     data = {
-        'settings': {
-            'from': {'column': 'column', 'currency': 'USD'},
-            'to': {'column': 'result', 'currency': 'EUR'},
-        },
+        'settings': [
+            {
+                'from': {'column': 'COL-123', 'currency': 'USD'},
+                'to': {'column': 'col1_eur', 'currency': 'EUR'},
+            },
+            {
+                'from': {'column': 'COL-234', 'currency': 'USD'},
+                'to': {'column': 'col2_eur', 'currency': 'EUR'},
+            },
+        ],
         'columns': {
             'input': [
-                {'name': 'column'},
+                {'id': 'COL-123', 'name': 'col1'},
+                {'id': 'COL-234', 'name': 'col2'},
             ],
             'output': [],
         },
@@ -25,15 +32,18 @@ def test_validate_currency_conversion(test_client_factory):
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/currency_conversion/validate', json=data)
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.content
     data = response.json()
 
     assert data == {
         'overview': (
-            'From Currency = USD\n'
-            'To Currency = EUR\n'
+            'From: col1 (USD)\n'
+            'To: col1_eur (EUR)\n'
+            '\n'
+            'From: col2 (USD)\n'
+            'To: col2_eur (EUR)\n'
         ),
-    }
+    }, data
 
 
 @pytest.mark.parametrize(
@@ -41,8 +51,8 @@ def test_validate_currency_conversion(test_client_factory):
     (
         {},
         {'settings': []},
-        {'settings': {}},
-        {'settings': {}, 'columns': {}},
+        {'settings': [{}]},
+        {'settings': [{}], 'columns': {}},
     ),
 )
 def test_validate_currency_conversion_settings_or_invalid(test_client_factory, data):
@@ -59,10 +69,10 @@ def test_validate_currency_conversion_settings_or_invalid(test_client_factory, d
 @pytest.mark.parametrize(
     'settings',
     (
-        {'from': {'column': 'x'}},
-        {'from': {'column': 'x', 'currency': ''}},
-        {'from': {'column': 'x', 'currency': ''}, 'to': {'column': 'y'}},
-        {'from': {'column': 'x', 'currency': ''}, 'to': {'currency': 'y'}},
+        [{'from': {'column': 'x'}}],
+        [{'from': {'column': 'x', 'currency': ''}}],
+        [{'from': {'column': 'x', 'currency': ''}, 'to': {'column': 'y'}}],
+        [{'from': {'column': 'x', 'currency': ''}, 'to': {'currency': 'y'}}],
     ),
 )
 def test_validate_currency_conversion_invalid_format(test_client_factory, settings):
@@ -82,10 +92,10 @@ def test_validate_currency_conversion_invalid_format(test_client_factory, settin
 
 def test_validate_currency_conversion_equal_currencies(test_client_factory):
     data = {
-        'settings': {
+        'settings': [{
             'from': {'column': 'columnA', 'currency': 'USD'},
             'to': {'column': 'columnB', 'currency': 'USD'},
-        },
+        }],
         'columns': {
             'input': [
                 {'name': 'columnA'},
@@ -109,10 +119,10 @@ def test_validate_currency_conversion_equal_currencies(test_client_factory):
 
 def test_validate_currency_conversion_invalid_column(test_client_factory):
     data = {
-        'settings': {
+        'settings': [{
             'from': {'column': 'column', 'currency': 'USD'},
             'to': {'column': 'columnB', 'currency': 'EUR'},
-        },
+        }],
         'columns': {
             'input': [
                 {'name': 'otherColumn'},

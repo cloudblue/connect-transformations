@@ -30,12 +30,55 @@ def test_currency_conversion_first(mocker, responses):
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
         'transformation': {
+            'settings': [{
+                'from': {'column': 'C123', 'currency': 'USD'},
+                'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
+            }],
+            'columns': {
+                'input': [{'id': 'C123', 'name': 'Price', 'nullable': False}],
+            },
+        },
+    }
+
+    response = app.currency_conversion(
+        {
+            'Price': '22.5',
+        },
+    )
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'Price(Eur)': (
+            Decimal('22.5') * Decimal(0.92343)
+        ).quantize(
+            Decimal('.00001'),
+        ),
+    }
+
+
+def test_currency_conversion_single_backward_compt(mocker, responses):
+    params = {
+        'symbols': 'EUR',
+        'base': 'USD',
+    }
+    responses.add(
+        'GET',
+        'https://api.exchangerate.host/latest',
+        match=[matchers.query_param_matcher(params)],
+        json={
+            'success': True,
+            'rates': {'EUR': 0.92343},
+        },
+    )
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
             'settings': {
-                'from': {'column': 'Price', 'currency': 'USD'},
+                'from': {'column': 'C123', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
             },
             'columns': {
-                'input': [{'name': 'Price', 'nullable': False}],
+                'input': [{'id': 'C123', 'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -73,12 +116,12 @@ def test_currency_conversion(mocker, responses):
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
         'transformation': {
-            'settings': {
-                'from': {'column': 'Price', 'currency': 'USD'},
+            'settings': [{
+                'from': {'column': 'COL123', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
-            },
+            }],
             'columns': {
-                'input': [{'name': 'Price', 'nullable': False}],
+                'input': [{'id': 'COL123', 'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -113,12 +156,12 @@ def test_currency_conversion_first_http_error(mocker, responses):
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
         'transformation': {
-            'settings': {
-                'from': {'column': 'Price', 'currency': 'USD'},
+            'settings': [{
+                'from': {'column': 'COL123', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
-            },
+            }],
             'columns': {
-                'input': [{'name': 'Price', 'nullable': False}],
+                'input': [{'id': 'COL123', 'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -129,7 +172,7 @@ def test_currency_conversion_first_http_error(mocker, responses):
         'An error occurred while requesting '
         'https://api.exchangerate.host/latest with params'
         " {'symbols': 'EUR', 'base': 'USD'}"
-    ) in response.output
+    ) in response.output, response.output
 
 
 def test_currency_conversion_first_unexpected_response(mocker, responses):
@@ -150,12 +193,12 @@ def test_currency_conversion_first_unexpected_response(mocker, responses):
     app = StandardTransformationsApplication(m, m, m)
     app.transformation_request = {
         'transformation': {
-            'settings': {
-                'from': {'column': 'Price', 'currency': 'USD'},
+            'settings': [{
+                'from': {'column': 'COL1', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
-            },
+            }],
             'columns': {
-                'input': [{'name': 'Price', 'nullable': False}],
+                'input': [{'id': 'COL1', 'name': 'Price', 'nullable': False}],
             },
         },
     }
@@ -175,12 +218,12 @@ def test_currency_conversion_null_value(mocker):
     app.currency_conversion_rates = {'a': 'b'}
     app.transformation_request = {
         'transformation': {
-            'settings': {
-                'from': {'column': 'Price', 'currency': 'USD'},
+            'settings': [{
+                'from': {'column': 'COL1', 'currency': 'USD'},
                 'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
-            },
+            }],
             'columns': {
-                'input': [{'name': 'Price', 'nullable': True}],
+                'input': [{'id': 'COL1', 'name': 'Price', 'nullable': True}],
             },
         },
     }
