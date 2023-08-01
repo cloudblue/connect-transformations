@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -26,5 +26,5 @@ class Settings(BaseModel):
 
 
 class Configuration(BaseModel):
-    settings: Optional[Settings]
+    settings: Optional[List[Settings]]
     columns: Optional[Columns]

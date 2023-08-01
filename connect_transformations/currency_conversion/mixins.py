@@ -4,54 +4,41 @@
 # All rights reserved.
 #
 from decimal import Decimal
+from functools import cached_property
 from typing import List
 
 import httpx
-import requests
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.responses import RowTransformationResponse
 
-from connect_transformations.currency_conversion.exceptions import CurrencyConversionError
 from connect_transformations.currency_conversion.models import Configuration, Currency
-from connect_transformations.currency_conversion.utils import validate_currency_conversion
+from connect_transformations.currency_conversion.utils import (
+    load_currency_rate,
+    validate_currency_conversion,
+)
 from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
 
 
 class CurrencyConverterTransformationMixin:
 
-    def preload_currency_conversion_rates(self, currency_from, currency_to):
-        with self.lock():
-            if hasattr(self, 'currency_conversion_rates'):
-                return
+    def get_currency_rate(self, currency_from, currency_to):
+        if not hasattr(self, '_currency_rates'):
+            self._currency_rates = {}
 
-            self.currency_conversion_rates = {}
+        key = (currency_from, currency_to)
 
-            try:
-                url = 'https://api.exchangerate.host/latest'
-                params = {
-                    'symbols': currency_to,
-                    'base': currency_from,
-                }
+        if key not in self._currency_rates:
+            with self.lock():
+                if key not in self._currency_rates:
+                    self._currency_rates[key] = load_currency_rate(currency_from, currency_to)
 
-                response = requests.get(
-                    url,
-                    params=params,
-                )
-                response.raise_for_status()
-                data = response.json()
+        return self._currency_rates[key]
 
-                if not data['success']:
-                    raise CurrencyConversionError(
-                        f'Unexpected response calling {url}'
-                        f' with params {params}',
-                    )
-                self.currency_conversion_rates[currency_to] = Decimal(data['rates'][currency_to])
-            except requests.RequestException as exc:
-                raise CurrencyConversionError(
-                    f'An error occurred while requesting {url} with '
-                    f'params {params}: {exc}',
-                )
+    @cached_property
+    def input_columns(self):
+        input_columns = self.transformation_request['transformation']['columns']['input']
+        return {c['id']: c for c in input_columns}
 
     @transformation(
         name='Convert Currency',
@@ -65,32 +52,29 @@ class CurrencyConverterTransformationMixin:
         self,
         row,
     ):
-        trfn_settings = self.transformation_request['transformation']['settings']
-        value = row[trfn_settings['from']['column']]
-        currency = trfn_settings['from']['currency']
-        currency_to = trfn_settings['to']['currency']
+        return_values = {}
 
-        try:
-            self.preload_currency_conversion_rates(
-                currency,
-                currency_to,
-            )
-        except Exception as e:
-            return RowTransformationResponse.fail(output=str(e))
+        for conv_settings in self.transformation_request['transformation']['settings']:
+            col_name = self.input_columns[conv_settings['from']['column']]['name']
+            value = row[col_name]
+            currency_from = conv_settings['from']['currency']
+            currency_to = conv_settings['to']['currency']
 
-        if is_input_column_nullable(
-            self.transformation_request['transformation']['columns']['input'],
-            trfn_settings['from']['column'],
-        ) and not value:
-            return RowTransformationResponse.skip()
+            if (not value) and is_input_column_nullable(
+                self.transformation_request['transformation']['columns']['input'],
+                col_name,
+            ):
+                return RowTransformationResponse.skip()
 
-        return RowTransformationResponse.done({
-            trfn_settings['to']['column']: (
-                Decimal(value) * self.currency_conversion_rates[currency_to]
-            ).quantize(
-                Decimal('.00001'),
-            ),
-        })
+            try:
+                return_values[conv_settings['to']['column']] = (
+                    Decimal(value) * self.get_currency_rate(currency_from, currency_to)
+                ).quantize(
+                    Decimal('.00001'),
+                )
+            except Exception as e:
+                return RowTransformationResponse.fail(output=str(e))
+        return RowTransformationResponse.done(return_values)
 
 
 class CurrencyConversionWebAppMixin:
