@@ -149,6 +149,18 @@ All rights reserved.
     flex-direction: column;
 }
 
+select,
+input,
+textarea,
+::placeholder {
+    font-size: 14px;
+}
+
+.card-header {
+    font-size: 14px;
+    font-weight: bold;
+}
+
 select {
     padding: 8px;
     border: none;
