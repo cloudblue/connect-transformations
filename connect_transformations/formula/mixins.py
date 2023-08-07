@@ -46,7 +46,7 @@ class FormulaTransformationMixin:
             input_columns = self.transformation_request['transformation']['columns']['input']
             columns_types = {column['name']: column.get('type') for column in input_columns}
             for col_name in row:
-                if columns_types[col_name] == 'datetime':
+                if columns_types.get(col_name) == 'datetime':
                     self.column_converters.append((col_name, str))
 
     @transformation(
@@ -63,7 +63,6 @@ class FormulaTransformationMixin:
         self,
         row: Dict,
     ):
-
         try:
             self.precompile(row)
         except Exception as e:
