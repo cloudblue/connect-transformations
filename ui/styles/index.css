@@ -143,6 +143,14 @@ All rights reserved.
     margin: 8px auto;
 }
 
+.form-wrapper {
+    margin: 18px auto;
+}
+
+.form-wrapper:first-child {
+    margin-top: 0;
+}
+
 .main-container {
     width: 466px;
     display: flex;
@@ -189,7 +197,6 @@ button.delete-button {
     height: 60px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
 }
 
 .convert-currency select {
