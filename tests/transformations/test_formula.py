@@ -91,7 +91,11 @@ def test_formula(mocker):
 
     date = datetime.datetime.now()
     response = app.formula({
-        'Price without Tax': 100, 'Tax': 20, 'Additional fee': 0.2, 'Created': date,
+        'Price without Tax': 100,
+        'Tax': 20,
+        'Additional fee': 0.2,
+        'Created': date,
+        'Redundant Column': None,
     })
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
