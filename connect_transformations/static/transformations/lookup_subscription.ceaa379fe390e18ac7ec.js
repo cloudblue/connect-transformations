@@ -257,7 +257,13 @@ const lookupSubscription = (app) => {
       document.getElementById('column').value = columnId;
       document.getElementById('prefix').value = settings.prefix;
       if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
+        document.getElementById('not_found_leave_empty').checked = true;
+      } else {
+        document.getElementById('not_found_fail').checked = true;
+      }
+      const multipleInput = document.getElementById(`multiple_${settings.action_if_multiple}`);
+      if (multipleInput) {
+        multipleInput.checked = true;
       } else {
         document.getElementById('fail').checked = true;
       }
@@ -268,7 +274,8 @@ const lookupSubscription = (app) => {
       }
     } else {
       document.getElementById('param_name_group').style.display = 'none';
-      document.getElementById('leave_empty').checked = true;
+      document.getElementById('not_found_leave_empty').checked = true;
+      document.getElementById('multiple_actual').checked = true;
     }
 
     document.getElementById('criteria').addEventListener('change', () => {
@@ -292,7 +299,8 @@ const lookupSubscription = (app) => {
       parameter = { name: paramName, id: paramID };
     }
     const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+    const actionIfNotFound = document.querySelector('input[name="if_not_found"]:checked').value;
+    const actionIfMultiple = document.querySelector('input[name="if_multiple"]:checked').value;
 
     const data = {
       settings: {
@@ -301,6 +309,7 @@ const lookupSubscription = (app) => {
         parameter,
         prefix,
         action_if_not_found: actionIfNotFound,
+        action_if_multiple: actionIfMultiple,
       },
       columns: {
         input: [column],
@@ -313,6 +322,7 @@ const lookupSubscription = (app) => {
           'vendor.name',
           'subscription.id',
           'subscription.external_id',
+          'subscription.status',
         ].map((name) => createOutputColumnForLookup(prefix, name)),
       },
     };

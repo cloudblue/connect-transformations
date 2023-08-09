@@ -36,12 +36,23 @@ All rights reserved.
                 <input class="input" id="prefix" type="text" placeholder="Prefix" />
             </div>
             <div class="input-group">
-                <p class="radio-buttons">What To Do If Subscription Not Found:</p>
-                <div class="radio-buttons">
-                    <input type="radio" id="leave_empty" name="if_not_found" value="leave_empty" />
-                    <label class="label" for="leave_empty">Leave Empty</label>
-                    <input type="radio" id="fail" name="if_not_found" value="Fail" />
-                    <label class="label" for="fail">Fail</label>
+                <p class="radio-buttons">What to do if subscription not found:</p>
+                <div class="radio-buttons input">
+                    <input type="radio" id="not_found_leave_empty" name="if_not_found" value="leave_empty" />
+                    <label class="label" for="not_found_leave_empty">Leave Empty</label>
+                    <input type="radio" id="not_found_fail" name="if_not_found" value="fail" />
+                    <label class="label" for="not_found_fail">Fail</label>
+                </div>
+            </div>
+            <div class="input-group">
+                <p class="radio-buttons">What to do if multiple subscriptions are found:</p>
+                <div class="radio-buttons input">
+                    <input type="radio" id="multiple_use_most_actual" name="if_multiple" value="use_most_actual" />
+                    <label class="label" for="multiple_use_most_actual">Use the most actual</label>
+                    <input type="radio" id="multiple_leave_empty" name="if_multiple" value="leave_empty" />
+                    <label class="label" for="multiple_leave_empty">Leave Empty</label>
+                    <input type="radio" id="multiple_fail" name="if_multiple" value="fail" />
+                    <label class="label" for="multiple_fail">Fail</label>
                 </div>
             </div>
         </div>

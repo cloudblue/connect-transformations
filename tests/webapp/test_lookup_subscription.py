@@ -16,6 +16,7 @@ def test_validate_lookup_subscription(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
+            'action_if_multiple': 'fail',
         },
         'columns': {
             'input': [
@@ -32,8 +33,10 @@ def test_validate_lookup_subscription(test_client_factory):
     data = response.json()
     assert data == {
         'overview': (
-
-            'Criteria = "CloudBlue Subscription ID"\nPrefix = "PREFIX"\nIf not found = Fail\n'
+            'Criteria = "CloudBlue Subscription ID"\n'
+            'Prefix = "PREFIX"\n'
+            'If not found = Fail\n'
+            'If multiple found = Fail\n'
         ),
     }
 
@@ -45,6 +48,7 @@ def test_validate_lookup_subscription_external_id(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
+            'action_if_multiple': 'use_most_actual',
         },
         'columns': {
             'input': [
@@ -62,7 +66,8 @@ def test_validate_lookup_subscription_external_id(test_client_factory):
     assert data == {
         'overview': (
             'Criteria = "CloudBlue Subscription External ID"\nPrefix = "PREFIX"\n'
-            'If not found = Leave Empty\n'
+            'If not found = Leave empty\n'
+            'If multiple found = Use most actual\n'
         ),
     }
 
@@ -74,6 +79,7 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
+            'action_if_multiple': 'leave_empty',
             'parameter': {'id': 'P-123', 'name': 'param_a'},
         },
         'columns': {
@@ -92,7 +98,8 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
     assert data == {
         'overview': (
             'Criteria = "Parameter Value"\nParameter Name = "param_a"\nPrefix = "PREFIX"\n'
-            'If not found = Leave Empty\n'
+            'If not found = Leave empty\n'
+            'If multiple found = Leave empty\n'
         ),
     }
 
@@ -138,8 +145,8 @@ def test_validate_lookup_subscription_invalid_format(test_client_factory, settin
     data = response.json()
     assert data == {
         'error': (
-            'The settings must have `lookup_type`, `from`, `prefix` and `action_if_not_found` '
-            'fields'
+            'The settings must have `lookup_type`, `from`, `prefix`, `action_if_not_found` '
+            'and `action_if_multiple` fields'
         ),
     }
 
@@ -151,6 +158,7 @@ def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory):
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
+            'action_if_multiple': 'fail',
         },
         'columns': {
             'input': [
@@ -179,6 +187,7 @@ def test_validate_lookup_subscription_invalid_action_if_not_found(
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'invalidtype',
+            'action_if_multiple': 'leave_empty',
         },
         'columns': {
             'input': [
@@ -198,6 +207,35 @@ def test_validate_lookup_subscription_invalid_action_if_not_found(
     }
 
 
+def test_validate_lookup_subscription_invalid_action_if_multiple(
+    test_client_factory,
+):
+    data = {
+        'settings': {
+            'lookup_type': 'id',
+            'from': 'column',
+            'prefix': 'PREFIX',
+            'action_if_not_found': 'fail',
+            'action_if_multiple': 'invalid',
+        },
+        'columns': {
+            'input': [
+                {'name': 'column'},
+            ],
+            'output': [],
+        },
+    }
+    client = test_client_factory(TransformationsWebApplication)
+    response = client.post('/api/lookup_subscription/validate', json=data)
+
+    assert response.status_code == 400
+    data = response.json()
+    values = ['leave_empty', 'fail', 'use_most_actual']
+    assert data == {
+        'error': f'The settings `action_if_multiple` allowed values {values}',
+    }
+
+
 @pytest.mark.parametrize(
     'parameter',
     (
@@ -214,6 +252,7 @@ def test_validate_lookup_subscription_invalid_parameter(test_client_factory, par
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
+            'action_if_multiple': 'leave_empty',
         },
         'columns': {
             'input': [
@@ -251,6 +290,7 @@ def test_validate_lookup_subscription_invalid_column(test_client_factory, lookup
             'from': 'column',
             'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
+            'action_if_multiple': 'leave_empty',
         },
         'columns': {
             'input': [
@@ -277,8 +317,9 @@ def test_validate_lookup_subscription_invalid_prefix(test_client_factory):
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
-            'prefix': '12345678901',
+            'prefix': '12345678901234',
             'action_if_not_found': 'leave_empty',
+            'action_if_multiple': 'leave_empty',
         },
         'columns': {
             'input': [{'name': 'column'}],
@@ -290,7 +331,7 @@ def test_validate_lookup_subscription_invalid_prefix(test_client_factory):
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'The settings `prefix` max length is 10',
+        'error': 'The settings `prefix` max length is 12',
     }
 
 
