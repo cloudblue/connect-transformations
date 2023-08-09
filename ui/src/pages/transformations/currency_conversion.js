@@ -8,7 +8,7 @@ import '../../../styles/index.css';
 import '../../../styles/app.styl';
 import {
   getColumnLabel,
-  getCurrencies,
+  getCurrencies, validate,
 } from '../../utils';
 
 import {
@@ -17,6 +17,37 @@ import {
   showError,
 } from '../../components';
 
+
+const currencyConversionFormMainHTML = index => `
+   <form name="convertCurrency-${index}" class="convert-currency">
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="input-column">Input Column</label>
+              <select name="inputColumn" id="input-column-${index}"></select>
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="from-currency">From Currency</label>
+              <select name="fromCurrency" id="from-currency-${index}"></select>
+          </div>
+      </div>
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="output-column">Output Column</label>
+              <input name="outputColumn" id="output-column-${index}" type="text">
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="to-currency">To Currency</label>
+              <select name="toCurrency" id="to-currency-${index}"></select>
+          </div>
+      </div>
+  </form>
+  
+  <button id="delete-${index}" class="button form-delete-button">DELETE</button>
+`;
 
 export const createCurrencyColumnOptions = (elem, currencies, selectedOption, disabledOption) => {
   elem.innerHTML = '';
@@ -35,64 +66,44 @@ export const createCurrencyColumnOptions = (elem, currencies, selectedOption, di
   });
 };
 
-export const createCurrencyConversionForm = (parent, index, columns, currencies) => {
+export const createCurrencyConversionForm = (parent, index, columns, currencies, settings) => {
   const item = document.createElement('div');
   item.classList.add('form-wrapper');
   item.id = `wrapper-${index}`;
   item.style.width = '100%';
-  item.innerHTML = `
-        <form name="convertCurrency-${index}" class="convert-currency">
+  item.innerHTML = currencyConversionFormMainHTML(index);
 
-          <div class="convert-currency__input-group">
-              <div class="convert-currency__column convert-currency__input">
-                  <label for="input-column">Input Column</label>
-                  <select name="inputColumn" id="input-column-${index}"></select>
-              </div>
-
-              <div class="convert-currency__input">
-                  <label for="from-currency">From Currency</label>
-                  <select name="fromCurrency" id="from-currency-${index}"></select>
-              </div>
-          </div>
-
-          <div class="convert-currency__input-group">
-              <div class="convert-currency__column convert-currency__input">
-                  <label for="output-column">Output Column</label>
-                  <input name="outputColumn" id="output-column-${index}" type="text">
-              </div>
-
-              <div class="convert-currency__input">
-                  <label for="to-currency">To Currency</label>
-                  <select name="toCurrency" id="to-currency-${index}"></select>
-              </div>
-          </div>
-      </form>
-      
-      <button id="delete-${index}" class="button">DELETE</button>
-    `;
   parent.appendChild(item);
-
-  // add input column options
 
   const inputColumnSelect = document.getElementById(`input-column-${index}`);
 
   columns.forEach(column => {
+    const isSelected = settings && settings.from.column === column.id;
     const colLabel = getColumnLabel(column);
-    const option = `<option value="${column.id}">${colLabel}</option>`;
+    const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
 
     inputColumnSelect.innerHTML += option;
   });
 
-  // add currencies options
-
-  let selectedToCurrency;
   let selectedFromCurrency;
+  let selectedToCurrency;
 
-  // eslint-disable-next-line prefer-const
-  [selectedFromCurrency] = [currencies[0].code];
-  // eslint-disable-next-line prefer-const
-  [selectedToCurrency] = [currencies[1].code];
+  if (settings) {
+    const {
+      from: { currency: inputCurrency },
+      to: { column: outputCol, currency: outputCurrency },
+    } = settings;
 
+    const outputColumnInput = document.getElementById(`output-column-${index}`);
+
+    outputColumnInput.value = outputCol;
+
+    selectedFromCurrency = inputCurrency;
+    selectedToCurrency = outputCurrency;
+  } else {
+    selectedFromCurrency = currencies[0].code;
+    selectedToCurrency = currencies[1].code;
+  }
 
   const fromCurrency = document.getElementById(`from-currency-${index}`);
   const toCurrency = document.getElementById(`to-currency-${index}`);
@@ -110,18 +121,8 @@ export const createCurrencyConversionForm = (parent, index, columns, currencies)
 
   // handle delete button
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
+  const buttons = document.getElementsByClassName('form-delete-button');
+
   for (let i = 0; i < buttons.length; i += 1) {
     if (buttons.length === 1) {
       buttons[i].disabled = true;
@@ -129,6 +130,14 @@ export const createCurrencyConversionForm = (parent, index, columns, currencies)
       buttons[i].disabled = false;
     }
   }
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
 };
 
 
@@ -144,6 +153,7 @@ const convert = (app) => {
   app.listen('config', async config => {
     const {
       context: { available_columns: availableColumns },
+      settings,
     } = config;
 
     columns = availableColumns;
@@ -151,7 +161,14 @@ const convert = (app) => {
 
     const content = document.getElementById('content');
 
-    createCurrencyConversionForm(content, formIndex, columns, currencies);
+    if (!settings) {
+      createCurrencyConversionForm(content, formIndex, columns, currencies);
+    } else {
+      settings.forEach((setting, index) => {
+        formIndex = index;
+        createCurrencyConversionForm(content, formIndex, columns, currencies, setting);
+      });
+    }
 
     hideComponent('loader');
     showComponent('app');
@@ -162,7 +179,7 @@ const convert = (app) => {
     });
   });
 
-  app.listen('save', () => {
+  app.listen('save', async () => {
     const data = {
       settings: [],
       columns: {
@@ -207,6 +224,20 @@ const convert = (app) => {
           },
         });
       }
+    }
+
+    try {
+      const overview = await validate('currency_conversion', data);
+
+      if (overview.error) {
+        throw new Error(overview.error);
+      }
+      app.emit('save', {
+        data: { ...data, ...overview },
+        status: 'ok',
+      });
+    } catch (e) {
+      showError(e);
     }
   });
 };
