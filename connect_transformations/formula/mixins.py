@@ -52,10 +52,9 @@ class FormulaTransformationMixin:
     @transformation(
         name='Formula',
         description=(
-            'Use this transformation to perform data manipulation '
-            'using columns manipulation formula. Also it is possible '
-            'to use reserved function drop_row to delete row.'
-            '(see https://stedolan.github.io/jq/manual/)'
+            'This transformation function allows you to perform'
+            ' mathematical and logical operations on columns and'
+            ' context variables using the jq programming language.'
         ),
         edit_dialog_ui='/static/transformations/formula.html',
     )

@@ -32,3 +32,8 @@ input[type="radio"] {
 .radio-buttons {
     width: 100%;
 }
+
+.radio-buttons-vertical {
+    display: flex;
+    flex-direction: column;
+}

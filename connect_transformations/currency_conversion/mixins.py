@@ -41,10 +41,10 @@ class CurrencyConverterTransformationMixin:
         return {c['id']: c for c in input_columns}
 
     @transformation(
-        name='Convert Currency',
+        name='Convert currency',
         description=(
-            'This transformation function allows you to make rate convertions using the '
-            'https://exchangerate.host API.'
+            'This transformation function allows you to convert currency rates,'
+            ' using the [Exchange rates API](https://exchangerate.host).'
         ),
         edit_dialog_ui='/static/transformations/currency_conversion.html',
     )

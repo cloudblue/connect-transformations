@@ -16,11 +16,10 @@ from connect_transformations.models import Error, ValidationResult
 class CopyColumnTransformationMixin:
 
     @transformation(
-        name='Copy Column(s)',
+        name='Copy columns',
         description=(
-            'This transformation function allows you to copy values from Input to Output columns, '
-            'which might be handy if you\'d like to change column name in the output data or '
-            'create a copy of values in a table.'
+            'This transformation function allows you'
+            ' to copy input column values to an output column.'
         ),
         edit_dialog_ui='/static/transformations/copy.html',
     )

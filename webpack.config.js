@@ -29,17 +29,17 @@ const populateHtmlPlugins = (pagesArray) => {
 }
 
 const pages = populateHtmlPlugins([
-  "Transformations/Airtable Lookup",
+  "Transformations/Airtable lookup",
   "Transformations/Copy",
-  "Transformations/Attachment Lookup",
-  "Transformations/Lookup Subscription",
-  "Transformations/Lookup Product Item",
-  "Transformations/Currency Conversion",
+  "Transformations/Attachment lookup",
+  "Transformations/Lookup subscription",
+  "Transformations/Lookup product item",
+  "Transformations/Currency conversion",
   "Transformations/Manual",
-  "Transformations/Split Column",
+  "Transformations/Split columns",
   "Transformations/Formula",
-  "Transformations/Filter Row",
-  "Transformations/VAT Rate",
+  "Transformations/Filter row",
+  "Transformations/VAT rate",
 ]);
 
 module.exports = {
@@ -53,7 +53,7 @@ module.exports = {
     ['transformations/lookup_subscription']: __dirname + "/ui/src/pages/transformations/lookup_subscription.js",
     ['transformations/lookup_product_item']: __dirname + "/ui/src/pages/transformations/lookup_product_item.js",
     ['transformations/manual']: __dirname + "/ui/src/pages/transformations/manual.js",
-    ['transformations/split_column']: __dirname + "/ui/src/pages/transformations/split_column.js",
+    ['transformations/split_columns']: __dirname + "/ui/src/pages/transformations/split_columns.js",
     ['transformations/attachment_lookup']: __dirname + "/ui/src/pages/transformations/attachment_lookup.js",
     ['transformations/vat_rate']: __dirname + "/ui/src/pages/transformations/vat_rate.js",
   },

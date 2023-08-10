@@ -42,11 +42,13 @@ class VATRateForEUCountryTransformationMixin:
                 )
 
     @transformation(
-        name='Get standard VAT Rate for EU Country',
+        name='Get standard VAT rate for EU country',
         description=(
-            'The latest rates from the https://exchangerate.host API will be used to perform this '
-            'transformation. The input content should be either ISO 3166 alpha-2 code or country '
-            'name in english. For instance ES or Spain.'
+            'This transformation function is performed, using the latest'
+            ' rates from the [Exchange rates API](https://exchangerate.host). '
+            'The input value must be either a two-letter country code defined'
+            ' in the ISO 3166-1 alpha-2 standard or country name. '
+            'For example, ES or Spain.'
         ),
         edit_dialog_ui='/static/transformations/vat_rate.html',
     )

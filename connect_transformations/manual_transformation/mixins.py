@@ -13,9 +13,8 @@ class ManualTransformationMixin:
     @transformation(
         name='Manual transformation',
         description=(
-            'The manual transformation is a special kind of transformation that allow to describe'
-            ' the steps that must be done on the input file to produce the transformed output file.'
-            ' The file must be transformed both by hands or by an external system.'
+            'This transformation function allows you to perform manual'
+            ' operations that cannot be automated using other transformations.'
         ),
         edit_dialog_ui='/static/transformations/manual.html',
     )

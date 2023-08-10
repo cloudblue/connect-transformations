@@ -70,10 +70,10 @@ class AirTableLookupTransformationMixin:
                 page_count += 1
 
     @transformation(
-        name='Lookup Data from AirTable',
+        name='Lookup data from AirTable',
         description=(
-            'Use this transformation to populate data from AirTable by '
-            'matching column from input table with column in AirTable table.'
+            'This transformation function allows you to populate data from'
+            ' AirTable by matching input column values with AirTable ones.'
         ),
         edit_dialog_ui='/static/transformations/airtable_lookup.html',
     )

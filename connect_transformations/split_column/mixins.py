@@ -23,13 +23,12 @@ from connect_transformations.utils import cast_value_to_type
 class SplitColumnTransformationMixin:
 
     @transformation(
-        name='Split Column',
+        name='Split columns',
         description=(
-            'This transformation function allows you to copy values from Input to Output columns,'
-            ' which might be handy if you\'d like to change column name in the output data for for'
-            ' some other reason create a copy of values in table.'
+            'This transformation function allows you to divide values'
+            ' of one column into separate columns, using regular expressions.'
         ),
-        edit_dialog_ui='/static/transformations/split_column.html',
+        edit_dialog_ui='/static/transformations/split_columns.html',
     )
     def split_column(
         self,
