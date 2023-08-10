@@ -18,6 +18,9 @@ from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import is_input_column_nullable
 
 
+SUBSCRIPTIONS_ACTIVE_STATUSES = ('active', 'terminating')
+
+
 class LookupSubscriptionTransformationMixin:
 
     @transformation(
@@ -32,15 +35,11 @@ class LookupSubscriptionTransformationMixin:
         self,
         row: Dict,
     ):
-        trfn_settings = (
-            self.transformation_request['transformation']['settings']
-        )
-        lookup_type = trfn_settings['lookup_type']
-        from_column = trfn_settings['from']
-        prefix = trfn_settings['prefix']
-        parameter = trfn_settings.get('parameter', {}).get('name', None)
+        lookup_type = self.settings['lookup_type']
+        from_column = self.settings['from']
+        prefix = self.settings['prefix']
+        parameter = self.settings.get('parameter', {}).get('name', None)
         value = row[from_column]
-        leave_empty = trfn_settings['action_if_not_found'] == 'leave_empty'
 
         if is_input_column_nullable(
             self.transformation_request['transformation']['columns']['input'],
@@ -50,19 +49,14 @@ class LookupSubscriptionTransformationMixin:
 
         if lookup_type == 'params__value':
             lookup = {
-                'params.id': parameter,
+                'params.name': parameter,
                 'params.value': value,
             }
         else:
             lookup = {lookup_type: value}
 
-        subscription = None
-
         try:
-            subscription = await self.retrieve_subscription(
-                lookup,
-                leave_empty,
-            )
+            subscription = await self.get_subscription(lookup)
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
 
@@ -75,9 +69,10 @@ class LookupSubscriptionTransformationMixin:
             f'{prefix}.vendor.name': subscription['connection']['vendor']['name'],
             f'{prefix}.subscription.id': subscription['id'],
             f'{prefix}.subscription.external_id': subscription['external_id'],
+            f'{prefix}.subscription.status': subscription['status'],
         }) if subscription else RowTransformationResponse.skip()
 
-    async def retrieve_subscription(self, lookup, leave_empty):
+    async def get_subscription(self, lookup):
         k = ''
         for key, value in lookup.items():
             k = k + f'{key}-{value}'
@@ -86,21 +81,48 @@ class LookupSubscriptionTransformationMixin:
         except KeyError:
             pass
 
-        results = await self.installation_client('subscriptions').assets.filter(**lookup).count()
-        if results == 0:
-            if leave_empty:
+        result = await self.retrieve_subscription(lookup)
+
+        await self.acache_put(k, result)
+        return result
+
+    async def retrieve_subscription(self, lookup):
+        subscriptions = self.installation_client('subscriptions').assets.filter(
+            status__in=(
+                'active', 'terminating', 'suspended',
+                'terminated', 'terminated',
+            ),
+        ).filter(**lookup).order_by('-events.created.at')
+
+        result = None
+
+        async for item in subscriptions:
+            if result is None:
+                result = item
+            elif self.settings.get('action_if_multiple') == 'leave_empty':
                 return
-            raise SubscriptionLookupError(f'No result found for the filter {lookup}')
-        elif results > 1:
-            raise SubscriptionLookupError(f'Many results found for the filter {lookup}')
-        else:
-            result = await self.installation_client(
-                'subscriptions',
-            ).assets.filter(
-                **lookup,
-            ).first()
-            await self.acache_put(k, result)
+            elif self.settings.get('action_if_multiple') == 'use_most_actual':
+                result = self.select_actual_subscription(result, item)
+            else:
+                raise SubscriptionLookupError(f'Many results found for the filter {lookup}')
+
+        if result:
             return result
+
+        if self.settings.get('action_if_not_found') == 'fail':
+            raise SubscriptionLookupError(f'No result found for the filter {lookup}')
+
+    @staticmethod
+    def select_actual_subscription(*subscriptions):
+        result = None
+        for item in subscriptions:
+            if result is None or item['status'] in SUBSCRIPTIONS_ACTIVE_STATUSES:
+                result = item
+        return result
+
+    @property
+    def settings(self):
+        return self.transformation_request['transformation']['settings']
 
 
 class LookupSubscriptionWebAppMixin:

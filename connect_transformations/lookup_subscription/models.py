@@ -20,6 +20,7 @@ class Settings(BaseModel):
     from_: Optional[str]
     prefix: Optional[str]
     action_if_not_found: Optional[str]
+    action_if_multiple: Optional[str]
     parameter: Optional[Parameter]
 
     class Config:

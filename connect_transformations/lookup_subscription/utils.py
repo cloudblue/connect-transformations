@@ -10,11 +10,17 @@ from connect_transformations.utils import (
 )
 
 
+PREFIX_MAX_LENGTH = 12
+
 SUBSCRIPTION_LOOKUP = {
     'external_id': 'CloudBlue Subscription External ID',
     'id': 'CloudBlue Subscription ID',
     'params__value': 'Parameter Value',
 }
+
+
+NOT_FOUND_CHOICES = ['leave_empty', 'fail']
+MULTIPLE_CHOICES = ['leave_empty', 'fail', 'use_most_actual']
 
 
 def validate_lookup_subscription(data):
@@ -26,13 +32,13 @@ def validate_lookup_subscription(data):
     if (
         does_not_contain_required_keys(
             data['settings'],
-            ['lookup_type', 'from', 'prefix', 'action_if_not_found'],
+            ['lookup_type', 'from', 'prefix', 'action_if_not_found', 'action_if_multiple'],
         ) or not isinstance(data['settings']['prefix'], str)
         or data['settings']['prefix'] == ''
     ):
         return build_error_response(
-            'The settings must have `lookup_type`, `from`, `prefix` and '
-            '`action_if_not_found` fields',
+            'The settings must have `lookup_type`, `from`, `prefix`, '
+            '`action_if_not_found` and `action_if_multiple` fields',
         )
 
     values = SUBSCRIPTION_LOOKUP.keys()
@@ -41,10 +47,14 @@ def validate_lookup_subscription(data):
             f'The settings `lookup_type` allowed values {values}',
         )
 
-    values = ['leave_empty', 'fail']
-    if data['settings']['action_if_not_found'] not in values:
+    if data['settings']['action_if_not_found'] not in NOT_FOUND_CHOICES:
         return build_error_response(
-            f'The settings `action_if_not_found` allowed values {values}',
+            f'The settings `action_if_not_found` allowed values {NOT_FOUND_CHOICES}',
+        )
+
+    if data['settings']['action_if_multiple'] not in MULTIPLE_CHOICES:
+        return build_error_response(
+            f'The settings `action_if_multiple` allowed values {MULTIPLE_CHOICES}',
         )
 
     if (
@@ -68,9 +78,9 @@ def validate_lookup_subscription(data):
             ' that does not exist on columns.input',
         )
 
-    if len(data['settings']['prefix']) > 10:
+    if len(data['settings']['prefix']) > PREFIX_MAX_LENGTH:
         return build_error_response(
-            'The settings `prefix` max length is 10',
+            f'The settings `prefix` max length is {PREFIX_MAX_LENGTH}',
         )
 
     overview = 'Criteria = "' + SUBSCRIPTION_LOOKUP[data['settings']['lookup_type']] + '"\n'
@@ -79,7 +89,12 @@ def validate_lookup_subscription(data):
     overview += 'Prefix = "' + data['settings']['prefix'] + '"\n'
     overview += (
         'If not found = '
-        + data['settings']['action_if_not_found'].replace('_', ' ').title()
+        + data['settings']['action_if_not_found'].replace('_', ' ').capitalize()
+        + '\n'
+    )
+    overview += (
+        'If multiple found = '
+        + data['settings']['action_if_multiple'].replace('_', ' ').capitalize()
         + '\n'
     )
 
