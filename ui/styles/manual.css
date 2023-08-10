@@ -38,3 +38,37 @@
     border: 1px solid #e0e0e0;
     border-radius: 4px;
 }
+
+.description-text-details {
+    display: flex;
+    flex: 1 0 auto;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 12px;
+    min-height: 12px;
+}
+
+.description-text-details .message {
+    flex: 1 1 auto;
+    min-width: 1px;
+    position: relative;
+}
+
+.description-text-details .counter {
+    flex: 0 1 auto;
+    line-height: 1;
+    color: rgba(0,0,0,0.54);
+}
+
+.text-hidden {
+    visibility: hidden;
+}
+
+.error--input {
+    border-color: #ff5252 !important;;
+}
+
+.error--text {
+    color: #ff5252 !important;
+    caret-color: #ff5252 !important;
+}

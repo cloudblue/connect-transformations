@@ -102,6 +102,29 @@ export const manual = (app) => {
       createManualOutputRow(outputColumnsElement, rowIndex);
     });
 
+    descriptionElement.addEventListener('keyup', () => {
+      const maxLength = 2000;
+      const currentLength = descriptionElement.value.length;
+      const descriptionLabel = document.getElementById('description-label');
+      const errorHint = document.getElementById('description-text-hint');
+      const descriptionCounter = document.getElementById('description-text-counter');
+
+      descriptionCounter.innerHTML = `${currentLength} / ${maxLength}`;
+      app.emit('overview-changed', descriptionElement.value);
+
+      if (currentLength > Number(maxLength)) {
+        descriptionLabel.classList.add('error--text');
+        descriptionCounter.classList.add('error--text');
+        descriptionElement.classList.add('error--input');
+        errorHint.classList.remove('text-hidden');
+      } else {
+        descriptionLabel.classList.remove('error--text');
+        descriptionCounter.classList.remove('error--text');
+        descriptionElement.classList.remove('error--input');
+        errorHint.classList.add('text-hidden');
+      }
+    });
+
     hideComponent('loader');
     showComponent('app');
   });
@@ -141,7 +164,7 @@ export const manual = (app) => {
         status: 'ok',
       });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };
