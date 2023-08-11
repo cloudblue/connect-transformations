@@ -34,10 +34,10 @@ class FilterRowTransformationMixin:
             self.filter_row_expression = jq.compile(filter_expression)
 
     @transformation(
-        name='Filter Rows by Condition',
+        name='Delete rows by condition',
         description=(
-            'This transformation function allows you to filter row from the input file '
-            'when a column value match/mismatch one or more values.'
+            'This transformation function allows you to delete'
+            ' rows that contain or do not contain a specific value(s).'
         ),
         edit_dialog_ui='/static/transformations/filter_row.html',
     )

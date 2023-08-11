@@ -6,18 +6,17 @@
 
 The current release provides the following transformations:
 
-* `Manual transformation`: The manual transformation is a special kind of transformation that allow to describe the steps that must be done on the input file to produce the transformed output file. The file must be transformed both by hands or by an external system.
-* `Copy Column(s)`: This transformation allows you to copy values from Input to Output columns, which might be handy if you’d like to change column name in the output data or for some other reason create a copy of values in a table.
-* `Split Column`: This transformation function allows you to copy values from Input to Output columns, which might be handy if you’d like to change column name in the output data for for some other reason create a copy of values in table.
-* `Lookup CloudBlue Subscription data`: This transformation function allows to search for the corresponding CloudBlue Subscription data.
-* `Lookup CloudBlue Product Item data`: This transformation function allows to search for the corresponding CloudBlue Product Item data.
-* `Convert Currency`: This transformation function converts a given column value with a given currency to another.
-* `Formula`: Use this transformation to perform data manipulation using columns manipulation formula.
-* `Filter Rows`: This transformation function allows you to filter by equality of a given input column with a given string value. If it matches the row is kept, if not it is marked to be deleted.
-* `Lookup Data from AirTable`: Use this transformation to populate data from AirTable by matching column from input table with column in AirTable table.
-* `Lookup Data from a stream attached Excel`: This transformation function allows you to lookup data from Excel attachment by matching column from input table and attachment table.
-* `Filter Rows by Condition`: This transformation function allows you to filter row from the input file when a column value match/mismatch one or more values.
-* `Get standard VAT Rate for EU Country`: Lates rates from the https://exchangerate.host API will be used to perform this transformation. The input content should be either ISO 3166 alpha-2 code or country name in english. For instance ES or Spain.
+* `Manual transformation`: This transformation function allows you to perform manual operations that cannot be automated using other transformations.
+* `Copy columns`: This transformation function allows you to copy input column values to an output column.
+* `Split columns`: This transformation function allows you to divide values of one column into separate columns, using regular expressions.
+* `Lookup CloudBlue subscription data`: This transformation function allows you to get the Cloudblue subscription data by the subscription ID or parameter value.
+* `Lookup CloudBlue product item`: This transformation function allows you to get the CloudBlue product item data by the product item ID or MPN.
+* `Convert currency`: This transformation function allows you to convert currency rates, using the https://exchangerate.host API.
+* `Formula`: This transformation function allows you to perform mathematical and logical operations on columns and context variables using the jq programming language.
+* `Delete rows by condition`: This transformation function allows you to delete rows that contain or do not contain a specific value(s).
+* `Lookup data from AirTable`: This transformation function allows you to populate data from AirTable by matching input column values with AirTable ones.
+* `Lookup data from Excel file attached to stream`: This transformation function allows you to populate data from the attached Excel file by matching input column values with the attached table values.
+* `Get standard VAT Rate for EU Country`: This transformation function is performed, using the latest rates from the https://exchangerate.host API. The input value must be either a two-letter country code defined in the ISO 3166-1 alpha-2 standard or country name. For example, ES or Spain.
 
 Overall, Connect Standard Transformations Library is a valuable extension of the CloudBlue Connect platform that provides users with a powerful set of tools for managing and manipulating data. By providing pre-built transformations that can be easily configured and executed, Connect Standard Transformations Library streamlines the data transformation process and makes it easier for users to work with their data.
 

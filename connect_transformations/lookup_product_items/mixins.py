@@ -23,10 +23,10 @@ from connect_transformations.utils import is_input_column_nullable
 
 class LookupProductItemsTransformationMixin:
     @transformation(
-        name='Lookup CloudBlue Product Item Data',
+        name='Lookup CloudBlue product item',
         description=(
-            'This transformation function allows to search for the corresponding CloudBlue '
-            'Product Item data.'
+            'This transformation function allows you to get the'
+            ' CloudBlue product item data by the product item ID or MPN.'
         ),
         edit_dialog_ui='/static/transformations/lookup_product_item.html',
     )

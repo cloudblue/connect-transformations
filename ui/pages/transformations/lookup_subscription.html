@@ -17,10 +17,10 @@ All rights reserved.
     <div id="app">
         <div class="main-container lookup" id="content">
             <div class="subtitle">
-                Supported search criteria includes Subscription External ID, ID and Parameter values.
+                Supported search criteria include Subscription External ID, ID and Parameter values.
             </div>
             <div class="input-group">
-                <label class="label" for="criteria">Criteria</label>
+                <label class="label" for="criteria">Criterion</label>
                 <select class="input" id="criteria"></select>
             </div>
             <div class="input-group" id="param_name_group">
@@ -36,23 +36,29 @@ All rights reserved.
                 <input class="input" id="prefix" type="text" placeholder="Prefix" />
             </div>
             <div class="input-group">
-                <p class="radio-buttons">What to do if subscription not found:</p>
+                <p class="radio-buttons">Choose what to do if a subscription is not found:</p>
                 <div class="radio-buttons input">
                     <input type="radio" id="not_found_leave_empty" name="if_not_found" value="leave_empty" />
-                    <label class="label" for="not_found_leave_empty">Leave Empty</label>
+                    <label class="label" for="not_found_leave_empty">Leave the row empty</label>
                     <input type="radio" id="not_found_fail" name="if_not_found" value="fail" />
-                    <label class="label" for="not_found_fail">Fail</label>
+                    <label class="label" for="not_found_fail">Transformation will fail</label>
                 </div>
             </div>
             <div class="input-group">
-                <p class="radio-buttons">What to do if multiple subscriptions are found:</p>
-                <div class="radio-buttons input">
-                    <input type="radio" id="multiple_use_most_actual" name="if_multiple" value="use_most_actual" />
-                    <label class="label" for="multiple_use_most_actual">Use the most actual</label>
-                    <input type="radio" id="multiple_leave_empty" name="if_multiple" value="leave_empty" />
-                    <label class="label" for="multiple_leave_empty">Leave Empty</label>
-                    <input type="radio" id="multiple_fail" name="if_multiple" value="fail" />
-                    <label class="label" for="multiple_fail">Fail</label>
+                <p class="radio-buttons">Choose what to do if multiple subscriptions are found:</p>
+                <div class="radio-buttons input radio-buttons-vertical">
+                    <div>
+                        <input type="radio" id="multiple_use_most_actual" name="if_multiple" value="use_most_actual" />
+                        <label class="label" for="multiple_use_most_actual">Use the most actual</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="multiple_leave_empty" name="if_multiple" value="leave_empty" />
+                        <label class="label" for="multiple_leave_empty">Leave the row empty</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="multiple_fail" name="if_multiple" value="fail" />
+                        <label class="label" for="multiple_fail">Transformation will fail</label>
+                    </div>
                 </div>
             </div>
         </div>

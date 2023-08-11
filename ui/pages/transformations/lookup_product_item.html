@@ -17,24 +17,24 @@ All rights reserved.
     <div id="app">
         <div class="main-container lookup" id="content">
             <div class="subtitle">
-                Supported search criteria includes CloudBlue Item MPN and CloudBlue Item ID.
+                Supported search criteria include the CloudBlue item ID and MPN.
             </div>
             <div class="input-group">
-                <label class="label" for="criteria">Criteria</label>
+                <label class="label" for="criteria">Criterion</label>
                 <select class="input" id="criteria"></select>
             </div>
             <div class="subtitle no-product" id="no_product">
-                Warning: No product associated with this data stream. Please either enter a Product ID,
-                which will be applied to all product item lookups, or select a Product column containing
-                the row-specific product IDs.
+                Warning: No product associated with this data stream was found.
+                Attach a product to the stream on the stream Configuration tab, enter the Product ID below,
+                or indicate a column from which the Product ID value will be taken.
             </div>
             <div class="input-group" id="product_id_radio_group" style="margin-bottom: 8px">
-                <p class="radio-buttons">Please specify a way to find product:</p>
+                <p class="radio-buttons">Find product by:</p>
                 <div class="radio-buttons">
                     <input type="radio" id="by_product_id" name="product_id_radio" value="product_id"/>
-                    <label class="label" for="by_product_id">By static product ID</label><br />
+                    <label class="label" for="by_product_id">Product ID</label><br />
                     <input type="radio" id="by_product_column" name="product_id_radio" value="product_column"/>
-                    <label class="label" for="by_product_column">By column containing product IDs</label>
+                    <label class="label" for="by_product_column">Column containing product ID</label>
                 </div>
             </div>
             <div class="input-group" id="product_id_input">
@@ -54,16 +54,15 @@ All rights reserved.
                 <input class="input" id="prefix" type="text" placeholder="Prefix" />
             </div>
             <div class="input-group">
-                <p class="radio-buttons">What To Do If Product Item Not Found:</p>
+                <p class="radio-buttons">Choose what to do if a product item is not found:</p>
                 <div class="radio-buttons">
                     <input type="radio" id="leave_empty" name="if_not_found" value="leave_empty"/>
-                    <label class="label" for="leave_empty">Leave Empty</label>
+                    <label class="label" for="leave_empty">Leave the row empty</label>
                     <input type="radio" id="fail" name="if_not_found" value="Fail"/>
-                    <label class="label" for="fail">Fail</label>
+                    <label class="label" for="fail">Transformation will fail</label>
                 </div>
             </div>
         </div>
-        </main-card>
     </div>
 </body>
 

@@ -24,10 +24,10 @@ SUBSCRIPTIONS_ACTIVE_STATUSES = ('active', 'terminating')
 class LookupSubscriptionTransformationMixin:
 
     @transformation(
-        name='Lookup CloudBlue Subscription Data',
+        name='Lookup CloudBlue subscription data',
         description=(
-            'This transformation function allows to search for the corresponding CloudBlue '
-            'Subscription data.'
+            'This transformation function allows you to get the CloudBlue'
+            ' subscription data by the subscription ID or parameter value.'
         ),
         edit_dialog_ui='/static/transformations/lookup_subscription.html',
     )
