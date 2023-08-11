@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 755:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -182,7 +180,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,159 +194,96 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
 
-const lookupProductItem = (app) => {
-  if (!app) return;
+const vatRate = (app) => {
+  if (!app) {
+    return;
+  }
 
   let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
-    } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
-    }
-  };
 
-  app.listen('config', (config) => {
+  app.listen('config', config => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = {
-      mpn: 'CloudBlue Item MPN',
-      id: 'CloudBlue Item ID',
-    };
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
-    hideComponent('loader');
-    showComponent('app');
-
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+    columns.forEach(column => {
+      const isSelected = settings && column.id === settings.from;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected
+        ? `<option value="${column.id}" selected>${colLabel}</option>`
+        : `<option value="${column.id}">${colLabel}</option>`;
+      inputColumnSelect.innerHTML += option;
     });
-
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
-
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
-    });
-
-    if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
-    }
 
     if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
-      document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
-      document.getElementById('prefix').value = settings.prefix;
+      outputColumnInput.value = settings.to;
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('leave_empty').checked = true;
       } else {
         document.getElementById('fail').checked = true;
       }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
-      } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
-      }
+    } else {
+      document.getElementById('leave_empty').checked = true;
     }
-
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
-    }
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
+    const inputColumnValue = document.getElementById('input-column').value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+    const outputColumnValue = document.getElementById('output-column').value;
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
 
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
-    }
+    if (outputColumnValue === inputColumn.name) {
+      app.emit('validation-error', 'This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      app.emit('validation-error', 'Output column name is required.');
+    } else {
+      const data = {
+        settings: {
+          from: inputColumn.name,
+          to: outputColumnValue,
+          action_if_not_found: actionIfNotFound,
+        },
+        columns: {
+          input: [
+            inputColumn,
+          ],
+          output: [
+            {
+              name: outputColumnValue,
+              type: 'integer',
+              description: '',
+            },
+          ],
+        },
+      };
 
-    const data = {
-      settings: {
-        product_id: productId,
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
-      },
-      columns: {
-        input,
-        output: [
-          'product.id',
-          'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
-          'item.commitment',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
-      },
-    };
-
-    try {
-      const overview = await validate('lookup_product_item', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      try {
+        const overview = await validate('vat_rate', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        app.emit('validation-error', e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      showError(e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+  .then(vatRate);
 
 
 /***/ })
@@ -440,7 +375,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			496: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -490,7 +425,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

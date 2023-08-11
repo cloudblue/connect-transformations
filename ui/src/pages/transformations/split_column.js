@@ -15,7 +15,6 @@ import {
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 
 
@@ -122,20 +121,21 @@ function buildGroups(groups) {
   });
 }
 
-export const createGroupRows = async () => {
+export const createGroupRows = async (app) => {
   const parent = document.getElementById('output');
   const groups = getCurrentGroups(parent);
   const pattern = document.getElementById('pattern').value;
+  app.emit('validation-error', '');
   if (pattern) {
     const body = { pattern, groups };
     const response = await getGroups(body);
     if (response.error) {
-      showError(response.error);
+      app.emit('validation-error', response.error);
     } else {
       buildGroups(response.groups);
     }
   } else {
-    showError('The regular expression is empty');
+    app.emit('validation-error', 'The regular expression is empty');
   }
 };
 
@@ -170,7 +170,7 @@ export const splitColumn = (app) => {
     }
 
     document.getElementById('refresh').addEventListener('click', () => {
-      createGroupRows();
+      createGroupRows(app);
     });
     hideComponent('loader');
     showComponent('app');
@@ -229,7 +229,7 @@ export const splitColumn = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };

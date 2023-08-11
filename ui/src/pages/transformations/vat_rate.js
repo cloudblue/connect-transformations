@@ -15,7 +15,6 @@ import {
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 
 
@@ -66,9 +65,9 @@ const vatRate = (app) => {
     const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
     if (outputColumnValue === inputColumn.name) {
-      showError('This fields may not be equal: columns.input.name, columns.output.name.');
+      app.emit('validation-error', 'This fields may not be equal: columns.input.name, columns.output.name.');
     } else if (outputColumnValue === '' || outputColumnValue === null) {
-      showError('Output column name is required.');
+      app.emit('validation-error', 'Output column name is required.');
     } else {
       const data = {
         settings: {
@@ -100,7 +99,7 @@ const vatRate = (app) => {
           status: 'ok',
         });
       } catch (e) {
-        showError(e);
+        app.emit('validation-error', e);
       }
     }
   });

@@ -14,7 +14,6 @@ import {
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 
 
@@ -200,30 +199,32 @@ const convert = (app) => {
       const outputColumnValue = formElements.outputColumn.value;
 
       if (outputColumnValue === '' || outputColumnValue === null) {
-        showError('Output column name is required.');
-      } else {
-        const outputColumn = {
-          name: outputColumnValue,
-          type: 'decimal',
-          description: '',
-        };
+        app.emit('validation-error', 'Output column name is required.');
 
-        const currencyFromValue = formElements.fromCurrency.value;
-        const currencyToValue = formElements.toCurrency.value;
-
-        data.columns.input.push(inputColumn);
-        data.columns.output.push(outputColumn);
-        data.settings.push({
-          from: {
-            currency: currencyFromValue,
-            column: inputColumnValue,
-          },
-          to: {
-            currency: currencyToValue,
-            column: outputColumn.name,
-          },
-        });
+        return;
       }
+
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
+      };
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings.push({
+        from: {
+          currency: currencyFromValue,
+          column: inputColumnValue,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      });
     }
 
     try {
@@ -237,7 +238,7 @@ const convert = (app) => {
         status: 'ok',
       });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };

@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 491:
+/***/ 179:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -180,7 +182,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -194,232 +196,159 @@ All rights reserved.
 
 
 
-const currencyConversionFormMainHTML = index => `
-   <form name="convertCurrency-${index}" class="convert-currency">
-  
-      <div class="convert-currency__input-group">
-          <div class="convert-currency__column convert-currency__input">
-              <label for="input-column">Input Column</label>
-              <select name="inputColumn" id="input-column-${index}"></select>
-          </div>
-  
-          <div class="convert-currency__input">
-              <label for="from-currency">From Currency</label>
-              <select name="fromCurrency" id="from-currency-${index}"></select>
-          </div>
-      </div>
-  
-      <div class="convert-currency__input-group">
-          <div class="convert-currency__column convert-currency__input">
-              <label for="output-column">Output Column</label>
-              <input name="outputColumn" id="output-column-${index}" type="text">
-          </div>
-  
-          <div class="convert-currency__input">
-              <label for="to-currency">To Currency</label>
-              <select name="toCurrency" id="to-currency-${index}"></select>
-          </div>
-      </div>
-  </form>
-  
-  <button id="delete-${index}" class="button form-delete-button">DELETE</button>
-`;
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
 
-const createCurrencyColumnOptions = (elem, currencies, selectedOption, disabledOption) => {
-  elem.innerHTML = '';
+const lookupProductItem = (app) => {
+  if (!app) return;
 
-  currencies.forEach(currency => {
-    const option = document.createElement('option');
-    const isSelected = selectedOption && currency.code === selectedOption;
-    const isDisabled = disabledOption && currency.code === disabledOption;
-
-    option.value = currency.code;
-    option.text = `${currency.code} • ${currency.description}`;
-    option.selected = isSelected;
-    option.disabled = isDisabled;
-
-    elem.appendChild(option);
-  });
-};
-
-const createCurrencyConversionForm = (parent, index, columns, currencies, settings) => {
-  const item = document.createElement('div');
-  item.classList.add('form-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = currencyConversionFormMainHTML(index);
-
-  parent.appendChild(item);
-
-  const inputColumnSelect = document.getElementById(`input-column-${index}`);
-
-  columns.forEach(column => {
-    const isSelected = settings && settings.from.column === column.id;
-    const colLabel = getColumnLabel(column);
-    const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
-
-    inputColumnSelect.innerHTML += option;
-  });
-
-  let selectedFromCurrency;
-  let selectedToCurrency;
-
-  if (settings) {
-    const {
-      from: { currency: inputCurrency },
-      to: { column: outputCol, currency: outputCurrency },
-    } = settings;
-
-    const outputColumnInput = document.getElementById(`output-column-${index}`);
-
-    outputColumnInput.value = outputCol;
-
-    selectedFromCurrency = inputCurrency;
-    selectedToCurrency = outputCurrency;
-  } else {
-    selectedFromCurrency = currencies[0].code;
-    selectedToCurrency = currencies[1].code;
-  }
-
-  const fromCurrency = document.getElementById(`from-currency-${index}`);
-  const toCurrency = document.getElementById(`to-currency-${index}`);
-
-  createCurrencyColumnOptions(fromCurrency, currencies, selectedFromCurrency, selectedToCurrency);
-  createCurrencyColumnOptions(toCurrency, currencies, selectedToCurrency, selectedFromCurrency);
-
-  fromCurrency.addEventListener('change', () => {
-    createCurrencyColumnOptions(toCurrency, currencies, toCurrency.value, fromCurrency.value);
-  });
-
-  toCurrency.addEventListener('change', () => {
-    createCurrencyColumnOptions(fromCurrency, currencies, fromCurrency.value, toCurrency.value);
-  });
-
-  // handle delete button
-
-  const buttons = document.getElementsByClassName('form-delete-button');
-
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    document.getElementById(`wrapper-${index}`).remove();
-
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-};
-
-
-const convert = (app) => {
-  if (!app) {
-    return;
-  }
-
-  let formIndex = 0;
   let columns = [];
-  let currencies = {};
-  let settings;
-
-  app.listen('config', async config => {
-    settings = config.settings;
-    columns = config.context.available_columns;
-    currencies = await getCurrencies();
-
-    const content = document.getElementById('content');
-
-    if (!settings) {
-      createCurrencyConversionForm(content, formIndex, columns, currencies);
+  const toggleProductId = (value) => {
+    if (value === 'product_id') {
+      hideComponent('product_column_input');
+      showComponent('product_id_input');
     } else {
-      if (!Array.isArray(settings)) {
-        settings = [settings];
-      }
-      settings.forEach((setting, index) => {
-        formIndex = index;
-        createCurrencyConversionForm(content, formIndex, columns, currencies, setting);
-      });
+      hideComponent('product_id_input');
+      showComponent('product_column_input');
     }
+  };
 
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns, stream },
+      settings,
+    } = config;
+
+    const hasProduct = 'product' in stream.context;
+    columns = availableColumns;
+    const criteria = {
+      mpn: 'CloudBlue Item MPN',
+      id: 'CloudBlue Item ID',
+    };
+
+    // defaults
+    document.getElementById('leave_empty').checked = true;
+    document.getElementById('by_product_id').checked = true;
+    hideComponent('product_column_input');
+    showComponent('product_id_input');
     hideComponent('loader');
     showComponent('app');
 
-    document.getElementById('add').addEventListener('click', () => {
-      formIndex += 1;
-      createCurrencyConversionForm(content, formIndex, columns, currencies);
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      document.getElementById('criteria').appendChild(option);
     });
-  });
 
-  app.listen('save', async () => {
-    const data = {
-      settings: [],
-      columns: {
-        input: [],
-        output: [],
-      },
-    };
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
 
-    const filledForms = document.forms;
+      const anotherOption = document.createElement('option');
+      anotherOption.value = column.id;
+      anotherOption.text = column.name;
+      document.getElementById('product_id_column').appendChild(anotherOption);
+    });
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const currentForm of filledForms) {
-      const formElements = currentForm.elements;
+    if (hasProduct === true) {
+      document.getElementById('product_id').value = stream.context.product.id;
+      hideComponent('product_id_input');
+      hideComponent('product_column_input');
+      hideComponent('product_id_radio_group');
+      hideComponent('no_product');
+    }
 
-      const inputColumnValue = formElements.inputColumn.value;
-      const inputColumn = columns.find(column => column.id === inputColumnValue);
-
-      const outputColumnValue = formElements.outputColumn.value;
-
-      if (outputColumnValue === '' || outputColumnValue === null) {
-        showError('Output column name is required.');
+    if (settings) {
+      document.getElementById('product_id').value = settings.product_id;
+      document.getElementById('criteria').value = settings.lookup_type;
+      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
+      document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('leave_empty').checked = true;
       } else {
-        const outputColumn = {
-          name: outputColumnValue,
-          type: 'decimal',
-          description: '',
-        };
-
-        const currencyFromValue = formElements.fromCurrency.value;
-        const currencyToValue = formElements.toCurrency.value;
-
-        data.columns.input.push(inputColumn);
-        data.columns.output.push(outputColumn);
-        data.settings.push({
-          from: {
-            currency: currencyFromValue,
-            column: inputColumnValue,
-          },
-          to: {
-            currency: currencyToValue,
-            column: outputColumn.name,
-          },
-        });
+        document.getElementById('fail').checked = true;
+      }
+      if (settings.product_lookup_mode === 'id') {
+        document.getElementById('by_product_id').checked = true;
+        hideComponent('product_column_input');
+        showComponent('product_id_input');
+      } else {
+        document.getElementById('by_product_column').checked = true;
+        hideComponent('product_id_input');
+        showComponent('product_column_input');
       }
     }
 
-    try {
-      const overview = await validate('currency_conversion', data);
+    const radios = document.getElementsByName('product_id_radio');
+    for (let i = 0, max = radios.length; i < max; i += 1) {
+      radios[i].onclick = () => {
+        toggleProductId(radios[i].value);
+      };
+    }
+  });
 
+  app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
+    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
+    const productId = document.getElementById('product_id').value;
+    const productColumnId = document.getElementById('product_id_column').value;
+    const productColumn = columns.find((c) => c.id === productColumnId);
+
+    const input = [column];
+    if (productLookupMode === 'column') {
+      input.push(productColumn);
+    }
+
+    const data = {
+      settings: {
+        product_id: productId,
+        lookup_type: criteria,
+        from: column.name,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+        product_column: productColumn?.name ?? '',
+        product_lookup_mode: productLookupMode,
+      },
+      columns: {
+        input,
+        output: [
+          'product.id',
+          'product.name',
+          'item.id',
+          'item.name',
+          'item.unit',
+          'item.period',
+          'item.mpn',
+          'item.commitment',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
+    };
+
+    try {
+      const overview = await validate('lookup_product_item', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
-      app.emit('save', {
-        data: { ...data, ...overview },
-        status: 'ok',
-      });
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(lookupProductItem);
 
 
 /***/ })
@@ -511,7 +440,7 @@ const convert = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			784: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -561,7 +490,7 @@ const convert = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

@@ -305,7 +305,7 @@ const loockupSpreadsheet = (app) => {
         let fileId = null;
         if (attachmentFound == null) {
           const fileName = file.split('/').pop();
-          showError(`The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
+          app.emit('validation-error', `The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
         } else {
           fileId = attachmentFound.id;
         }
@@ -321,7 +321,7 @@ const loockupSpreadsheet = (app) => {
         createMappingRow(0);
       }
     } catch (error) {
-      showError(error);
+      app.emit('validation-error', error);
     } finally {
       hideComponent('loader');
       showComponent('app');
@@ -351,7 +351,6 @@ const loockupSpreadsheet = (app) => {
             name: to,
           });
         } else {
-          showError('Please fill all mapping rows');
           throw new Error('Please fill all mapping rows');
         }
       });
@@ -378,7 +377,7 @@ const loockupSpreadsheet = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (error) {
-      showError(error);
+      app.emit('validation-error', error);
     }
   });
 };

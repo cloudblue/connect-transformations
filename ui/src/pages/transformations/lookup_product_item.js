@@ -14,7 +14,6 @@ import {
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 
 
@@ -164,7 +163,7 @@ export const lookupProductItem = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };

@@ -10,7 +10,6 @@ import '../../../styles/app.styl';
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 import {
   getColumnLabel,
@@ -147,7 +146,7 @@ export const filterRow = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
       showComponent('app');
       hideComponent('loader');
     }

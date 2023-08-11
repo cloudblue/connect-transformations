@@ -2,76 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 813:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createAdditionalValue, filterRow
-
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
-
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
-  }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
-};
-
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -182,7 +118,69 @@ const getContextVariables = (stream) => {
   return variables;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,144 +194,234 @@ All rights reserved.
 
 
 
-const createAdditionalValue = (parent, index, value) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
+const currencyConversionFormMainHTML = index => `
+   <form name="convertCurrency-${index}" class="convert-currency">
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="input-column">Input Column</label>
+              <select name="inputColumn" id="input-column-${index}"></select>
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="from-currency">From Currency</label>
+              <select name="fromCurrency" id="from-currency-${index}"></select>
+          </div>
+      </div>
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="output-column">Output Column</label>
+              <input name="outputColumn" id="output-column-${index}" type="text">
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="to-currency">To Currency</label>
+              <select name="toCurrency" id="to-currency-${index}"></select>
+          </div>
+      </div>
+  </form>
+  
+  <button id="delete-${index}" class="button form-delete-button">DELETE</button>
+`;
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    document.getElementById(`wrapper-${index}`).remove();
+const createCurrencyColumnOptions = (elem, currencies, selectedOption, disabledOption) => {
+  elem.innerHTML = '';
+
+  currencies.forEach(currency => {
+    const option = document.createElement('option');
+    const isSelected = selectedOption && currency.code === selectedOption;
+    const isDisabled = disabledOption && currency.code === disabledOption;
+
+    option.value = currency.code;
+    option.text = `${currency.code} • ${currency.description}`;
+    option.selected = isSelected;
+    option.disabled = isDisabled;
+
+    elem.appendChild(option);
   });
 };
 
-const filterRow = (app) => {
-  if (!app) return;
+const createCurrencyConversionForm = (parent, index, columns, currencies, settings) => {
+  const item = document.createElement('div');
+  item.classList.add('form-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = currencyConversionFormMainHTML(index);
 
-  let columns = [];
-  let rowIndex = 0;
+  parent.appendChild(item);
 
-  hideComponent('loader');
-  showComponent('app');
+  const inputColumnSelect = document.getElementById(`input-column-${index}`);
 
-  app.listen('config', (config) => {
+  columns.forEach(column => {
+    const isSelected = settings && settings.from.column === column.id;
+    const colLabel = getColumnLabel(column);
+    const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
+
+    inputColumnSelect.innerHTML += option;
+  });
+
+  let selectedFromCurrency;
+  let selectedToCurrency;
+
+  if (settings) {
     const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
+      from: { currency: inputCurrency },
+      to: { column: outputCol, currency: outputCurrency },
+    } = settings;
 
-    showComponent('loader');
-    hideComponent('app');
+    const outputColumnInput = document.getElementById(`output-column-${index}`);
 
-    columns = availableColumns;
+    outputColumnInput.value = outputCol;
+
+    selectedFromCurrency = inputCurrency;
+    selectedToCurrency = outputCurrency;
+  } else {
+    selectedFromCurrency = currencies[0].code;
+    selectedToCurrency = currencies[1].code;
+  }
+
+  const fromCurrency = document.getElementById(`from-currency-${index}`);
+  const toCurrency = document.getElementById(`to-currency-${index}`);
+
+  createCurrencyColumnOptions(fromCurrency, currencies, selectedFromCurrency, selectedToCurrency);
+  createCurrencyColumnOptions(toCurrency, currencies, selectedToCurrency, selectedFromCurrency);
+
+  fromCurrency.addEventListener('change', () => {
+    createCurrencyColumnOptions(toCurrency, currencies, toCurrency.value, fromCurrency.value);
+  });
+
+  toCurrency.addEventListener('change', () => {
+    createCurrencyColumnOptions(fromCurrency, currencies, fromCurrency.value, toCurrency.value);
+  });
+
+  // handle delete button
+
+  const buttons = document.getElementsByClassName('form-delete-button');
+
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+};
+
+
+const convert = (app) => {
+  if (!app) {
+    return;
+  }
+
+  let formIndex = 0;
+  let columns = [];
+  let currencies = {};
+  let settings;
+
+  app.listen('config', async config => {
+    settings = config.settings;
+    columns = config.context.available_columns;
+    currencies = await getCurrencies();
 
     const content = document.getElementById('content');
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (settings) {
-      document.getElementById('value').value = settings.value;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-
-      if (settings.match_condition) {
-        document.getElementById('match').checked = true;
-      } else {
-        document.getElementById('mismatch').checked = true;
-      }
-
-      if (settings.additional_values) {
-        settings.additional_values.forEach((addVal, i) => {
-          rowIndex = i;
-          createAdditionalValue(content, rowIndex, addVal.value, i);
-        });
-      }
+    if (!settings) {
+      createCurrencyConversionForm(content, formIndex, columns, currencies);
     } else {
-      document.getElementById('match').checked = true;
+      if (!Array.isArray(settings)) {
+        settings = [settings];
+      }
+      settings.forEach((setting, index) => {
+        formIndex = index;
+        createCurrencyConversionForm(content, formIndex, columns, currencies, setting);
+      });
     }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createAdditionalValue(content, rowIndex);
-    });
 
     hideComponent('loader');
     showComponent('app');
+
+    document.getElementById('add').addEventListener('click', () => {
+      formIndex += 1;
+      createCurrencyConversionForm(content, formIndex, columns, currencies);
+    });
   });
 
   app.listen('save', async () => {
     const data = {
-      settings: {},
+      settings: [],
       columns: {
         input: [],
         output: [],
       },
-      overview: '',
     };
 
-    showComponent('loader');
-    hideComponent('app');
+    const filledForms = document.forms;
 
-    const inputSelector = document.getElementById('column');
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    const matchCondition = document.getElementById('match').checked;
-    data.columns.input.push(inputColumn);
-    data.columns.output.push(
-      {
-        name: `${inputColumn.name}_INSTRUCTIONS`,
-        type: 'string',
-        output: false,
-      },
-    );
-
-    const inputValue = document.getElementById('value');
-    data.settings = {
-      from: inputColumn.name,
-      value: inputValue.value,
-      match_condition: matchCondition,
-      additional_values: [],
-    };
-
-    const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const val = line.getElementsByTagName('input')[0].value;
-      const addVal = {
-        value: val,
+    for (const currentForm of filledForms) {
+      const formElements = currentForm.elements;
+
+      const inputColumnValue = formElements.inputColumn.value;
+      const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+      const outputColumnValue = formElements.outputColumn.value;
+
+      if (outputColumnValue === '' || outputColumnValue === null) {
+        app.emit('validation-error', 'Output column name is required.');
+
+        return;
+      }
+
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
       };
-      data.settings.additional_values.push(addVal);
+
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings.push({
+        from: {
+          currency: currencyFromValue,
+          column: inputColumnValue,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      });
     }
 
     try {
-      const overview = await validate('filter_row', data);
+      const overview = await validate('currency_conversion', data);
+
       if (overview.error) {
         throw new Error(overview.error);
       }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
-      }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+      app.emit('save', {
+        data: { ...data, ...overview },
+        status: 'ok',
+      });
     } catch (e) {
-      showError(e);
-      showComponent('app');
-      hideComponent('loader');
+      app.emit('validation-error', e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(filterRow);
+  .then(convert);
 
 
 /***/ })
@@ -425,7 +513,7 @@ const filterRow = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			429: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -475,7 +563,7 @@ const filterRow = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
