@@ -2,14 +2,124 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 81:
+/***/ 262:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createManualOutputRow, manual
+// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
+
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -72,7 +182,7 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -85,132 +195,144 @@ All rights reserved.
 
 
 
-const createManualOutputRow = (parent, index, output) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '450px';
-  item.innerHTML = `
-      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
-};
 
-const manual = (app) => {
-  if (!app) {
-    return;
-  }
+const createOutputColumnForLookup = (prefix, name) => ({
+  name: `${prefix}.${name}`,
+  type: 'string',
+  description: '',
+});
 
-  hideComponent('app');
-  hideComponent('loader');
+const lookupSubscription = (app) => {
+  if (!app) return;
 
-  let availableColumns;
-  let rowIndex = 0;
+  let columns = [];
 
-  const descriptionElement = document.getElementById('description-text');
-  const settingsElement = document.getElementById('settings-text');
-
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
-      columns: { input: inputColumns, output: outputColumns },
-      context: { available_columns }, // eslint-disable-line camelcase
-      overview,
+      context: { available_columns: availableColumns, stream },
       settings,
     } = config;
 
-    availableColumns = available_columns; // eslint-disable-line camelcase
-
-    descriptionElement.value = overview || '';
-    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
-
-    const inputColumnsEditElement = document.getElementById('edit-input-columns');
-    availableColumns.forEach((column) => {
-      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
-      const inputColumnRow = document.createElement('tr');
-      inputColumnRow.innerHTML = `
-        <td>${column.id.slice(-3)}</td>
-        <td>${column.name}</td>
-        <td>${column.type}</td>
-        <td>${column.description ? column.description : '-'}</td>
-        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
-      `;
-      inputColumnsEditElement.appendChild(inputColumnRow);
-    });
-
-    const outputColumnsElement = document.getElementById('output-columns');
-
-    if (outputColumns.length > 0) {
-      outputColumns.forEach((outputColumn, index) => {
-        rowIndex = index;
-        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
-      });
-    } else {
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    });
+    const hasProduct = 'product' in stream.context;
+    columns = availableColumns;
+    const criteria = {
+      external_id: 'CloudBlue Subscription External ID',
+      id: 'CloudBlue Subscription ID',
+      params__value: 'Parameter Value',
+    };
 
     hideComponent('loader');
     showComponent('app');
+
+    Object.keys(criteria).forEach((key) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.text = criteria[key];
+      if (hasProduct === false && key === 'params__value') {
+        option.disabled = true;
+      }
+      document.getElementById('criteria').appendChild(option);
+    });
+
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (hasProduct === true) {
+      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      parameters.forEach((element) => {
+        const option = document.createElement('option');
+        option.value = element.id;
+        option.text = element.name;
+        document.getElementById('parameter').appendChild(option);
+      });
+    }
+
+    if (settings) {
+      document.getElementById('criteria').value = settings.lookup_type;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      document.getElementById('prefix').value = settings.prefix;
+      if (settings.action_if_not_found === 'leave_empty') {
+        document.getElementById('not_found_leave_empty').checked = true;
+      } else {
+        document.getElementById('not_found_fail').checked = true;
+      }
+      const multipleInput = document.getElementById(`multiple_${settings.action_if_multiple}`);
+      if (multipleInput) {
+        multipleInput.checked = true;
+      } else {
+        document.getElementById('multiple_fail').checked = true;
+      }
+      if (settings.lookup_type === 'params__value') {
+        document.getElementById('parameter').value = settings.parameter.id;
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    } else {
+      document.getElementById('param_name_group').style.display = 'none';
+      document.getElementById('not_found_leave_empty').checked = true;
+      document.getElementById('multiple_actual').checked = true;
+    }
+
+    document.getElementById('criteria').addEventListener('change', () => {
+      if (document.getElementById('criteria').value === 'params__value') {
+        document.getElementById('param_name_group').style.display = 'block';
+      } else {
+        document.getElementById('param_name_group').style.display = 'none';
+      }
+    });
   });
 
-  app.listen('save', () => {
+  app.listen('save', async () => {
+    const criteria = document.getElementById('criteria').value;
+    const columnId = document.getElementById('column').value;
+    const prefix = document.getElementById('prefix').value;
+    let parameter = {};
+    if (document.getElementById('criteria').value === 'params__value') {
+      const select = document.getElementById('parameter');
+      const paramName = select[select.selectedIndex].text;
+      const paramID = select.value;
+      parameter = { name: paramName, id: paramID };
+    }
+    const column = columns.find((c) => c.id === columnId);
+    const actionIfNotFound = document.querySelector('input[name="if_not_found"]:checked').value;
+    const actionIfMultiple = document.querySelector('input[name="if_multiple"]:checked').value;
+
     const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
+      settings: {
+        lookup_type: criteria,
+        from: column.name,
+        parameter,
+        prefix,
+        action_if_not_found: actionIfNotFound,
+        action_if_multiple: actionIfMultiple,
       },
-      overview: '',
+      columns: {
+        input: [column],
+        output: [
+          'product.id',
+          'product.name',
+          'marketplace.id',
+          'marketplace.name',
+          'vendor.id',
+          'vendor.name',
+          'subscription.id',
+          'subscription.external_id',
+          'subscription.status',
+        ].map((name) => createOutputColumnForLookup(prefix, name)),
+      },
     };
 
     try {
-      data.overview = descriptionElement.value;
-      data.settings = JSON.parse(settingsElement.value);
-      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
-      inputColumns.forEach((inputColumn) => {
-        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
-        data.columns.input.push(availableColumn);
-      });
-
-      const outputColumnsElements = document.getElementsByClassName('output-column-name');
-      // eslint-disable-next-line no-restricted-syntax
-      for (const outputColumnElement of outputColumnsElements) {
-        const outputColumn = {
-          name: outputColumnElement.value,
-          type: 'string',
-          description: '',
-        };
-        data.columns.output.push(outputColumn);
+      const overview = await validate('lookup_subscription', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
-
-      app.emit('save', {
-        data,
-        status: 'ok',
-      });
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       showError(e);
     }
@@ -218,7 +340,7 @@ const manual = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(lookupSubscription);
 
 
 /***/ })
@@ -310,7 +432,7 @@ const manual = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			228: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -360,7 +482,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(81)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
