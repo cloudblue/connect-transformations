@@ -15,7 +15,6 @@ import {
 import {
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
 
 
@@ -98,7 +97,7 @@ export const lookupSubscription = (app) => {
     } else {
       document.getElementById('param_name_group').style.display = 'none';
       document.getElementById('not_found_leave_empty').checked = true;
-      document.getElementById('multiple_actual').checked = true;
+      document.getElementById('multiple_use_most_actual').checked = true;
     }
 
     document.getElementById('criteria').addEventListener('change', () => {
@@ -157,7 +156,7 @@ export const lookupSubscription = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };

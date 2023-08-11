@@ -128,7 +128,7 @@ const airtable = (app) => {
         }
         hideError();
       } catch (e) {
-        showError(e);
+        app.emit('validation-error', e);
       }
 
       createOptions('base-select', airtableBases);
@@ -193,7 +193,7 @@ const airtable = (app) => {
         }
         hideError();
       } catch (e) {
-        showError(e);
+        app.emit('validation-error', e);
       }
 
       const currentTable = tables.find(x => x.id === settings.table_id);
@@ -235,7 +235,7 @@ const airtable = (app) => {
   app.listen('save', async () => {
     let overview = '';
     if (!mapInputColumn || !mapAirtableColumn) {
-      showError('Please complete all the fields');
+      app.emit('validation-error', 'Please complete all the fields');
 
       return;
     }
@@ -284,7 +284,7 @@ const airtable = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
-      showError(e);
+      app.emit('validation-error', e);
     }
   });
 };
