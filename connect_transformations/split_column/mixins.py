@@ -40,7 +40,7 @@ class SplitColumnTransformationMixin:
         groups = trfn_settings['regex']['groups']
 
         result = {}
-        match = re.match(pattern, row_value) if row_value else None
+        match = re.match(pattern, str(row_value)) if row_value else None
         pattern_groups = match.groups() if match else {}
 
         for key, column in groups.items():
