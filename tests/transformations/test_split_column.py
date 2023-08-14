@@ -3,6 +3,7 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
+from datetime import datetime
 from decimal import Decimal
 
 import pytest
@@ -65,6 +66,62 @@ def test_split_column_integer(mocker):
     assert response.transformed_row == {
         'street': 'street',
         'number': 22,
+    }
+
+
+def test_split_column_input_float(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': r'(\w+).(\d+)',
+                    'groups': {
+                        '1': {'name': 'whole', 'type': 'integer'},
+                        '2': {'name': 'fract', 'type': 'integer'},
+                    },
+                },
+            },
+        },
+    }
+    response = app.split_column({
+        'column': 100.12,
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'whole': 100,
+        'fract': 12,
+    }
+
+
+def test_split_column_input_datetime(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'from': 'column',
+                'regex': {
+                    'pattern': r'(\d{4})-(\d{2})-(\d{2}).*',
+                    'groups': {
+                        '1': {'name': 'year', 'type': 'integer'},
+                        '2': {'name': 'month', 'type': 'integer'},
+                        '3': {'name': 'day', 'type': 'integer'},
+                    },
+                },
+            },
+        },
+    }
+    response = app.split_column({
+        'column': datetime(2022, 1, 2, 12, 11),
+    })
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'year': 2022,
+        'month': 1,
+        'day': 2,
     }
 
 
