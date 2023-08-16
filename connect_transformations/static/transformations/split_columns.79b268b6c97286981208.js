@@ -270,11 +270,11 @@ function buildGroups(groups) {
     const selectPrecision = buildSelectColumnPrecision(groupKey);
     item.innerHTML = `
     <div>
-    <input 
-    type="text" 
-    class="output-input" 
+    <input
+    type="text"
+    class="output-input"
     id="${groupKey}"
-    placeholder="${groupKey} group name" 
+    placeholder="${groupKey} group name"
     value="${groupValue.name}"/>
     </div>
     <div>
@@ -407,6 +407,9 @@ const splitColumn = (app) => {
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
+      hideComponent('loader');
+      showComponent('app');
+
       app.emit('validation-error', e);
     }
   });
