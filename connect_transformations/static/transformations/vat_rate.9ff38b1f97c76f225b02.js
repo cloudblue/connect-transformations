@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 262:
+/***/ 755:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -120,6 +118,22 @@ const getContextVariables = (stream) => {
   return variables;
 };
 
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
+
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
+  }
+
+  return data;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -182,7 +196,98 @@ const getDeleteButton = (index) => {
   return button;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_subscription.js
+
+const buildOutputColumnInput = (parent, column, index, deletable) => {
+  const container = document.createElement('div');
+  container.id = index;
+  container.classList.add('output-column-container');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = `name-${container.id}`;
+  nameInput.placeholder = 'Column name';
+  nameInput.value = column?.name || '';
+  container.appendChild(nameInput);
+
+  const typeSelect = document.createElement('select');
+  typeSelect.style.flexGrow = '1';
+  typeSelect.id = `type-${container.id}`;
+  typeSelect.innerHTML = `
+    <option value="string" selected>String</option>
+    <option value="integer">Integer</option>
+    <option value="decimal">Decimal</option>
+    <option value="boolean">Boolean</option>
+    <option value="datetime">Datetime</option>
+  `;
+  typeSelect.value = column?.type || 'string';
+  container.appendChild(typeSelect);
+
+  const precisionSelect = document.createElement('select');
+  precisionSelect.id = `precision-${container.id}`;
+  typeSelect.style.flexShrink = '100';
+  precisionSelect.innerHTML = `
+    <option value="auto" selected>Auto</option>
+    <option value="1">1 decimal</option>
+    <option value="2">2 decimals</option>
+    <option value="3">3 decimals</option>
+    <option value="4">4 decimals</option>
+    <option value="5">5 decimals</option>
+    <option value="6">6 decimals</option>
+    <option value="7">7 decimals</option>
+    <option value="8">8 decimals</option>
+  `;
+
+  if (column?.type === 'decimal') {
+    precisionSelect.style.display = 'block';
+    precisionSelect.value = column.constraints?.precision || 'auto';
+  } else {
+    precisionSelect.style.display = 'none';
+    precisionSelect.value = null;
+  }
+
+  container.appendChild(precisionSelect);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.id = `delete-${container.id}`;
+  deleteButton.classList.add('button', 'delete-button');
+  deleteButton.innerHTML = 'DELETE';
+  container.appendChild(deleteButton);
+
+  if (!deletable) {
+    deleteButton.style.display = 'none';
+  }
+
+  parent.appendChild(container);
+
+  typeSelect.addEventListener('change', () => {
+    if (typeSelect.value === 'decimal') {
+      precisionSelect.style.display = 'block';
+      precisionSelect.value = 'auto';
+    } else {
+      precisionSelect.style.display = 'none';
+      precisionSelect.value = null;
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    parent.remove();
+    const buttons = document.getElementsByClassName('delete-button');
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,151 +301,96 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
 
-const lookupSubscription = (app) => {
-  if (!app) return;
+const vatRate = (app) => {
+  if (!app) {
+    return;
+  }
 
   let columns = [];
 
-  app.listen('config', async (config) => {
+  app.listen('config', config => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
     columns = availableColumns;
-    const criteria = {
-      external_id: 'CloudBlue Subscription External ID',
-      id: 'CloudBlue Subscription ID',
-      params__value: 'Parameter Value',
-    };
 
-    hideComponent('loader');
-    showComponent('app');
-
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      if (hasProduct === false && key === 'params__value') {
-        option.disabled = true;
-      }
-      document.getElementById('criteria').appendChild(option);
+    const inputColumnSelect = document.getElementById('input-column');
+    const outputColumnInput = document.getElementById('output-column');
+    columns.forEach(column => {
+      const isSelected = settings && column.id === settings.from;
+      const colLabel = getColumnLabel(column);
+      const option = isSelected
+        ? `<option value="${column.id}" selected>${colLabel}</option>`
+        : `<option value="${column.id}">${colLabel}</option>`;
+      inputColumnSelect.innerHTML += option;
     });
-
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (hasProduct === true) {
-      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
-      parameters.forEach((element) => {
-        const option = document.createElement('option');
-        option.value = element.id;
-        option.text = element.name;
-        document.getElementById('parameter').appendChild(option);
-      });
-    }
 
     if (settings) {
-      document.getElementById('criteria').value = settings.lookup_type;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-      document.getElementById('prefix').value = settings.prefix;
+      outputColumnInput.value = settings.to;
       if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('not_found_leave_empty').checked = true;
+        document.getElementById('leave_empty').checked = true;
       } else {
-        document.getElementById('not_found_fail').checked = true;
-      }
-      const multipleInput = document.getElementById(`multiple_${settings.action_if_multiple}`);
-      if (multipleInput) {
-        multipleInput.checked = true;
-      } else {
-        document.getElementById('multiple_fail').checked = true;
-      }
-      if (settings.lookup_type === 'params__value') {
-        document.getElementById('parameter').value = settings.parameter.id;
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
+        document.getElementById('fail').checked = true;
       }
     } else {
-      document.getElementById('param_name_group').style.display = 'none';
-      document.getElementById('not_found_leave_empty').checked = true;
-      document.getElementById('multiple_use_most_actual').checked = true;
+      document.getElementById('leave_empty').checked = true;
     }
-
-    document.getElementById('criteria').addEventListener('change', () => {
-      if (document.getElementById('criteria').value === 'params__value') {
-        document.getElementById('param_name_group').style.display = 'block';
-      } else {
-        document.getElementById('param_name_group').style.display = 'none';
-      }
-    });
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    let parameter = {};
-    if (document.getElementById('criteria').value === 'params__value') {
-      const select = document.getElementById('parameter');
-      const paramName = select[select.selectedIndex].text;
-      const paramID = select.value;
-      parameter = { name: paramName, id: paramID };
-    }
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.querySelector('input[name="if_not_found"]:checked').value;
-    const actionIfMultiple = document.querySelector('input[name="if_multiple"]:checked').value;
+    const inputColumnValue = document.getElementById('input-column').value;
+    const inputColumn = columns.find(column => column.id === inputColumnValue);
+    const outputColumnValue = document.getElementById('output-column').value;
+    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
 
-    const data = {
-      settings: {
-        lookup_type: criteria,
-        from: column.name,
-        parameter,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        action_if_multiple: actionIfMultiple,
-      },
-      columns: {
-        input: [column],
-        output: [
-          'product.id',
-          'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
-          'subscription.status',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
-      },
-    };
+    if (outputColumnValue === inputColumn.name) {
+      app.emit('validation-error', 'This fields may not be equal: columns.input.name, columns.output.name.');
+    } else if (outputColumnValue === '' || outputColumnValue === null) {
+      app.emit('validation-error', 'Output column name is required.');
+    } else {
+      const data = {
+        settings: {
+          from: inputColumn.name,
+          to: outputColumnValue,
+          action_if_not_found: actionIfNotFound,
+        },
+        columns: {
+          input: [
+            inputColumn,
+          ],
+          output: [
+            {
+              name: outputColumnValue,
+              type: 'integer',
+              description: '',
+            },
+          ],
+        },
+      };
 
-    try {
-      const overview = await validate('lookup_subscription', data);
-      if (overview.error) {
-        throw new Error(overview.error);
+      try {
+        const overview = await validate('vat_rate', data);
+        if (overview.error) {
+          throw new Error(overview.error);
+        }
+        app.emit('save', {
+          data: { ...data, ...overview },
+          status: 'ok',
+        });
+      } catch (e) {
+        app.emit('validation-error', e);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      app.emit('validation-error', e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupSubscription);
+  .then(vatRate);
 
 
 /***/ })
@@ -432,7 +482,7 @@ const lookupSubscription = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			228: 0
+/******/ 			496: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -482,7 +532,7 @@ const lookupSubscription = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(262)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

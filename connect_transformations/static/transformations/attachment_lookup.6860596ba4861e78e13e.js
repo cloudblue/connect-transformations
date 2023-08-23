@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 813:
+/***/ 33:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createAdditionalValue, filterRow
+// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -70,6 +70,97 @@ const getDeleteButton = (index) => {
   button.innerHTML = getDeleteSvg();
 
   return button;
+};
+
+
+const buildOutputColumnInput = (parent, column, index, deletable) => {
+  const container = document.createElement('div');
+  container.id = index;
+  container.classList.add('output-column-container');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = `name-${container.id}`;
+  nameInput.placeholder = 'Column name';
+  nameInput.value = column?.name || '';
+  container.appendChild(nameInput);
+
+  const typeSelect = document.createElement('select');
+  typeSelect.style.flexGrow = '1';
+  typeSelect.id = `type-${container.id}`;
+  typeSelect.innerHTML = `
+    <option value="string" selected>String</option>
+    <option value="integer">Integer</option>
+    <option value="decimal">Decimal</option>
+    <option value="boolean">Boolean</option>
+    <option value="datetime">Datetime</option>
+  `;
+  typeSelect.value = column?.type || 'string';
+  container.appendChild(typeSelect);
+
+  const precisionSelect = document.createElement('select');
+  precisionSelect.id = `precision-${container.id}`;
+  typeSelect.style.flexShrink = '100';
+  precisionSelect.innerHTML = `
+    <option value="auto" selected>Auto</option>
+    <option value="1">1 decimal</option>
+    <option value="2">2 decimals</option>
+    <option value="3">3 decimals</option>
+    <option value="4">4 decimals</option>
+    <option value="5">5 decimals</option>
+    <option value="6">6 decimals</option>
+    <option value="7">7 decimals</option>
+    <option value="8">8 decimals</option>
+  `;
+
+  if (column?.type === 'decimal') {
+    precisionSelect.style.display = 'block';
+    precisionSelect.value = column.constraints?.precision || 'auto';
+  } else {
+    precisionSelect.style.display = 'none';
+    precisionSelect.value = null;
+  }
+
+  container.appendChild(precisionSelect);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.id = `delete-${container.id}`;
+  deleteButton.classList.add('button', 'delete-button');
+  deleteButton.innerHTML = 'DELETE';
+  container.appendChild(deleteButton);
+
+  if (!deletable) {
+    deleteButton.style.display = 'none';
+  }
+
+  parent.appendChild(container);
+
+  typeSelect.addEventListener('change', () => {
+    if (typeSelect.value === 'decimal') {
+      precisionSelect.style.display = 'block';
+      precisionSelect.value = 'auto';
+    } else {
+      precisionSelect.style.display = 'none';
+      precisionSelect.value = null;
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    parent.remove();
+    const buttons = document.getElementsByClassName('delete-button');
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -182,7 +273,23 @@ const getContextVariables = (stream) => {
   return variables;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
+
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
+  }
+
+  return data;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,144 +303,193 @@ All rights reserved.
 
 
 
-const createAdditionalValue = (parent, index, value) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = `
-      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
-  parent.appendChild(item);
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    document.getElementById(`wrapper-${index}`).remove();
+const getRequiredValue = (id, errorMessage) => {
+  const { value } = document.getElementById(id);
+  if (!value) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+};
+
+const fillSelect = (options, id, value) => {
+  const select = document.getElementById(id);
+  if (value) {
+    select.value = value;
+  }
+  select.innerHTML = '';
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.text = getColumnLabel(item);
+    if (item.id === value) {
+      option.selected = true;
+    }
+    select.appendChild(option);
   });
 };
 
-const filterRow = (app) => {
+const createMappingRow = (index, from, to) => {
+  let lastRowIndex = 0;
+  // remove existing ADD button and add REMOVE button to last col of the row
+  const addButton = document.getElementById('add-button');
+  if (addButton) {
+    // get data-row-index from the ADD button and add delete button to this row
+    lastRowIndex = addButton.getAttribute('data-row-index');
+    addButton.remove();
+    document
+      .getElementById(`row-${lastRowIndex}`)
+      .children[3]
+      .appendChild(getDeleteButton(lastRowIndex));
+  }
+
+  const row = document.createElement('div');
+  row.classList.add('row');
+  row.id = `row-${index}`;
+  row.innerHTML = `
+    <div class="col button-col">
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Input column" value="${from || ''}" />
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Output column" value="${to || ''}" />
+    </div>
+    <div class="col button-col">
+    </div>`;
+  row.children[0].appendChild(getAddButton(index));
+  document.getElementById('mapping').appendChild(row);
+
+  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      document.getElementById(`row-${lastRowIndex}`).remove();
+      // replace delete button with add button if there is only one row left
+      if (document.getElementsByClassName('row').length === 1) {
+        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+      }
+    });
+  }
+  document.getElementById('add-button').addEventListener('click', () => {
+    createMappingRow(index + 1);
+  });
+};
+
+const loockupSpreadsheet = (app) => {
   if (!app) return;
 
+  let attachments = [];
   let columns = [];
-  let rowIndex = 0;
 
-  hideComponent('loader');
-  showComponent('app');
+  app.listen('config', async (config) => {
+    try {
+      const {
+        context: {
+          stream: { id: streamId },
+          available_columns: availableColumns,
+        },
+        settings,
+      } = config;
 
-  app.listen('config', (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      settings,
-    } = config;
+      attachments = await getAttachments(streamId);
+      columns = availableColumns;
 
-    showComponent('loader');
-    hideComponent('app');
+      if (settings) {
+        const {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumnName,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        } = settings;
 
-    columns = availableColumns;
-
-    const content = document.getElementById('content');
-
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
-    });
-
-    if (settings) {
-      document.getElementById('value').value = settings.value;
-      const columnId = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('column').value = columnId;
-
-      if (settings.match_condition) {
-        document.getElementById('match').checked = true;
-      } else {
-        document.getElementById('mismatch').checked = true;
-      }
-
-      if (settings.additional_values) {
-        settings.additional_values.forEach((addVal, i) => {
-          rowIndex = i;
-          createAdditionalValue(content, rowIndex, addVal.value, i);
+        const inputColumn = columns.find((item) => item.name === inputColumnName);
+        fillSelect(columns, 'input-column', inputColumn.id);
+        const attachmentFound = attachments.find((item) => item.file === file);
+        let fileId = null;
+        if (attachmentFound == null) {
+          const fileName = file.split('/').pop();
+          app.emit('validation-error', `The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
+        } else {
+          fileId = attachmentFound.id;
+        }
+        fillSelect(attachments, 'attachment', fileId);
+        document.getElementById('attachment-column').value = attachmentColumn;
+        document.getElementById('sheet').value = sheet;
+        mapping.forEach((item, index) => {
+          createMappingRow(index, item.from, item.to);
         });
+      } else {
+        fillSelect(columns, 'input-column');
+        fillSelect(attachments, 'attachment');
+        createMappingRow(0);
       }
-    } else {
-      document.getElementById('match').checked = true;
+    } catch (error) {
+      app.emit('validation-error', error);
+    } finally {
+      hideComponent('loader');
+      showComponent('app');
     }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createAdditionalValue(content, rowIndex);
-    });
-
-    hideComponent('loader');
-    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const data = {
-      settings: {},
-      columns: {
-        input: [],
-        output: [],
-      },
-      overview: '',
-    };
-
-    showComponent('loader');
-    hideComponent('app');
-
-    const inputSelector = document.getElementById('column');
-    const inputColumn = columns.find((column) => column.id === inputSelector.value);
-    const matchCondition = document.getElementById('match').checked;
-    data.columns.input.push(inputColumn);
-    data.columns.output.push(
-      {
-        name: `${inputColumn.name}_INSTRUCTIONS`,
-        type: 'string',
-        output: false,
-      },
-    );
-
-    const inputValue = document.getElementById('value');
-    data.settings = {
-      from: inputColumn.name,
-      value: inputValue.value,
-      match_condition: matchCondition,
-      additional_values: [],
-    };
-
-    const form = document.getElementsByClassName('list-wrapper');
-    // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const val = line.getElementsByTagName('input')[0].value;
-      const addVal = {
-        value: val,
-      };
-      data.settings.additional_values.push(addVal);
-    }
+    hideError();
 
     try {
-      const overview = await validate('filter_row', data);
+      const fileId = getRequiredValue('attachment', 'Please select attachment');
+      const { file } = attachments.find((item) => item.id === fileId);
+      const sheet = document.getElementById('sheet').value;
+      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
+      const inputColumn = columns.find((item) => item.id === inputColumnId);
+      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+
+      const outputColumns = [];
+      const mapping = [];
+      const rows = document.querySelectorAll('#mapping .row');
+      rows.forEach((row) => {
+        const from = row.children[1].children[0].value;
+        const to = row.children[2].children[0].value;
+        if (from && to) {
+          mapping.push({ from, to });
+          outputColumns.push({
+            name: to,
+          });
+        } else {
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const data = {
+        settings: {
+          file,
+          sheet,
+          map_by: {
+            input_column: inputColumn.name,
+            attachment_column: attachmentColumn,
+          },
+          mapping,
+        },
+        columns: {
+          input: [inputColumn],
+          output: outputColumns,
+        },
+      };
+
+      const overview = await validate('attachment_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
-
-      if (data.columns.output.length === 0) {
-        throw new Error('No output columns defined');
-      }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      app.emit('validation-error', e);
-      showComponent('app');
-      hideComponent('loader');
+    } catch (error) {
+      app.emit('validation-error', error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ })
-  .then(filterRow);
+(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
 
 
 /***/ })
@@ -425,7 +581,7 @@ const filterRow = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			429: 0
+/******/ 			264: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -475,7 +631,7 @@ const filterRow = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

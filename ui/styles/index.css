@@ -140,6 +140,7 @@ All rights reserved.
 }
 
 .list-wrapper {
+    width: 100%;
     margin: 8px auto;
 }
 
@@ -169,21 +170,11 @@ textarea,
     font-weight: bold;
 }
 
+input,
 select {
     padding: 8px;
     border: none;
     border-bottom: 1px solid rgb(var(--pure-material-primary-rgb, 33, 150, 243));
-    margin-right: 16px;
-}
-
-input {
-    padding: 8px;
-    border: none;
-    border-bottom: 1px solid rgb(var(--pure-material-primary-rgb, 33, 150, 243));
-}
-
-button.delete-button {
-    margin-left: 16px;
 }
 
 .convert-currency {
@@ -217,4 +208,15 @@ button.delete-button {
 
 .convert-currency label {
     font-weight: 700;
+}
+
+.output-column-container {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    justify-content: space-between;
+}
+
+.output-column-container > * {
+    flex-shrink: 0;
 }

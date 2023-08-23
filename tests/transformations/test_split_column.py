@@ -23,11 +23,18 @@ def test_split_column_string(mocker):
                 'regex': {
                     'pattern': r'(\w+) (?P<first_name>\w+) (?P<last_name>\w+)',
                     'groups': {
-                        '1': {'name': 'group_1', 'type': 'string'},
-                        '2': {'name': 'First Name', 'type': 'string'},
-                        '3': {'name': 'Last Name', 'type': 'string'},
+                        '1': {'name': 'group_1'},
+                        '2': {'name': 'First Name'},
+                        '3': {'name': 'Last Name'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'group_1', 'type': 'string'},
+                    {'id': 'COL-2', 'name': 'First Name', 'type': 'string'},
+                    {'id': 'COL-3', 'name': 'Last Name', 'type': 'string'},
+                ],
             },
         },
     }
@@ -52,10 +59,16 @@ def test_split_column_integer(mocker):
                 'regex': {
                     'pattern': r'(\w+) (?P<number>\d+)',
                     'groups': {
-                        '1': {'name': 'street', 'type': 'string'},
-                        '2': {'name': 'number', 'type': 'integer'},
+                        '1': {'name': 'street'},
+                        '2': {'name': 'number'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'street', 'type': 'string'},
+                    {'id': 'COL-2', 'name': 'number', 'type': 'integer'},
+                ],
             },
         },
     }
@@ -79,10 +92,16 @@ def test_split_column_input_float(mocker):
                 'regex': {
                     'pattern': r'(\w+).(\d+)',
                     'groups': {
-                        '1': {'name': 'whole', 'type': 'integer'},
-                        '2': {'name': 'fract', 'type': 'integer'},
+                        '1': {'name': 'whole'},
+                        '2': {'name': 'fract'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'whole', 'type': 'integer'},
+                    {'id': 'COL-2', 'name': 'fract', 'type': 'integer'},
+                ],
             },
         },
     }
@@ -106,11 +125,18 @@ def test_split_column_input_datetime(mocker):
                 'regex': {
                     'pattern': r'(\d{4})-(\d{2})-(\d{2}).*',
                     'groups': {
-                        '1': {'name': 'year', 'type': 'integer'},
-                        '2': {'name': 'month', 'type': 'integer'},
-                        '3': {'name': 'day', 'type': 'integer'},
+                        '1': {'name': 'year'},
+                        '2': {'name': 'month'},
+                        '3': {'name': 'day'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'year', 'type': 'integer'},
+                    {'id': 'COL-2', 'name': 'month', 'type': 'integer'},
+                    {'id': 'COL-3', 'name': 'day', 'type': 'integer'},
+                ],
             },
         },
     }
@@ -135,11 +161,24 @@ def test_split_column_decimal(mocker):
                 'regex': {
                     'pattern': r'(\w+) (?P<number>[\d,.]+) (?P<vat>[\d,.]+)',
                     'groups': {
-                        '1': {'name': 'currency', 'type': 'string'},
-                        '2': {'name': 'number', 'type': 'decimal', 'precision': 2},
-                        '3': {'name': 'vat', 'type': 'decimal', 'precision': 3},
+                        '1': {'name': 'currency'},
+                        '2': {'name': 'number'},
+                        '3': {'name': 'vat'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'currency', 'type': 'string'},
+                    {
+                        'id': 'COL-2', 'name': 'number', 'type': 'decimal',
+                        'constraints': {'precision': 2},
+                    },
+                    {
+                        'id': 'COL-3', 'name': 'vat', 'type': 'decimal',
+                        'constraints': {'precision': 3},
+                    },
+                ],
             },
         },
     }
@@ -183,9 +222,14 @@ def test_split_column_boolean(mocker, value, result):
                 'regex': {
                     'pattern': r'(\w+)',
                     'groups': {
-                        '1': {'name': 'is_right', 'type': 'boolean'},
+                        '1': {'name': 'is_right'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'is_right', 'type': 'boolean'},
+                ],
             },
         },
     }
@@ -215,9 +259,14 @@ def test_split_column_datetime(mocker, value):
                 'regex': {
                     'pattern': r'(.*)',
                     'groups': {
-                        '1': {'name': 'date', 'type': 'datetime'},
+                        '1': {'name': 'date'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'date', 'type': 'datetime'},
+                ],
             },
         },
     }
@@ -246,6 +295,13 @@ def test_split_column_not_match_regex(mocker):
                     },
                 },
             },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'group_1', 'type': 'string'},
+                    {'id': 'COL-2', 'name': 'First Name', 'type': 'string'},
+                    {'id': 'COL-3', 'name': 'Last Name', 'type': 'string'},
+                ],
+            },
         },
     }
     response = app.split_column({
@@ -269,10 +325,16 @@ def test_split_column_match_partially(mocker):
                 'regex': {
                     'pattern': '(?P<first_name>\\w+) (?P<last_name>\\w+)',
                     'groups': {
-                        '1': {'name': 'First Name', 'type': 'string'},
-                        '2': {'name': 'Last Name', 'type': 'string'},
+                        '1': {'name': 'First Name'},
+                        '2': {'name': 'Last Name'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-2', 'name': 'First Name', 'type': 'string'},
+                    {'id': 'COL-3', 'name': 'Last Name', 'type': 'string'},
+                ],
             },
         },
     }
@@ -300,6 +362,12 @@ def test_split_column_match_optional(mocker):
                         '2': {'name': 'Last Name', 'type': 'string'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-2', 'name': 'First Name', 'type': 'string'},
+                    {'id': 'COL-3', 'name': 'Last Name', 'type': 'string'},
+                ],
             },
         },
     }
@@ -329,6 +397,13 @@ def test_split_column_old_config(mocker):
                         '3': {'name': 'Last Name'},
                     },
                 },
+            },
+            'columns': {
+                'output': [
+                    {'id': 'COL-1', 'name': 'group_1', 'type': 'string'},
+                    {'id': 'COL-2', 'name': 'First Name', 'type': 'string'},
+                    {'id': 'COL-3', 'name': 'Last Name', 'type': 'string'},
+                ],
             },
         },
     }

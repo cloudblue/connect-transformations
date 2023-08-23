@@ -21,7 +21,6 @@ export const createAdditionalValue = (parent, index, value) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '100%';
   item.innerHTML = `
       <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
