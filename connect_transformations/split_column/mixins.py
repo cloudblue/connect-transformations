@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import re
+from functools import cached_property
 from typing import Dict
 
 from connect.eaas.core.decorators import router, transformation
@@ -43,18 +44,26 @@ class SplitColumnTransformationMixin:
         match = re.match(pattern, str(row_value)) if row_value else None
         pattern_groups = match.groups() if match else {}
 
-        for key, column in groups.items():
+        for key, group in groups.items():
             index = int(key) - 1
-            column_name = column['name']
+            column_name = group['name']
+            column = self.output_columns[column_name]
+
             column_type = column.get('type', 'string')
             value = pattern_groups[index] if len(pattern_groups) > index else None
             parameters = {'value': value, 'type': column_type}
-            if column_type == 'decimal' and 'precision' in column:
-                parameters['additional_parameters'] = {'precision': column['precision']}
+            precision = column.get('constraints', {}).get('precision')
+            if precision:
+                parameters['additional_parameters'] = {'precision': precision}
             cast_value = cast_value_to_type(**parameters)
             result[column_name] = cast_value
 
         return RowTransformationResponse.done(result)
+
+    @cached_property
+    def output_columns(self):
+        out_columns = self.transformation_request['transformation']['columns']['output']
+        return {c['name']: c for c in out_columns}
 
 
 class SplitColumnWebAppMixin:

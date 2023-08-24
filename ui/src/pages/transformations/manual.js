@@ -8,41 +8,21 @@ import '../../../styles/index.css';
 import '../../../styles/manual.css';
 import '../../../styles/app.styl';
 import {
+  buildOutputColumnInput,
   hideComponent,
   showComponent,
-  showError,
 } from '../../components';
+import {
+  getDataFromOutputColumnInput,
+} from '../../utils';
 
 
-export const createManualOutputRow = (parent, index, output) => {
+export const createManualOutputRow = (parent, index, column) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '450px';
-  item.innerHTML = `
-      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
   parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
+  buildOutputColumnInput(item, column, index, true);
 };
 
 export const manual = (app) => {
@@ -148,15 +128,10 @@ export const manual = (app) => {
         data.columns.input.push(availableColumn);
       });
 
-      const outputColumnsElements = document.getElementsByClassName('output-column-name');
-      // eslint-disable-next-line no-restricted-syntax
-      for (const outputColumnElement of outputColumnsElements) {
-        const outputColumn = {
-          name: outputColumnElement.value,
-          type: 'string',
-          description: '',
-        };
-        data.columns.output.push(outputColumn);
+      const outputs = document.getElementsByClassName('output-column-container');
+      for (let i = 0; i < outputs.length; i += 1) {
+        const index = outputs[i].id;
+        data.columns.output.push(getDataFromOutputColumnInput(index));
       }
 
       app.emit('save', {

@@ -21,7 +21,6 @@ export const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '100%';
   item.innerHTML = `
       <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
         ${options.map((column) => `

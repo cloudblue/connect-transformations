@@ -2,14 +2,167 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 813:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
+// UNUSED EXPORTS: createAdditionalValue, filterRow
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/components.js
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+
+// render UI components - show/hide
+const showComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.remove('hidden');
+};
+
+const hideComponent = (id) => {
+  if (!id) return;
+  const element = document.getElementById(id);
+  element.classList.add('hidden');
+};
+
+const showError = (message) => {
+  const oldError = document.getElementById('error');
+  if (oldError) {
+    oldError.remove();
+  }
+  const error = document.createElement('div');
+  error.id = 'error';
+  error.innerHTML = `<div class="c-alert">${message}</div>`;
+  document.getElementsByTagName('body')[0].appendChild(error);
+  document.getElementById('error').scrollIntoView();
+};
+
+const hideError = () => {
+  const error = document.getElementById('error');
+  if (error) {
+    error.remove();
+  }
+};
+
+const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+
+const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+
+const getAddButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('add-button');
+  button.id = 'add-button';
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getAddSvg();
+
+  return button;
+};
+
+const getDeleteButton = (index) => {
+  const button = document.createElement('button');
+  button.classList.add('delete-button');
+  button.id = `delete-${index}`;
+  button.setAttribute('data-row-index', index);
+  button.innerHTML = getDeleteSvg();
+
+  return button;
+};
+
+
+const buildOutputColumnInput = (parent, column, index, deletable) => {
+  const container = document.createElement('div');
+  container.id = index;
+  container.classList.add('output-column-container');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = `name-${container.id}`;
+  nameInput.placeholder = 'Column name';
+  nameInput.value = column?.name || '';
+  container.appendChild(nameInput);
+
+  const typeSelect = document.createElement('select');
+  typeSelect.style.flexGrow = '1';
+  typeSelect.id = `type-${container.id}`;
+  typeSelect.innerHTML = `
+    <option value="string" selected>String</option>
+    <option value="integer">Integer</option>
+    <option value="decimal">Decimal</option>
+    <option value="boolean">Boolean</option>
+    <option value="datetime">Datetime</option>
+  `;
+  typeSelect.value = column?.type || 'string';
+  container.appendChild(typeSelect);
+
+  const precisionSelect = document.createElement('select');
+  precisionSelect.id = `precision-${container.id}`;
+  typeSelect.style.flexShrink = '100';
+  precisionSelect.innerHTML = `
+    <option value="auto" selected>Auto</option>
+    <option value="1">1 decimal</option>
+    <option value="2">2 decimals</option>
+    <option value="3">3 decimals</option>
+    <option value="4">4 decimals</option>
+    <option value="5">5 decimals</option>
+    <option value="6">6 decimals</option>
+    <option value="7">7 decimals</option>
+    <option value="8">8 decimals</option>
+  `;
+
+  if (column?.type === 'decimal') {
+    precisionSelect.style.display = 'block';
+    precisionSelect.value = column.constraints?.precision || 'auto';
+  } else {
+    precisionSelect.style.display = 'none';
+    precisionSelect.value = null;
+  }
+
+  container.appendChild(precisionSelect);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.id = `delete-${container.id}`;
+  deleteButton.classList.add('button', 'delete-button');
+  deleteButton.innerHTML = 'DELETE';
+  container.appendChild(deleteButton);
+
+  if (!deletable) {
+    deleteButton.style.display = 'none';
+  }
+
+  parent.appendChild(container);
+
+  typeSelect.addEventListener('change', () => {
+    if (typeSelect.value === 'decimal') {
+      precisionSelect.style.display = 'block';
+      precisionSelect.value = 'auto';
+    } else {
+      precisionSelect.style.display = 'none';
+      precisionSelect.value = null;
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    parent.remove();
+    const buttons = document.getElementsByClassName('delete-button');
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
 ;// CONCATENATED MODULE: ./ui/src/utils.js
 
 /*
@@ -120,69 +273,23 @@ const getContextVariables = (stream) => {
   return variables;
 };
 
-;// CONCATENATED MODULE: ./ui/src/components.js
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
 
-// render UI components - show/hide
-const showComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.remove('hidden');
-};
+const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
 
-const hideComponent = (id) => {
-  if (!id) return;
-  const element = document.getElementById(id);
-  element.classList.add('hidden');
-};
-
-const showError = (message) => {
-  const oldError = document.getElementById('error');
-  if (oldError) {
-    oldError.remove();
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
   }
-  const error = document.createElement('div');
-  error.id = 'error';
-  error.innerHTML = `<div class="c-alert">${message}</div>`;
-  document.getElementsByTagName('body')[0].appendChild(error);
-  document.getElementById('error').scrollIntoView();
+
+  return data;
 };
 
-const hideError = () => {
-  const error = document.getElementById('error');
-  if (error) {
-    error.remove();
-  }
-};
-
-const getAddSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
-
-const getDeleteSvg = () => '<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12 1.41 1.41L13.41 14l2.12 2.12-1.41 1.41L12 15.41l-2.12 2.12-1.41-1.41L10.59 14l-2.13-2.12zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
-
-const getAddButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('add-button');
-  button.id = 'add-button';
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getAddSvg();
-
-  return button;
-};
-
-const getDeleteButton = (index) => {
-  const button = document.createElement('button');
-  button.classList.add('delete-button');
-  button.id = `delete-${index}`;
-  button.setAttribute('data-row-index', index);
-  button.innerHTML = getDeleteSvg();
-
-  return button;
-};
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,159 +303,143 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
+const createAdditionalValue = (parent, index, value) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.innerHTML = `
+      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
 
-const lookupProductItem = (app) => {
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+  });
+};
+
+const filterRow = (app) => {
   if (!app) return;
 
   let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
-    } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
-    }
-  };
+  let rowIndex = 0;
+
+  hideComponent('loader');
+  showComponent('app');
 
   app.listen('config', (config) => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
+    showComponent('loader');
+    hideComponent('app');
+
     columns = availableColumns;
-    const criteria = {
-      mpn: 'CloudBlue Item MPN',
-      id: 'CloudBlue Item ID',
-    };
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
-    hideComponent('loader');
-    showComponent('app');
-
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
-    });
+    const content = document.getElementById('content');
 
     availableColumns.forEach((column) => {
       const option = document.createElement('option');
       option.value = column.id;
       option.text = getColumnLabel(column);
       document.getElementById('column').appendChild(option);
-
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
     });
 
-    if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
-    }
-
     if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
-      document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
+      document.getElementById('value').value = settings.value;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+
+      if (settings.match_condition) {
+        document.getElementById('match').checked = true;
       } else {
-        document.getElementById('fail').checked = true;
+        document.getElementById('mismatch').checked = true;
       }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
-      } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
+
+      if (settings.additional_values) {
+        settings.additional_values.forEach((addVal, i) => {
+          rowIndex = i;
+          createAdditionalValue(content, rowIndex, addVal.value, i);
+        });
       }
+    } else {
+      document.getElementById('match').checked = true;
     }
 
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
-    }
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createAdditionalValue(content, rowIndex);
+    });
+
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
-
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
-    }
-
     const data = {
-      settings: {
-        product_id: productId,
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
-      },
+      settings: {},
       columns: {
-        input,
-        output: [
-          'product.id',
-          'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
-          'item.commitment',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        input: [],
+        output: [],
       },
+      overview: '',
     };
 
+    showComponent('loader');
+    hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    const matchCondition = document.getElementById('match').checked;
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${inputColumn.name}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: inputColumn.name,
+      value: inputValue.value,
+      match_condition: matchCondition,
+      additional_values: [],
+    };
+
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const val = line.getElementsByTagName('input')[0].value;
+      const addVal = {
+        value: val,
+      };
+      data.settings.additional_values.push(addVal);
+    }
+
     try {
-      const overview = await validate('lookup_product_item', data);
+      const overview = await validate('filter_row', data);
       if (overview.error) {
         throw new Error(overview.error);
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       app.emit('validation-error', e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+  .then(filterRow);
 
 
 /***/ })
@@ -440,7 +531,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -490,7 +581,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

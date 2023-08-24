@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 33:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -70,6 +68,97 @@ const getDeleteButton = (index) => {
   button.innerHTML = getDeleteSvg();
 
   return button;
+};
+
+
+const buildOutputColumnInput = (parent, column, index, deletable) => {
+  const container = document.createElement('div');
+  container.id = index;
+  container.classList.add('output-column-container');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = `name-${container.id}`;
+  nameInput.placeholder = 'Column name';
+  nameInput.value = column?.name || '';
+  container.appendChild(nameInput);
+
+  const typeSelect = document.createElement('select');
+  typeSelect.style.flexGrow = '1';
+  typeSelect.id = `type-${container.id}`;
+  typeSelect.innerHTML = `
+    <option value="string" selected>String</option>
+    <option value="integer">Integer</option>
+    <option value="decimal">Decimal</option>
+    <option value="boolean">Boolean</option>
+    <option value="datetime">Datetime</option>
+  `;
+  typeSelect.value = column?.type || 'string';
+  container.appendChild(typeSelect);
+
+  const precisionSelect = document.createElement('select');
+  precisionSelect.id = `precision-${container.id}`;
+  typeSelect.style.flexShrink = '100';
+  precisionSelect.innerHTML = `
+    <option value="auto" selected>Auto</option>
+    <option value="1">1 decimal</option>
+    <option value="2">2 decimals</option>
+    <option value="3">3 decimals</option>
+    <option value="4">4 decimals</option>
+    <option value="5">5 decimals</option>
+    <option value="6">6 decimals</option>
+    <option value="7">7 decimals</option>
+    <option value="8">8 decimals</option>
+  `;
+
+  if (column?.type === 'decimal') {
+    precisionSelect.style.display = 'block';
+    precisionSelect.value = column.constraints?.precision || 'auto';
+  } else {
+    precisionSelect.style.display = 'none';
+    precisionSelect.value = null;
+  }
+
+  container.appendChild(precisionSelect);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.id = `delete-${container.id}`;
+  deleteButton.classList.add('button', 'delete-button');
+  deleteButton.innerHTML = 'DELETE';
+  container.appendChild(deleteButton);
+
+  if (!deletable) {
+    deleteButton.style.display = 'none';
+  }
+
+  parent.appendChild(container);
+
+  typeSelect.addEventListener('change', () => {
+    if (typeSelect.value === 'decimal') {
+      precisionSelect.style.display = 'block';
+      precisionSelect.value = 'auto';
+    } else {
+      precisionSelect.style.display = 'none';
+      precisionSelect.value = null;
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    parent.remove();
+    const buttons = document.getElementsByClassName('delete-button');
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -182,7 +271,23 @@ const getContextVariables = (stream) => {
   return variables;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
+
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
+  }
+
+  return data;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -196,193 +301,275 @@ All rights reserved.
 
 
 
-
-const getRequiredValue = (id, errorMessage) => {
-  const { value } = document.getElementById(id);
-  if (!value) {
-    throw new Error(errorMessage);
-  }
-
-  return value;
+const cleanCopyRows = parent => {
+  parent.innerHTML = '';
 };
 
-const fillSelect = (options, id, value) => {
-  const select = document.getElementById(id);
-  if (value) {
-    select.value = value;
-  }
-  select.innerHTML = '';
-  options.forEach((item) => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.text = getColumnLabel(item);
-    if (item.id === value) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-};
 
-const createMappingRow = (index, from, to) => {
-  let lastRowIndex = 0;
-  // remove existing ADD button and add REMOVE button to last col of the row
-  const addButton = document.getElementById('add-button');
-  if (addButton) {
-    // get data-row-index from the ADD button and add delete button to this row
-    lastRowIndex = addButton.getAttribute('data-row-index');
-    addButton.remove();
-    document
-      .getElementById(`row-${lastRowIndex}`)
-      .children[3]
-      .appendChild(getDeleteButton(lastRowIndex));
-  }
+const createCopyRow = (parent, index, options, input, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${getColumnLabel(column)}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
 
-  const row = document.createElement('div');
-  row.classList.add('row');
-  row.id = `row-${index}`;
-  row.innerHTML = `
-    <div class="col button-col">
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Input column" value="${from || ''}" />
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Output column" value="${to || ''}" />
-    </div>
-    <div class="col button-col">
-    </div>`;
-  row.children[0].appendChild(getAddButton(index));
-  document.getElementById('mapping').appendChild(row);
-
-  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
-  if (deleteButton) {
-    deleteButton.addEventListener('click', () => {
-      document.getElementById(`row-${lastRowIndex}`).remove();
-      // replace delete button with add button if there is only one row left
-      if (document.getElementsByClassName('row').length === 1) {
-        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
       }
-    });
-  }
-  document.getElementById('add-button').addEventListener('click', () => {
-    createMappingRow(index + 1);
+    }
   });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
-const loockupSpreadsheet = (app) => {
-  if (!app) return;
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
 
-  let attachments = [];
-  let columns = [];
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const cleanField = elem => {
+  elem.setAttribute('disabled', '');
+  elem.value = '';
+};
+
+const airtable = (app) => {
+  if (!app) return;
+  hideComponent('loader');
+  showComponent('app');
+
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const baseSelect = document.getElementById('base-select');
+  const content = document.getElementById('content');
+  const tableSelect = document.getElementById('table-select');
+  const keyInput = document.getElementById('key-input');
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
 
   app.listen('config', async (config) => {
-    try {
-      const {
-        context: {
-          stream: { id: streamId },
-          available_columns: availableColumns,
-        },
-        settings,
-      } = config;
+    const {
+      context: { available_columns: availableColumns },
+      columns: { output: outputColumns },
+      settings,
+    } = config;
 
-      attachments = await getAttachments(streamId);
-      columns = availableColumns;
+    let airtableBases;
+    let rowIndex = 0;
 
-      if (settings) {
-        const {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumnName,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        } = settings;
+    keyInput.addEventListener('input', async () => {
+      cleanField(baseSelect);
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
 
-        const inputColumn = columns.find((item) => item.name === inputColumnName);
-        fillSelect(columns, 'input-column', inputColumn.id);
-        const attachmentFound = attachments.find((item) => item.file === file);
-        let fileId = null;
-        if (attachmentFound == null) {
-          const fileName = file.split('/').pop();
-          app.emit('validation-error', `The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
-        } else {
-          fileId = attachmentFound.id;
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
         }
-        fillSelect(attachments, 'attachment', fileId);
-        document.getElementById('attachment-column').value = attachmentColumn;
-        document.getElementById('sheet').value = sheet;
-        mapping.forEach((item, index) => {
-          createMappingRow(index, item.from, item.to);
-        });
-      } else {
-        fillSelect(columns, 'input-column');
-        fillSelect(attachments, 'attachment');
-        createMappingRow(0);
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
       }
-    } catch (error) {
-      app.emit('validation-error', error);
-    } finally {
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
+    });
+
+    baseSelect.addEventListener('change', async () => {
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+    });
+
+    if (settings) {
+      showComponent('loader');
+      apiKey = settings.api_key;
+      baseId = settings.base_id;
+      tableId = settings.table_id;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        tables = await getAirtableTables(apiKey, settings.base_id);
+
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
+      }
+
+      const currentTable = tables.find(x => x.id === settings.table_id);
+      airtableColumns = currentTable.columns;
+
+      createOptions('base-select', airtableBases);
+      createOptions('table-select', tables);
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+
+      keyInput.value = settings.api_key;
+      baseSelect.value = settings.base_id;
+      tableSelect.value = settings.table_id;
+
+      mapInputColumn = availableColumns
+        .find((column) => column.name === settings.map_by.input_column);
+      inputColumnSelect.value = mapInputColumn.id;
+
+      mapAirtableColumn = airtableColumns
+        .find((column) => column.name === settings.map_by.airtable_column);
+      airtableFieldSelect.value = mapAirtableColumn.id;
+
+      removeDisabled('base-select');
+      removeDisabled('table-select');
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+      removeDisabled('add');
+
+      settings.mapping.forEach((mapping, i) => {
+        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
+        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
+        rowIndex = i;
+        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
+      });
       hideComponent('loader');
-      showComponent('app');
     }
   });
 
   app.listen('save', async () => {
-    hideError();
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      app.emit('validation-error', 'Please complete all the fields');
+
+      return;
+    }
+
+    const data = {
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
+      columns: {
+        input: [mapInputColumn],
+        output: [],
+      },
+    };
+
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
+      const outputColumn = {
+        name: outputName,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
+      data.columns.output.push(outputColumn);
+    }
 
     try {
-      const fileId = getRequiredValue('attachment', 'Please select attachment');
-      const { file } = attachments.find((item) => item.id === fileId);
-      const sheet = document.getElementById('sheet').value;
-      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
-      const inputColumn = columns.find((item) => item.id === inputColumnId);
-      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
-
-      const outputColumns = [];
-      const mapping = [];
-      const rows = document.querySelectorAll('#mapping .row');
-      rows.forEach((row) => {
-        const from = row.children[1].children[0].value;
-        const to = row.children[2].children[0].value;
-        if (from && to) {
-          mapping.push({ from, to });
-          outputColumns.push({
-            name: to,
-          });
-        } else {
-          throw new Error('Please fill all mapping rows');
-        }
-      });
-
-      const data = {
-        settings: {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumn.name,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        },
-        columns: {
-          input: [inputColumn],
-          output: outputColumns,
-        },
-      };
-
-      const overview = await validate('attachment_lookup', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (error) {
-      app.emit('validation-error', error);
+    } catch (e) {
+      app.emit('validation-error', e);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
+(0,dist/* default */.ZP)({ })
+  .then(airtable);
 
 
 /***/ })
@@ -474,7 +661,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			264: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -524,7 +711,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

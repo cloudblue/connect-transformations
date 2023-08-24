@@ -106,3 +106,19 @@ export const getContextVariables = (stream) => {
 
   return variables;
 };
+
+
+export const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
+
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
+  }
+
+  return data;
+};

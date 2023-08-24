@@ -2,7 +2,7 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 81:
+/***/ 608:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
@@ -72,6 +72,223 @@ const getDeleteButton = (index) => {
   return button;
 };
 
+
+const buildOutputColumnInput = (parent, column, index, deletable) => {
+  const container = document.createElement('div');
+  container.id = index;
+  container.classList.add('output-column-container');
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = `name-${container.id}`;
+  nameInput.placeholder = 'Column name';
+  nameInput.value = column?.name || '';
+  container.appendChild(nameInput);
+
+  const typeSelect = document.createElement('select');
+  typeSelect.style.flexGrow = '1';
+  typeSelect.id = `type-${container.id}`;
+  typeSelect.innerHTML = `
+    <option value="string" selected>String</option>
+    <option value="integer">Integer</option>
+    <option value="decimal">Decimal</option>
+    <option value="boolean">Boolean</option>
+    <option value="datetime">Datetime</option>
+  `;
+  typeSelect.value = column?.type || 'string';
+  container.appendChild(typeSelect);
+
+  const precisionSelect = document.createElement('select');
+  precisionSelect.id = `precision-${container.id}`;
+  typeSelect.style.flexShrink = '100';
+  precisionSelect.innerHTML = `
+    <option value="auto" selected>Auto</option>
+    <option value="1">1 decimal</option>
+    <option value="2">2 decimals</option>
+    <option value="3">3 decimals</option>
+    <option value="4">4 decimals</option>
+    <option value="5">5 decimals</option>
+    <option value="6">6 decimals</option>
+    <option value="7">7 decimals</option>
+    <option value="8">8 decimals</option>
+  `;
+
+  if (column?.type === 'decimal') {
+    precisionSelect.style.display = 'block';
+    precisionSelect.value = column.constraints?.precision || 'auto';
+  } else {
+    precisionSelect.style.display = 'none';
+    precisionSelect.value = null;
+  }
+
+  container.appendChild(precisionSelect);
+
+  const deleteButton = document.createElement('button');
+  deleteButton.id = `delete-${container.id}`;
+  deleteButton.classList.add('button', 'delete-button');
+  deleteButton.innerHTML = 'DELETE';
+  container.appendChild(deleteButton);
+
+  if (!deletable) {
+    deleteButton.style.display = 'none';
+  }
+
+  parent.appendChild(container);
+
+  typeSelect.addEventListener('change', () => {
+    if (typeSelect.value === 'decimal') {
+      precisionSelect.style.display = 'block';
+      precisionSelect.value = 'auto';
+    } else {
+      precisionSelect.style.display = 'none';
+      precisionSelect.value = null;
+    }
+  });
+
+  deleteButton.addEventListener('click', () => {
+    parent.remove();
+    const buttons = document.getElementsByClassName('delete-button');
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
+  });
+
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
+
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
+
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {
+    name: document.getElementById(`name-${index}`).value,
+    type: document.getElementById(`type-${index}`).value,
+    constraints: {},
+  };
+
+  const precision = document.getElementById(`precision-${index}`).value;
+  if (data.type === 'decimal' && precision !== 'auto') {
+    data.constraints.precision = precision;
+  }
+
+  return data;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -85,35 +302,13 @@ All rights reserved.
 
 
 
-const createManualOutputRow = (parent, index, output) => {
+
+const createManualOutputRow = (parent, index, column) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '450px';
-  item.innerHTML = `
-      <input type="text" class="output-column-name" placeholder="Output column name" style="width: 75%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
-    `;
   parent.appendChild(item);
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
-  });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
+  buildOutputColumnInput(item, column, index, true);
 };
 
 const manual = (app) => {
@@ -219,15 +414,10 @@ const manual = (app) => {
         data.columns.input.push(availableColumn);
       });
 
-      const outputColumnsElements = document.getElementsByClassName('output-column-name');
-      // eslint-disable-next-line no-restricted-syntax
-      for (const outputColumnElement of outputColumnsElements) {
-        const outputColumn = {
-          name: outputColumnElement.value,
-          type: 'string',
-          description: '',
-        };
-        data.columns.output.push(outputColumn);
+      const outputs = document.getElementsByClassName('output-column-container');
+      for (let i = 0; i < outputs.length; i += 1) {
+        const index = outputs[i].id;
+        data.columns.output.push(getDataFromOutputColumnInput(index));
       }
 
       app.emit('save', {
@@ -383,7 +573,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(81)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(608)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()
