@@ -322,3 +322,83 @@ def test_formula_drop_row(mocker):
     assert response.transformed_row == {
         'Tax rate': 'OK',
     }
+
+
+@pytest.mark.parametrize('formula,expected', (
+    ('tonumber(.c)', 2.23),
+    ('.c | tonumber', 2.23),
+    ('.a | round', 10),
+    ('.a | round(1)', 10.1),
+    ('.b | round(1)', 19.5),
+    ('round(.b; 2)', 19.47),
+    ('round(.b; -2.5)', 0),
+))
+def test_formula_functions_common(mocker, formula, expected):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'stream': {},
+        'batch': {},
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'd',
+                        'formula': formula,
+                        'ignore_errors': False,
+                        'type': 'decimal',
+                        'constraints': {
+                            'precision': 2,
+                        },
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'a', 'nullable': False},
+                    {'name': 'b', 'nullable': False},
+                ],
+            },
+        },
+    }
+    response = app.formula({'a': 10.123, 'b': 19.466, 'c': "2.23"})
+
+    assert response.transformed_row == {'d': expected}
+
+
+@pytest.mark.parametrize('formula,expected', (
+    ('gross_profit(.a; .b) | round(2)', 5.23),
+    ('margin(.a; .b) | round(2)', 4.54),
+    ('markup(.a; .b) | round(2)', 4.75),
+))
+def test_formula_functions_pricing(mocker, formula, expected):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'stream': {},
+        'batch': {},
+        'transformation': {
+            'settings': {
+                'expressions': [
+                    {
+                        'to': 'c',
+                        'formula': formula,
+                        'ignore_errors': False,
+                        'type': 'decimal',
+                        'constraints': {
+                            'precision': 2,
+                        },
+                    },
+                ],
+            },
+            'columns': {
+                'input': [
+                    {'name': 'a', 'nullable': False, 'type': 'decimal'},
+                    {'name': 'b', 'nullable': False, 'type': 'decimal'},
+                ],
+            },
+        },
+    }
+    response = app.formula({'a': 115.23, 'b': 110})
+
+    assert response.transformed_row == {'c': expected}
