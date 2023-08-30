@@ -10,6 +10,7 @@ from datetime import datetime
 import jq
 from fastapi.responses import JSONResponse
 
+from connect_transformations.formula.functions import all_functions
 from connect_transformations.utils import (
     _cast_mapping,
     build_error_response,
@@ -166,7 +167,7 @@ def clear_formula(expression):
 
 def compile_formula(expression, stream, batch=None):
     return jq.compile(
-        expression,
+        all_functions + expression,
         args=get_context_variables(stream, batch),
     )
 
