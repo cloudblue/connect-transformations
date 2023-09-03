@@ -481,15 +481,25 @@ const getContextVariables = (stream) => {
 
 
 const getDataFromOutputColumnInput = (index) => {
-  const data = {
-    name: document.getElementById(`name-${index}`).value,
-    type: document.getElementById(`type-${index}`).value,
-    constraints: {},
-  };
+  const data = {};
 
-  const precision = document.getElementById(`precision-${index}`).value;
-  if (data.type === 'decimal' && precision !== 'auto') {
-    data.constraints.precision = precision;
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
   }
 
   return data;
@@ -558,92 +568,107 @@ const getDeleteButton = (index) => {
 };
 
 
-const buildOutputColumnInput = (parent, column, index, deletable) => {
+const buildOutputColumnInput = ({
+  parent,
+  column,
+  index,
+  additionalInputs,
+  showName = true,
+  showType = true,
+  showDelete = true,
+}) => {
   const container = document.createElement('div');
   container.id = index;
   container.classList.add('output-column-container');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = `name-${container.id}`;
-  nameInput.placeholder = 'Column name';
-  nameInput.value = column?.name || '';
-  container.appendChild(nameInput);
-
-  const typeSelect = document.createElement('select');
-  typeSelect.style.flexGrow = '1';
-  typeSelect.id = `type-${container.id}`;
-  typeSelect.innerHTML = `
-    <option value="string" selected>String</option>
-    <option value="integer">Integer</option>
-    <option value="decimal">Decimal</option>
-    <option value="boolean">Boolean</option>
-    <option value="datetime">Datetime</option>
-  `;
-  typeSelect.value = column?.type || 'string';
-  container.appendChild(typeSelect);
-
-  const precisionSelect = document.createElement('select');
-  precisionSelect.id = `precision-${container.id}`;
-  typeSelect.style.flexShrink = '100';
-  precisionSelect.innerHTML = `
-    <option value="auto" selected>Auto</option>
-    <option value="1">1 decimal</option>
-    <option value="2">2 decimals</option>
-    <option value="3">3 decimals</option>
-    <option value="4">4 decimals</option>
-    <option value="5">5 decimals</option>
-    <option value="6">6 decimals</option>
-    <option value="7">7 decimals</option>
-    <option value="8">8 decimals</option>
-  `;
-
-  if (column?.type === 'decimal') {
-    precisionSelect.style.display = 'block';
-    precisionSelect.value = column.constraints?.precision || 'auto';
-  } else {
-    precisionSelect.style.display = 'none';
-    precisionSelect.value = null;
-  }
-
-  container.appendChild(precisionSelect);
-
-  const deleteButton = document.createElement('button');
-  deleteButton.id = `delete-${container.id}`;
-  deleteButton.classList.add('button', 'delete-button');
-  deleteButton.innerHTML = 'DELETE';
-  container.appendChild(deleteButton);
-
-  if (!deletable) {
-    deleteButton.style.display = 'none';
-  }
-
   parent.appendChild(container);
 
-  typeSelect.addEventListener('change', () => {
-    if (typeSelect.value === 'decimal') {
+  if (showName) {
+    const nameInput = document.createElement('input');
+    nameInput.classList.add('output-column-name');
+    nameInput.type = 'text';
+    nameInput.id = `name-${container.id}`;
+    nameInput.placeholder = 'Column name';
+    nameInput.value = column?.name || '';
+    container.appendChild(nameInput);
+  }
+
+  if (showType) {
+    const typeSelect = document.createElement('select');
+    typeSelect.classList.add('output-column-type');
+    typeSelect.style.flexGrow = '1';
+    typeSelect.id = `type-${container.id}`;
+    typeSelect.innerHTML = `
+      <option value="string" selected>String</option>
+      <option value="integer">Integer</option>
+      <option value="decimal">Decimal</option>
+      <option value="boolean">Boolean</option>
+      <option value="datetime">Datetime</option>
+    `;
+    typeSelect.value = column?.type || 'string';
+    container.appendChild(typeSelect);
+
+    const precisionSelect = document.createElement('select');
+    precisionSelect.classList.add('output-column-precision');
+    precisionSelect.id = `precision-${container.id}`;
+    typeSelect.style.flexShrink = '100';
+    precisionSelect.innerHTML = `
+      <option value="auto" selected>Auto</option>
+      <option value="1">1 decimal</option>
+      <option value="2">2 decimals</option>
+      <option value="3">3 decimals</option>
+      <option value="4">4 decimals</option>
+      <option value="5">5 decimals</option>
+      <option value="6">6 decimals</option>
+      <option value="7">7 decimals</option>
+      <option value="8">8 decimals</option>
+    `;
+
+    if (column?.type === 'decimal') {
       precisionSelect.style.display = 'block';
-      precisionSelect.value = 'auto';
+      precisionSelect.value = column.constraints?.precision || 'auto';
     } else {
       precisionSelect.style.display = 'none';
       precisionSelect.value = null;
     }
-  });
 
-  deleteButton.addEventListener('click', () => {
-    parent.remove();
+    container.appendChild(precisionSelect);
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'decimal') {
+        precisionSelect.style.display = 'block';
+        precisionSelect.value = 'auto';
+      } else {
+        precisionSelect.style.display = 'none';
+        precisionSelect.value = null;
+      }
+    });
+  }
+
+  additionalInputs?.forEach(customInput => container.appendChild(customInput));
+
+  if (showDelete) {
+    const deleteButton = document.createElement('button');
+    deleteButton.id = `delete-${container.id}`;
+    deleteButton.classList.add('button', 'delete-button', 'output-column-delete');
+    deleteButton.innerHTML = 'DELETE';
+    container.appendChild(deleteButton);
+
+    deleteButton?.addEventListener('click', () => {
+      parent.remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    });
+
     const buttons = document.getElementsByClassName('delete-button');
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
+    for (let i = 0; i < buttons.length; i += 1) {
+      if (buttons.length === 1) {
+        buttons[i].disabled = true;
+      } else {
+        buttons[i].disabled = false;
+      }
     }
   }
 };
@@ -668,14 +693,18 @@ let suggestor = {};
 const createFormulaRow = (
   parent,
   index,
-  output,
+  column,
   formula,
   ignore,
 ) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   parent.appendChild(item);
-  buildOutputColumnInput(item, output, index, true);
+  buildOutputColumnInput({
+    column,
+    index,
+    parent: item,
+  });
 
   const formulaInput = document.createElement('div');
   formulaInput.classList.add('input-group', '_mt_12', '_mb_18');

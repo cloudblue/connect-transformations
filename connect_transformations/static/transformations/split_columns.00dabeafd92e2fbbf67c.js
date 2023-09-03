@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 755:
+/***/ 674:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createGroupRows, splitColumn
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -120,15 +122,25 @@ const getContextVariables = (stream) => {
 
 
 const getDataFromOutputColumnInput = (index) => {
-  const data = {
-    name: document.getElementById(`name-${index}`).value,
-    type: document.getElementById(`type-${index}`).value,
-    constraints: {},
-  };
+  const data = {};
 
-  const precision = document.getElementById(`precision-${index}`).value;
-  if (data.type === 'decimal' && precision !== 'auto') {
-    data.constraints.precision = precision;
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
   }
 
   return data;
@@ -197,97 +209,112 @@ const getDeleteButton = (index) => {
 };
 
 
-const buildOutputColumnInput = (parent, column, index, deletable) => {
+const buildOutputColumnInput = ({
+  parent,
+  column,
+  index,
+  additionalInputs,
+  showName = true,
+  showType = true,
+  showDelete = true,
+}) => {
   const container = document.createElement('div');
   container.id = index;
   container.classList.add('output-column-container');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = `name-${container.id}`;
-  nameInput.placeholder = 'Column name';
-  nameInput.value = column?.name || '';
-  container.appendChild(nameInput);
-
-  const typeSelect = document.createElement('select');
-  typeSelect.style.flexGrow = '1';
-  typeSelect.id = `type-${container.id}`;
-  typeSelect.innerHTML = `
-    <option value="string" selected>String</option>
-    <option value="integer">Integer</option>
-    <option value="decimal">Decimal</option>
-    <option value="boolean">Boolean</option>
-    <option value="datetime">Datetime</option>
-  `;
-  typeSelect.value = column?.type || 'string';
-  container.appendChild(typeSelect);
-
-  const precisionSelect = document.createElement('select');
-  precisionSelect.id = `precision-${container.id}`;
-  typeSelect.style.flexShrink = '100';
-  precisionSelect.innerHTML = `
-    <option value="auto" selected>Auto</option>
-    <option value="1">1 decimal</option>
-    <option value="2">2 decimals</option>
-    <option value="3">3 decimals</option>
-    <option value="4">4 decimals</option>
-    <option value="5">5 decimals</option>
-    <option value="6">6 decimals</option>
-    <option value="7">7 decimals</option>
-    <option value="8">8 decimals</option>
-  `;
-
-  if (column?.type === 'decimal') {
-    precisionSelect.style.display = 'block';
-    precisionSelect.value = column.constraints?.precision || 'auto';
-  } else {
-    precisionSelect.style.display = 'none';
-    precisionSelect.value = null;
-  }
-
-  container.appendChild(precisionSelect);
-
-  const deleteButton = document.createElement('button');
-  deleteButton.id = `delete-${container.id}`;
-  deleteButton.classList.add('button', 'delete-button');
-  deleteButton.innerHTML = 'DELETE';
-  container.appendChild(deleteButton);
-
-  if (!deletable) {
-    deleteButton.style.display = 'none';
-  }
-
   parent.appendChild(container);
 
-  typeSelect.addEventListener('change', () => {
-    if (typeSelect.value === 'decimal') {
+  if (showName) {
+    const nameInput = document.createElement('input');
+    nameInput.classList.add('output-column-name');
+    nameInput.type = 'text';
+    nameInput.id = `name-${container.id}`;
+    nameInput.placeholder = 'Column name';
+    nameInput.value = column?.name || '';
+    container.appendChild(nameInput);
+  }
+
+  if (showType) {
+    const typeSelect = document.createElement('select');
+    typeSelect.classList.add('output-column-type');
+    typeSelect.style.flexGrow = '1';
+    typeSelect.id = `type-${container.id}`;
+    typeSelect.innerHTML = `
+      <option value="string" selected>String</option>
+      <option value="integer">Integer</option>
+      <option value="decimal">Decimal</option>
+      <option value="boolean">Boolean</option>
+      <option value="datetime">Datetime</option>
+    `;
+    typeSelect.value = column?.type || 'string';
+    container.appendChild(typeSelect);
+
+    const precisionSelect = document.createElement('select');
+    precisionSelect.classList.add('output-column-precision');
+    precisionSelect.id = `precision-${container.id}`;
+    typeSelect.style.flexShrink = '100';
+    precisionSelect.innerHTML = `
+      <option value="auto" selected>Auto</option>
+      <option value="1">1 decimal</option>
+      <option value="2">2 decimals</option>
+      <option value="3">3 decimals</option>
+      <option value="4">4 decimals</option>
+      <option value="5">5 decimals</option>
+      <option value="6">6 decimals</option>
+      <option value="7">7 decimals</option>
+      <option value="8">8 decimals</option>
+    `;
+
+    if (column?.type === 'decimal') {
       precisionSelect.style.display = 'block';
-      precisionSelect.value = 'auto';
+      precisionSelect.value = column.constraints?.precision || 'auto';
     } else {
       precisionSelect.style.display = 'none';
       precisionSelect.value = null;
     }
-  });
 
-  deleteButton.addEventListener('click', () => {
-    parent.remove();
+    container.appendChild(precisionSelect);
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'decimal') {
+        precisionSelect.style.display = 'block';
+        precisionSelect.value = 'auto';
+      } else {
+        precisionSelect.style.display = 'none';
+        precisionSelect.value = null;
+      }
+    });
+  }
+
+  additionalInputs?.forEach(customInput => container.appendChild(customInput));
+
+  if (showDelete) {
+    const deleteButton = document.createElement('button');
+    deleteButton.id = `delete-${container.id}`;
+    deleteButton.classList.add('button', 'delete-button', 'output-column-delete');
+    deleteButton.innerHTML = 'DELETE';
+    container.appendChild(deleteButton);
+
+    deleteButton?.addEventListener('click', () => {
+      parent.remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    });
+
     const buttons = document.getElementsByClassName('delete-button');
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
+    for (let i = 0; i < buttons.length; i += 1) {
+      if (buttons.length === 1) {
+        buttons[i].disabled = true;
+      } else {
+        buttons[i].disabled = false;
+      }
     }
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/vat_rate.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_columns.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -301,96 +328,141 @@ All rights reserved.
 
 
 
+function getCurrentGroups() {
+  const outputContainers = document.getElementsByClassName('output-column-container');
+  const currentGroups = {};
 
-const vatRate = (app) => {
-  if (!app) {
-    return;
+  for (let i = 0; i < outputContainers.length; i += 1) {
+    const index = outputContainers[i].id;
+    currentGroups[index] = getDataFromOutputColumnInput(index);
   }
+
+  return currentGroups;
+}
+
+function buildGroups(groups) {
+  const parent = document.getElementById('output');
+  parent.innerHTML = '';
+
+  Object.keys(groups).forEach(index => {
+    const column = groups[index];
+    const item = document.createElement('div');
+    item.classList.add('list-wrapper');
+    parent.appendChild(item);
+    buildOutputColumnInput({
+      column,
+      index,
+      parent: item,
+      showDelete: false,
+    });
+  });
+}
+
+const createGroupRows = async (app) => {
+  const groups = getCurrentGroups();
+  const pattern = document.getElementById('pattern').value;
+  app.emit('validation-error', '');
+  if (pattern) {
+    const body = { pattern, groups };
+    const response = await getGroups(body);
+    if (response.error) {
+      app.emit('validation-error', response.error);
+    } else {
+      buildGroups(response.groups);
+    }
+  } else {
+    app.emit('validation-error', 'The regular expression is empty');
+  }
+};
+
+const splitColumn = (app) => {
+  if (!app) return;
 
   let columns = [];
 
-  app.listen('config', config => {
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns },
       settings,
     } = config;
 
+    showComponent('loader');
+    hideComponent('app');
+
     columns = availableColumns;
 
-    const inputColumnSelect = document.getElementById('input-column');
-    const outputColumnInput = document.getElementById('output-column');
-    columns.forEach(column => {
-      const isSelected = settings && column.id === settings.from;
-      const colLabel = getColumnLabel(column);
-      const option = isSelected
-        ? `<option value="${column.id}" selected>${colLabel}</option>`
-        : `<option value="${column.id}">${colLabel}</option>`;
-      inputColumnSelect.innerHTML += option;
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
     });
 
     if (settings) {
-      outputColumnInput.value = settings.to;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
-      } else {
-        document.getElementById('fail').checked = true;
-      }
-    } else {
-      document.getElementById('leave_empty').checked = true;
+      document.getElementById('pattern').value = settings.regex.pattern;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      buildGroups(settings.regex.groups);
     }
+
+    document.getElementById('refresh').addEventListener('click', () => {
+      createGroupRows(app);
+    });
     hideComponent('loader');
     showComponent('app');
   });
 
   app.listen('save', async () => {
-    const inputColumnValue = document.getElementById('input-column').value;
-    const inputColumn = columns.find(column => column.id === inputColumnValue);
-    const outputColumnValue = document.getElementById('output-column').value;
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-
-    if (outputColumnValue === inputColumn.name) {
-      app.emit('validation-error', 'This fields may not be equal: columns.input.name, columns.output.name.');
-    } else if (outputColumnValue === '' || outputColumnValue === null) {
-      app.emit('validation-error', 'Output column name is required.');
-    } else {
-      const data = {
-        settings: {
-          from: inputColumn.name,
-          to: outputColumnValue,
-          action_if_not_found: actionIfNotFound,
+    const data = {
+      settings: {
+        regex: {
+          groups: {},
         },
-        columns: {
-          input: [
-            inputColumn,
-          ],
-          output: [
-            {
-              name: outputColumnValue,
-              type: 'integer',
-              description: '',
-            },
-          ],
-        },
-      };
+      },
+      columns: {
+        input: [],
+        output: [],
+      },
+      overview: '',
+    };
+    showComponent('loader');
+    hideComponent('app');
 
-      try {
-        const overview = await validate('vat_rate', data);
-        if (overview.error) {
-          throw new Error(overview.error);
-        }
-        app.emit('save', {
-          data: { ...data, ...overview },
-          status: 'ok',
-        });
-      } catch (e) {
-        app.emit('validation-error', e);
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+
+    const groups = getCurrentGroups();
+
+    Object.entries(groups).forEach(([i, group]) => {
+      data.columns.output.push(group);
+      data.settings.regex.groups[i] = { name: group.name };
+    });
+
+    data.settings.from = inputColumn.name;
+    data.settings.regex.pattern = document.getElementById('pattern').value;
+
+    try {
+      const overview = await validate('split_column', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
+    } catch (e) {
+      hideComponent('loader');
+      showComponent('app');
+
+      app.emit('validation-error', e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(vatRate);
+  .then(splitColumn);
 
 
 /***/ })
@@ -482,7 +554,7 @@ const vatRate = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			496: 0
+/******/ 			158: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -532,7 +604,7 @@ const vatRate = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(755)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(674)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

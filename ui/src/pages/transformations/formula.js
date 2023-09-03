@@ -27,14 +27,18 @@ let suggestor = {};
 export const createFormulaRow = (
   parent,
   index,
-  output,
+  column,
   formula,
   ignore,
 ) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   parent.appendChild(item);
-  buildOutputColumnInput(item, output, index, true);
+  buildOutputColumnInput({
+    column,
+    index,
+    parent: item,
+  });
 
   const formulaInput = document.createElement('div');
   formulaInput.classList.add('input-group', '_mt_12', '_mb_18');

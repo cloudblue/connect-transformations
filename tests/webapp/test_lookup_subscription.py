@@ -14,27 +14,41 @@ def test_validate_lookup_subscription(test_client_factory):
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
             'action_if_multiple': 'fail',
+            'output_config': {
+                'Sub ID': {
+                    'attribute': 'id',
+                },
+                'Param': {
+                    'attribute': 'parameter.value',
+                    'parameter': 'test',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'Sub ID',
+                },
+                {
+                    'name': 'Param',
+                },
+            ],
         },
     }
 
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/lookup_subscription/validate', json=data)
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.content
     data = response.json()
     assert data == {
         'overview': (
             'Criteria = "CloudBlue Subscription ID"\n'
-            'Prefix = "PREFIX"\n'
             'If not found = Fail\n'
             'If multiple found = Fail\n'
         ),
@@ -46,15 +60,23 @@ def test_validate_lookup_subscription_external_id(test_client_factory):
         'settings': {
             'lookup_type': 'external_id',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
             'action_if_multiple': 'use_most_actual',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
 
@@ -65,7 +87,7 @@ def test_validate_lookup_subscription_external_id(test_client_factory):
     data = response.json()
     assert data == {
         'overview': (
-            'Criteria = "CloudBlue Subscription External ID"\nPrefix = "PREFIX"\n'
+            'Criteria = "CloudBlue Subscription External ID"\n'
             'If not found = Leave empty\n'
             'If multiple found = Use most actual\n'
         ),
@@ -77,16 +99,24 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
         'settings': {
             'lookup_type': 'params__value',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
             'action_if_multiple': 'leave_empty',
             'parameter': {'id': 'P-123', 'name': 'param_a'},
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
 
@@ -97,7 +127,7 @@ def test_validate_lookup_subscription_with_params_value(test_client_factory):
     data = response.json()
     assert data == {
         'overview': (
-            'Criteria = "Parameter Value"\nParameter Name = "param_a"\nPrefix = "PREFIX"\n'
+            'Criteria = "Parameter Value"\nParameter Name = "param_a"\n'
             'If not found = Leave empty\n'
             'If multiple found = Leave empty\n'
         ),
@@ -129,11 +159,10 @@ def test_validate_lookup_subscription_settings_or_invalid(test_client_factory, d
         {},
         {'lookup_type': 'x'},
         {'lookup_type': 'x', 'from': 'x'},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': None},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': 3.33},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': 333},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': ''},
-        {'lookup_type': 'x', 'from': 'x', 'prefix': 'pref'},
+        {'lookup_type': 'x', 'from': 'x', 'output_config': None},
+        {'lookup_type': 'x', 'from': 'x', 'output_config': {'A': {}}},
+        {'lookup_type': 'x', 'from': 'x', 'output_config': {'A': {}}, 'action_if_not_found': ''},
+        {'lookup_type': 'x', 'from': 'x', 'output_config': {'A': {}}, 'action_if_multiple': ''},
     ),
 )
 def test_validate_lookup_subscription_invalid_format(test_client_factory, settings):
@@ -145,7 +174,7 @@ def test_validate_lookup_subscription_invalid_format(test_client_factory, settin
     data = response.json()
     assert data == {
         'error': (
-            'The settings must have `lookup_type`, `from`, `prefix`, `action_if_not_found` '
+            'The settings must have `lookup_type`, `from`, `output_config`, `action_if_not_found` '
             'and `action_if_multiple` fields'
         ),
     }
@@ -156,21 +185,29 @@ def test_validate_lookup_subscription_invalid_lookup_type(test_client_factory):
         'settings': {
             'lookup_type': 'invalidtype',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
             'action_if_multiple': 'fail',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
     response = client.post('/api/lookup_subscription/validate', json=data)
 
-    assert response.status_code == 400
+    assert response.status_code == 400, response.content
     data = response.json()
     values = SUBSCRIPTION_LOOKUP.keys()
     assert data == {
@@ -185,15 +222,23 @@ def test_validate_lookup_subscription_invalid_action_if_not_found(
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'invalidtype',
             'action_if_multiple': 'leave_empty',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -217,12 +262,21 @@ def test_validate_lookup_subscription_invalid_action_if_multiple(
             'prefix': 'PREFIX',
             'action_if_not_found': 'fail',
             'action_if_multiple': 'invalid',
+            'output_config': {
+                'A': {
+                    'attribute': 'status',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -250,15 +304,23 @@ def test_validate_lookup_subscription_invalid_parameter(test_client_factory, par
         'settings': {
             'lookup_type': 'params__value',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
             'action_if_multiple': 'leave_empty',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'column'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
     if parameter is not None:
@@ -288,15 +350,23 @@ def test_validate_lookup_subscription_invalid_column(test_client_factory, lookup
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
-            'prefix': 'PREFIX',
             'action_if_not_found': 'leave_empty',
             'action_if_multiple': 'leave_empty',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
             'input': [
                 {'name': 'otherColumn'},
             ],
-            'output': [],
+            'output': [
+                {
+                    'name': 'A',
+                },
+            ],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -312,17 +382,31 @@ def test_validate_lookup_subscription_invalid_column(test_client_factory, lookup
     }
 
 
-def test_validate_lookup_subscription_invalid_prefix(test_client_factory):
+def test_validate_lookup_subscription_no_source(test_client_factory):
     data = {
         'settings': {
             'lookup_type': 'id',
             'from': 'column',
-            'prefix': '12345678901234',
             'action_if_not_found': 'leave_empty',
             'action_if_multiple': 'leave_empty',
+            'output_config': {
+                'A': {
+                    'attribute': 'id',
+                },
+            },
         },
         'columns': {
-            'input': [{'name': 'column'}],
+            'input': [
+                {'name': 'column'},
+            ],
+            'output': [
+                {
+                    'name': 'A',
+                },
+                {
+                    'name': 'B',
+                },
+            ],
         },
     }
     client = test_client_factory(TransformationsWebApplication)
@@ -331,7 +415,7 @@ def test_validate_lookup_subscription_invalid_prefix(test_client_factory):
     assert response.status_code == 400
     data = response.json()
     assert data == {
-        'error': 'The settings `prefix` max length is 12',
+        'error': 'The settings `output_config` does not contain settings for the column B.',
     }
 
 

@@ -30,6 +30,80 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
         'id': 'subscription.id',
         'external_id': 'subscription.external_id',
         'status': 'active',
+        'events': {
+            'created': {'at': '2022-01-01 11:23:23'},
+        },
+        'params': [
+            {'id': 'PAR-111', 'name': 'Param1', 'value': '111'},
+            {'id': 'PAR-112', 'name': 'Param2', 'value': '113'},
+        ],
+        'items': [
+            {'id': 'i1'},
+            {'id': 'i2'},
+            {'id': 'i3'},
+        ],
+    }])
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'lookup_type': 'id',
+                'from': 'ColumnA',
+                'action_if_not_found': 'leave_empty',
+                'action_if_multiple': 'use_most_actual',
+                'output_config': {
+                    'attr': {'attribute': 'id'},
+                    'nested': {'attribute': 'product.id'},
+                    'deeper': {'attribute': 'events.created.at'},
+                    'param val': {'attribute': 'parameter.value', 'parameter_name': 'Param1'},
+                    'param_not_exist': {'attribute': 'parameter.value', 'parameter_name': 'no'},
+                    'items': {'attribute': 'items.id'},
+                },
+            },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [
+                    {'name': 'attr'},
+                    {'name': 'nested'},
+                    {'name': 'deeper'},
+                    {'name': 'param val'},
+                    {'param_not_exist': None},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_subscription({
+        'ColumnA': 'SubscriptionID',
+    })
+    assert response.status == ResultType.SUCCESS, response.output
+    assert response.transformed_row == {
+        'attr': 'subscription.id',
+        'nested': 'product.id',
+        'deeper': '2022-01-01 11:23:23',
+        'param val': '111',
+        'param_not_exist': None,
+        'items': 'i1; i2; i3',
+    }
+
+
+@pytest.mark.asyncio
+async def test_lookup_subscription_deprecated_format(
+    mocker, async_connect_client, async_client_mocker_factory,
+):
+    client = async_client_mocker_factory(base_url=async_connect_client.endpoint)
+    client('subscriptions').assets.all().filter(
+        **COMMON_FILTERS,
+        id='SubscriptionID',
+    ).order_by('-events.created.at').mock(return_value=[{
+        'product': {'id': 'product.id', 'name': 'product.name'},
+        'marketplace': {'id': 'marketplace.id', 'name': 'marketplace.name'},
+        'connection': {'vendor': {'id': 'vendor.id', 'name': 'vendor.name'}},
+        'id': 'subscription.id',
+        'external_id': 'subscription.external_id',
+        'status': 'active',
     }])
 
     m = mocker.MagicMock()
@@ -75,12 +149,13 @@ async def test_lookup_subscription_cached(mocker):
             'settings': {
                 'lookup_type': 'id',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'leave_empty',
                 'action_if_multiple': 'fail',
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -98,15 +173,7 @@ async def test_lookup_subscription_cached(mocker):
 
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'PREFIX.product.id': 'product.id',
-        'PREFIX.product.name': 'product.name',
-        'PREFIX.marketplace.id': 'marketplace.id',
-        'PREFIX.marketplace.name': 'marketplace.name',
-        'PREFIX.vendor.id': 'vendor.id',
-        'PREFIX.vendor.name': 'vendor.name',
-        'PREFIX.subscription.id': 'subscription.id',
-        'PREFIX.subscription.external_id': 'subscription.external_id',
-        'PREFIX.subscription.status': 'terminated',
+        'A': 'subscription.id',
     }
 
 
@@ -130,11 +197,12 @@ async def test_lookup_subscription_not_found(
             'settings': {
                 'lookup_type': 'id',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'fail',
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -168,11 +236,12 @@ async def test_lookup_subscription_not_found_leave_empty(
             'settings': {
                 'lookup_type': 'id',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'leave_empty',
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -223,13 +292,14 @@ async def test_lookup_subscription_found_multiple_fail(
             'settings': {
                 'lookup_type': 'params__value',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
+                'output_config': {'A': {'attribute': 'id'}},
                 'action_if_not_found': 'leave_empty',
                 'action_if_multiple': 'fail',
                 'parameter': {'id': 'PRD-123', 'name': 'param_a'},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -282,13 +352,14 @@ async def test_lookup_subscription_found_multiple_leave_empty(
             'settings': {
                 'lookup_type': 'params__value',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'leave_empty',
                 'action_if_multiple': 'leave_empty',
                 'parameter': {'id': 'PRD-123', 'name': 'param_a'},
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -342,13 +413,14 @@ async def test_lookup_subscription_found_multiple_use_most_actual_active(
             'settings': {
                 'lookup_type': 'params__value',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'leave_empty',
                 'action_if_multiple': 'use_most_actual',
                 'parameter': {'id': 'PRD-123', 'name': 'param_a'},
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -360,15 +432,7 @@ async def test_lookup_subscription_found_multiple_use_most_actual_active(
     )
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'PREFIX.product.id': 'product.id',
-        'PREFIX.product.name': 'product.name',
-        'PREFIX.marketplace.id': 'marketplace.id',
-        'PREFIX.marketplace.name': 'marketplace.name',
-        'PREFIX.vendor.id': 'vendor.id',
-        'PREFIX.vendor.name': 'vendor.name',
-        'PREFIX.subscription.id': '2',
-        'PREFIX.subscription.external_id': '2',
-        'PREFIX.subscription.status': sub_status,
+        'A': '2',
     }
 
 
@@ -415,9 +479,11 @@ async def test_lookup_subscription_found_multiple_use_most_actual_all_terminated
                 'action_if_not_found': 'leave_empty',
                 'action_if_multiple': 'use_most_actual',
                 'parameter': {'id': 'PRD-123', 'name': 'param_a'},
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -429,15 +495,7 @@ async def test_lookup_subscription_found_multiple_use_most_actual_all_terminated
     )
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'PREFIX.product.id': 'product.id',
-        'PREFIX.product.name': 'product.name',
-        'PREFIX.marketplace.id': 'marketplace.id',
-        'PREFIX.marketplace.name': 'marketplace.name',
-        'PREFIX.vendor.id': 'vendor.id',
-        'PREFIX.vendor.name': 'vendor.name',
-        'PREFIX.subscription.id': '1',
-        'PREFIX.subscription.external_id': '1',
-        'PREFIX.subscription.status': 'terminated',
+        'A': '1',
     }
 
 
@@ -450,11 +508,12 @@ async def test_lookup_subscription_null_value(mocker):
             'settings': {
                 'lookup_type': 'id',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'fail',
+                'output_config': {'A': {'attribute': 'id'}},
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': True}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -491,12 +550,14 @@ async def test_lookup_subscription_params_value(
             'settings': {
                 'lookup_type': 'params__value',
                 'from': 'ColumnA',
-                'prefix': 'PREFIX',
                 'action_if_not_found': 'leave_empty',
                 'parameter': {'id': 'PRD-123', 'name': 'param_a'},
+                'output_config': {'A': {'attribute': 'id'}},
+
             },
             'columns': {
                 'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [{'name': 'A'}],
             },
         },
     }
@@ -505,13 +566,5 @@ async def test_lookup_subscription_params_value(
     })
     assert response.status == ResultType.SUCCESS
     assert response.transformed_row == {
-        'PREFIX.product.id': 'product.id',
-        'PREFIX.product.name': 'product.name',
-        'PREFIX.marketplace.id': 'marketplace.id',
-        'PREFIX.marketplace.name': 'marketplace.name',
-        'PREFIX.vendor.id': 'vendor.id',
-        'PREFIX.vendor.name': 'vendor.name',
-        'PREFIX.subscription.id': 'subscription.id',
-        'PREFIX.subscription.external_id': 'subscription.external_id',
-        'PREFIX.subscription.status': 'active',
+        'A': 'subscription.id',
     }

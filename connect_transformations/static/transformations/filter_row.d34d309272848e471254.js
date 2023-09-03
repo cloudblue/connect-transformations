@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 616:
+/***/ 813:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createAdditionalValue, filterRow
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -71,92 +73,107 @@ const getDeleteButton = (index) => {
 };
 
 
-const buildOutputColumnInput = (parent, column, index, deletable) => {
+const buildOutputColumnInput = ({
+  parent,
+  column,
+  index,
+  additionalInputs,
+  showName = true,
+  showType = true,
+  showDelete = true,
+}) => {
   const container = document.createElement('div');
   container.id = index;
   container.classList.add('output-column-container');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = `name-${container.id}`;
-  nameInput.placeholder = 'Column name';
-  nameInput.value = column?.name || '';
-  container.appendChild(nameInput);
-
-  const typeSelect = document.createElement('select');
-  typeSelect.style.flexGrow = '1';
-  typeSelect.id = `type-${container.id}`;
-  typeSelect.innerHTML = `
-    <option value="string" selected>String</option>
-    <option value="integer">Integer</option>
-    <option value="decimal">Decimal</option>
-    <option value="boolean">Boolean</option>
-    <option value="datetime">Datetime</option>
-  `;
-  typeSelect.value = column?.type || 'string';
-  container.appendChild(typeSelect);
-
-  const precisionSelect = document.createElement('select');
-  precisionSelect.id = `precision-${container.id}`;
-  typeSelect.style.flexShrink = '100';
-  precisionSelect.innerHTML = `
-    <option value="auto" selected>Auto</option>
-    <option value="1">1 decimal</option>
-    <option value="2">2 decimals</option>
-    <option value="3">3 decimals</option>
-    <option value="4">4 decimals</option>
-    <option value="5">5 decimals</option>
-    <option value="6">6 decimals</option>
-    <option value="7">7 decimals</option>
-    <option value="8">8 decimals</option>
-  `;
-
-  if (column?.type === 'decimal') {
-    precisionSelect.style.display = 'block';
-    precisionSelect.value = column.constraints?.precision || 'auto';
-  } else {
-    precisionSelect.style.display = 'none';
-    precisionSelect.value = null;
-  }
-
-  container.appendChild(precisionSelect);
-
-  const deleteButton = document.createElement('button');
-  deleteButton.id = `delete-${container.id}`;
-  deleteButton.classList.add('button', 'delete-button');
-  deleteButton.innerHTML = 'DELETE';
-  container.appendChild(deleteButton);
-
-  if (!deletable) {
-    deleteButton.style.display = 'none';
-  }
-
   parent.appendChild(container);
 
-  typeSelect.addEventListener('change', () => {
-    if (typeSelect.value === 'decimal') {
+  if (showName) {
+    const nameInput = document.createElement('input');
+    nameInput.classList.add('output-column-name');
+    nameInput.type = 'text';
+    nameInput.id = `name-${container.id}`;
+    nameInput.placeholder = 'Column name';
+    nameInput.value = column?.name || '';
+    container.appendChild(nameInput);
+  }
+
+  if (showType) {
+    const typeSelect = document.createElement('select');
+    typeSelect.classList.add('output-column-type');
+    typeSelect.style.flexGrow = '1';
+    typeSelect.id = `type-${container.id}`;
+    typeSelect.innerHTML = `
+      <option value="string" selected>String</option>
+      <option value="integer">Integer</option>
+      <option value="decimal">Decimal</option>
+      <option value="boolean">Boolean</option>
+      <option value="datetime">Datetime</option>
+    `;
+    typeSelect.value = column?.type || 'string';
+    container.appendChild(typeSelect);
+
+    const precisionSelect = document.createElement('select');
+    precisionSelect.classList.add('output-column-precision');
+    precisionSelect.id = `precision-${container.id}`;
+    typeSelect.style.flexShrink = '100';
+    precisionSelect.innerHTML = `
+      <option value="auto" selected>Auto</option>
+      <option value="1">1 decimal</option>
+      <option value="2">2 decimals</option>
+      <option value="3">3 decimals</option>
+      <option value="4">4 decimals</option>
+      <option value="5">5 decimals</option>
+      <option value="6">6 decimals</option>
+      <option value="7">7 decimals</option>
+      <option value="8">8 decimals</option>
+    `;
+
+    if (column?.type === 'decimal') {
       precisionSelect.style.display = 'block';
-      precisionSelect.value = 'auto';
+      precisionSelect.value = column.constraints?.precision || 'auto';
     } else {
       precisionSelect.style.display = 'none';
       precisionSelect.value = null;
     }
-  });
 
-  deleteButton.addEventListener('click', () => {
-    parent.remove();
+    container.appendChild(precisionSelect);
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'decimal') {
+        precisionSelect.style.display = 'block';
+        precisionSelect.value = 'auto';
+      } else {
+        precisionSelect.style.display = 'none';
+        precisionSelect.value = null;
+      }
+    });
+  }
+
+  additionalInputs?.forEach(customInput => container.appendChild(customInput));
+
+  if (showDelete) {
+    const deleteButton = document.createElement('button');
+    deleteButton.id = `delete-${container.id}`;
+    deleteButton.classList.add('button', 'delete-button', 'output-column-delete');
+    deleteButton.innerHTML = 'DELETE';
+    container.appendChild(deleteButton);
+
+    deleteButton?.addEventListener('click', () => {
+      parent.remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    });
+
     const buttons = document.getElementsByClassName('delete-button');
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
+    for (let i = 0; i < buttons.length; i += 1) {
+      if (buttons.length === 1) {
+        buttons[i].disabled = true;
+      } else {
+        buttons[i].disabled = false;
+      }
     }
   }
 };
@@ -273,21 +290,31 @@ const getContextVariables = (stream) => {
 
 
 const getDataFromOutputColumnInput = (index) => {
-  const data = {
-    name: document.getElementById(`name-${index}`).value,
-    type: document.getElementById(`type-${index}`).value,
-    constraints: {},
-  };
+  const data = {};
 
-  const precision = document.getElementById(`precision-${index}`).value;
-  if (data.type === 'decimal' && precision !== 'auto') {
-    data.constraints.precision = precision;
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
   }
 
   return data;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -301,275 +328,143 @@ All rights reserved.
 
 
 
-const cleanCopyRows = parent => {
-  parent.innerHTML = '';
-};
-
-
-const createCopyRow = (parent, index, options, input, output) => {
+const createAdditionalValue = (parent, index, value) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
   item.innerHTML = `
-      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
-        ${options.map((column) => `
-          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
-            ${getColumnLabel(column)}
-          </option>`).join(' ')}
-      </select>
-      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
       <button id="delete-${index}" class="button delete-button">DELETE</button>
     `;
   parent.appendChild(item);
 
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
-    if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
-    } else {
-      document.getElementById(`wrapper-${index}`).remove();
-      const buttons = document.getElementsByClassName('delete-button');
-      if (buttons.length === 1) {
-        buttons[0].disabled = true;
-      }
-    }
+    document.getElementById(`wrapper-${index}`).remove();
   });
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
 };
 
-const createOptions = (selectId, options) => {
-  const select = document.getElementById(selectId);
-  select.innerHTML = `
-        <option disabled selected value>Please select an option</option>
-        ${options.map((column) => `
-          <option value="${column.id}">
-            ${column.name}
-          </option>`).join(' ')}
-    `;
-};
-
-const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
-
-const cleanField = elem => {
-  elem.setAttribute('disabled', '');
-  elem.value = '';
-};
-
-const airtable = (app) => {
+const filterRow = (app) => {
   if (!app) return;
+
+  let columns = [];
+  let rowIndex = 0;
+
   hideComponent('loader');
   showComponent('app');
 
-  let airtableColumns = [];
-  let apiKey;
-  let baseId;
-  let tableId;
-  let tables;
-  let mapInputColumn;
-  let mapAirtableColumn;
-  const baseSelect = document.getElementById('base-select');
-  const content = document.getElementById('content');
-  const tableSelect = document.getElementById('table-select');
-  const keyInput = document.getElementById('key-input');
-  const inputColumnSelect = document.getElementById('input-column-select');
-  const airtableFieldSelect = document.getElementById('field-select');
-  const addButton = document.getElementById('add');
-
-  app.listen('config', async (config) => {
+  app.listen('config', (config) => {
     const {
       context: { available_columns: availableColumns },
-      columns: { output: outputColumns },
       settings,
     } = config;
 
-    let airtableBases;
-    let rowIndex = 0;
+    showComponent('loader');
+    hideComponent('app');
 
-    keyInput.addEventListener('input', async () => {
-      cleanField(baseSelect);
-      cleanField(tableSelect);
-      cleanField(inputColumnSelect);
-      cleanField(airtableFieldSelect);
-      cleanCopyRows(content);
-      apiKey = keyInput.value;
-      if (apiKey.length < 50) return;
+    columns = availableColumns;
 
-      try {
-        airtableBases = await getAirtableBases(apiKey);
-        if (airtableBases.error) {
-          throw new Error(airtableBases.error);
-        }
-        hideError();
-      } catch (e) {
-        app.emit('validation-error', e);
-      }
+    const content = document.getElementById('content');
 
-      createOptions('base-select', airtableBases);
-      removeDisabled('base-select');
-    });
-
-    baseSelect.addEventListener('change', async () => {
-      cleanField(tableSelect);
-      cleanField(inputColumnSelect);
-      cleanField(airtableFieldSelect);
-      cleanCopyRows(content);
-
-      baseId = baseSelect.value;
-      tables = await getAirtableTables(apiKey, baseId);
-      hideError();
-
-      createOptions('table-select', tables);
-      removeDisabled('table-select');
-    });
-
-    tableSelect.addEventListener('change', () => {
-      tableId = tableSelect.value;
-      const currentTable = tables.find(x => x.id === tableId);
-      airtableColumns = currentTable.columns;
-      hideError();
-
-      createOptions('field-select', airtableColumns);
-      createOptions('input-column-select', availableColumns);
-      removeDisabled('field-select');
-      removeDisabled('input-column-select');
-    });
-
-    inputColumnSelect.addEventListener('change', () => {
-      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
-      if (mapAirtableColumn) removeDisabled('add');
-      hideError();
-    });
-
-    airtableFieldSelect.addEventListener('change', () => {
-      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
-      if (mapInputColumn) removeDisabled('add');
-      hideError();
-    });
-
-    addButton.addEventListener('click', () => {
-      rowIndex += 1;
-      createCopyRow(content, rowIndex, airtableColumns);
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
     });
 
     if (settings) {
-      showComponent('loader');
-      apiKey = settings.api_key;
-      baseId = settings.base_id;
-      tableId = settings.table_id;
+      document.getElementById('value').value = settings.value;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
 
-      try {
-        airtableBases = await getAirtableBases(apiKey);
-        tables = await getAirtableTables(apiKey, settings.base_id);
-
-        if (airtableBases.error) {
-          throw new Error(airtableBases.error);
-        }
-        hideError();
-      } catch (e) {
-        app.emit('validation-error', e);
+      if (settings.match_condition) {
+        document.getElementById('match').checked = true;
+      } else {
+        document.getElementById('mismatch').checked = true;
       }
 
-      const currentTable = tables.find(x => x.id === settings.table_id);
-      airtableColumns = currentTable.columns;
-
-      createOptions('base-select', airtableBases);
-      createOptions('table-select', tables);
-      createOptions('field-select', airtableColumns);
-      createOptions('input-column-select', availableColumns);
-
-      keyInput.value = settings.api_key;
-      baseSelect.value = settings.base_id;
-      tableSelect.value = settings.table_id;
-
-      mapInputColumn = availableColumns
-        .find((column) => column.name === settings.map_by.input_column);
-      inputColumnSelect.value = mapInputColumn.id;
-
-      mapAirtableColumn = airtableColumns
-        .find((column) => column.name === settings.map_by.airtable_column);
-      airtableFieldSelect.value = mapAirtableColumn.id;
-
-      removeDisabled('base-select');
-      removeDisabled('table-select');
-      removeDisabled('field-select');
-      removeDisabled('input-column-select');
-      removeDisabled('add');
-
-      settings.mapping.forEach((mapping, i) => {
-        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
-        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
-        rowIndex = i;
-        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
-      });
-      hideComponent('loader');
+      if (settings.additional_values) {
+        settings.additional_values.forEach((addVal, i) => {
+          rowIndex = i;
+          createAdditionalValue(content, rowIndex, addVal.value, i);
+        });
+      }
+    } else {
+      document.getElementById('match').checked = true;
     }
+
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createAdditionalValue(content, rowIndex);
+    });
+
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
-    let overview = '';
-    if (!mapInputColumn || !mapAirtableColumn) {
-      app.emit('validation-error', 'Please complete all the fields');
-
-      return;
-    }
-
     const data = {
-      settings: {
-        api_key: apiKey,
-        base_id: baseId,
-        table_id: tableId,
-        map_by: {
-          input_column: mapInputColumn.name,
-          airtable_column: mapAirtableColumn.name,
-        },
-        mapping: [],
-      },
+      settings: {},
       columns: {
-        input: [mapInputColumn],
+        input: [],
         output: [],
       },
+      overview: '',
+    };
+
+    showComponent('loader');
+    hideComponent('app');
+
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    const matchCondition = document.getElementById('match').checked;
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${inputColumn.name}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: inputColumn.name,
+      value: inputValue.value,
+      match_condition: matchCondition,
+      additional_values: [],
     };
 
     const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
     for (const line of form) {
-      const inputId = line.getElementsByTagName('select')[0].value;
-      const outputName = line.getElementsByTagName('input')[0].value;
-
-      const inputColumn = airtableColumns.find((column) => column.id === inputId);
-
-      const outputColumn = {
-        name: outputName,
-        description: '',
+      const val = line.getElementsByTagName('input')[0].value;
+      const addVal = {
+        value: val,
       };
-      const setting = {
-        from: inputColumn.name,
-        to: outputName,
-      };
-      data.settings.mapping.push(setting);
-      data.columns.output.push(outputColumn);
+      data.settings.additional_values.push(addVal);
     }
 
     try {
-      overview = await validate('airtable_lookup', data);
+      const overview = await validate('filter_row', data);
       if (overview.error) {
         throw new Error(overview.error);
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       app.emit('validation-error', e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(airtable);
+  .then(filterRow);
 
 
 /***/ })
@@ -661,7 +556,7 @@ const airtable = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			18: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -711,7 +606,7 @@ const airtable = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

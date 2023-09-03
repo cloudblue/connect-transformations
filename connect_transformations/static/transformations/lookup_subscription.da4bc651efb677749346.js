@@ -6,8 +6,6 @@
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupSubscription
-
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -122,15 +120,25 @@ const getContextVariables = (stream) => {
 
 
 const getDataFromOutputColumnInput = (index) => {
-  const data = {
-    name: document.getElementById(`name-${index}`).value,
-    type: document.getElementById(`type-${index}`).value,
-    constraints: {},
-  };
+  const data = {};
 
-  const precision = document.getElementById(`precision-${index}`).value;
-  if (data.type === 'decimal' && precision !== 'auto') {
-    data.constraints.precision = precision;
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
   }
 
   return data;
@@ -199,92 +207,107 @@ const getDeleteButton = (index) => {
 };
 
 
-const buildOutputColumnInput = (parent, column, index, deletable) => {
+const buildOutputColumnInput = ({
+  parent,
+  column,
+  index,
+  additionalInputs,
+  showName = true,
+  showType = true,
+  showDelete = true,
+}) => {
   const container = document.createElement('div');
   container.id = index;
   container.classList.add('output-column-container');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = `name-${container.id}`;
-  nameInput.placeholder = 'Column name';
-  nameInput.value = column?.name || '';
-  container.appendChild(nameInput);
-
-  const typeSelect = document.createElement('select');
-  typeSelect.style.flexGrow = '1';
-  typeSelect.id = `type-${container.id}`;
-  typeSelect.innerHTML = `
-    <option value="string" selected>String</option>
-    <option value="integer">Integer</option>
-    <option value="decimal">Decimal</option>
-    <option value="boolean">Boolean</option>
-    <option value="datetime">Datetime</option>
-  `;
-  typeSelect.value = column?.type || 'string';
-  container.appendChild(typeSelect);
-
-  const precisionSelect = document.createElement('select');
-  precisionSelect.id = `precision-${container.id}`;
-  typeSelect.style.flexShrink = '100';
-  precisionSelect.innerHTML = `
-    <option value="auto" selected>Auto</option>
-    <option value="1">1 decimal</option>
-    <option value="2">2 decimals</option>
-    <option value="3">3 decimals</option>
-    <option value="4">4 decimals</option>
-    <option value="5">5 decimals</option>
-    <option value="6">6 decimals</option>
-    <option value="7">7 decimals</option>
-    <option value="8">8 decimals</option>
-  `;
-
-  if (column?.type === 'decimal') {
-    precisionSelect.style.display = 'block';
-    precisionSelect.value = column.constraints?.precision || 'auto';
-  } else {
-    precisionSelect.style.display = 'none';
-    precisionSelect.value = null;
-  }
-
-  container.appendChild(precisionSelect);
-
-  const deleteButton = document.createElement('button');
-  deleteButton.id = `delete-${container.id}`;
-  deleteButton.classList.add('button', 'delete-button');
-  deleteButton.innerHTML = 'DELETE';
-  container.appendChild(deleteButton);
-
-  if (!deletable) {
-    deleteButton.style.display = 'none';
-  }
-
   parent.appendChild(container);
 
-  typeSelect.addEventListener('change', () => {
-    if (typeSelect.value === 'decimal') {
+  if (showName) {
+    const nameInput = document.createElement('input');
+    nameInput.classList.add('output-column-name');
+    nameInput.type = 'text';
+    nameInput.id = `name-${container.id}`;
+    nameInput.placeholder = 'Column name';
+    nameInput.value = column?.name || '';
+    container.appendChild(nameInput);
+  }
+
+  if (showType) {
+    const typeSelect = document.createElement('select');
+    typeSelect.classList.add('output-column-type');
+    typeSelect.style.flexGrow = '1';
+    typeSelect.id = `type-${container.id}`;
+    typeSelect.innerHTML = `
+      <option value="string" selected>String</option>
+      <option value="integer">Integer</option>
+      <option value="decimal">Decimal</option>
+      <option value="boolean">Boolean</option>
+      <option value="datetime">Datetime</option>
+    `;
+    typeSelect.value = column?.type || 'string';
+    container.appendChild(typeSelect);
+
+    const precisionSelect = document.createElement('select');
+    precisionSelect.classList.add('output-column-precision');
+    precisionSelect.id = `precision-${container.id}`;
+    typeSelect.style.flexShrink = '100';
+    precisionSelect.innerHTML = `
+      <option value="auto" selected>Auto</option>
+      <option value="1">1 decimal</option>
+      <option value="2">2 decimals</option>
+      <option value="3">3 decimals</option>
+      <option value="4">4 decimals</option>
+      <option value="5">5 decimals</option>
+      <option value="6">6 decimals</option>
+      <option value="7">7 decimals</option>
+      <option value="8">8 decimals</option>
+    `;
+
+    if (column?.type === 'decimal') {
       precisionSelect.style.display = 'block';
-      precisionSelect.value = 'auto';
+      precisionSelect.value = column.constraints?.precision || 'auto';
     } else {
       precisionSelect.style.display = 'none';
       precisionSelect.value = null;
     }
-  });
 
-  deleteButton.addEventListener('click', () => {
-    parent.remove();
+    container.appendChild(precisionSelect);
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'decimal') {
+        precisionSelect.style.display = 'block';
+        precisionSelect.value = 'auto';
+      } else {
+        precisionSelect.style.display = 'none';
+        precisionSelect.value = null;
+      }
+    });
+  }
+
+  additionalInputs?.forEach(customInput => container.appendChild(customInput));
+
+  if (showDelete) {
+    const deleteButton = document.createElement('button');
+    deleteButton.id = `delete-${container.id}`;
+    deleteButton.classList.add('button', 'delete-button', 'output-column-delete');
+    deleteButton.innerHTML = 'DELETE';
+    container.appendChild(deleteButton);
+
+    deleteButton?.addEventListener('click', () => {
+      parent.remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    });
+
     const buttons = document.getElementsByClassName('delete-button');
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
+    for (let i = 0; i < buttons.length; i += 1) {
+      if (buttons.length === 1) {
+        buttons[i].disabled = true;
+      } else {
+        buttons[i].disabled = false;
+      }
     }
   }
 };
@@ -303,22 +326,239 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
+const AVAILABLE_SUBSCRIPTION_ATTRS = [
+  {
+    value: 'id',
+    label: 'Subscription ID',
+  },
+  {
+    value: 'status',
+    label: 'Subscription status',
+  },
+  {
+    value: 'events.created.at',
+    label: 'Subscription created at',
+  },
+  {
+    value: 'events.updated.at',
+    label: 'Subscription updated at',
+  },
+  {
+    value: 'external_id',
+    label: 'Subscription external id',
+  },
+  {
+    value: 'external_uid',
+    label: 'Subscription UID',
+  },
+  {
+    value: 'product.id',
+    label: 'Product id',
+  },
+  {
+    value: 'product.name',
+    label: 'Product name',
+  },
+  {
+    value: 'product.status',
+    label: 'Product status',
+  },
+  {
+    value: 'connection.provider.id',
+    label: 'Distributor ID',
+  },
+  {
+    value: 'connection.provider.name',
+    label: 'Distributor name',
+  },
+  {
+    value: 'connection.vendor.id',
+    label: 'Vendor ID',
+  },
+  {
+    value: 'connection.vendor.name',
+    label: 'Vendor name',
+  },
+  {
+    value: 'connection.hub.id',
+    label: 'Hub id',
+  },
+  {
+    value: 'connection.hub.name',
+    label: 'Hub name',
+  },
+  {
+    value: 'tiers.customer.id',
+    label: 'Customer ID',
+  },
+  {
+    value: 'tiers.customer.external_id',
+    label: 'Customer external ID',
+  },
+  {
+    value: 'tiers.customer.external_uid',
+    label: 'Customer external UID',
+  },
+  {
+    value: 'tiers.customer.name',
+    label: 'Customer name',
+  },
+  {
+    value: 'tiers.customer.tax_id',
+    label: 'Customer tax ID',
+  },
+  {
+    value: 'tiers.tier1.id',
+    label: 'Tier1 ID',
+  },
+  {
+    value: 'tiers.tier1.external_id',
+    label: 'Tier1 external ID',
+  },
+  {
+    value: 'tiers.tier1.external_uid',
+    label: 'Tier1 external UID',
+  },
+  {
+    value: 'tiers.tier1.name',
+    label: 'Tier1 name',
+  },
+  {
+    value: 'tiers.tier1.tax_id',
+    label: 'Tier1 tax ID',
+  },
+  {
+    value: 'tiers.tier2.id',
+    label: 'Tier2 ID',
+  },
+  {
+    value: 'tiers.tier2.external_id',
+    label: 'Tier2 external ID',
+  },
+  {
+    value: 'tiers.tier2.external_uid',
+    label: 'Tier2 external UID',
+  },
+  {
+    value: 'tiers.tier2.name',
+    label: 'Tier2 name',
+  },
+  {
+    value: 'tiers.tier2.tax_id',
+    label: 'Tier2 tax ID',
+  },
+  {
+    value: 'marketplace.id',
+    label: 'Marketplace ID',
+  },
+  {
+    value: 'marketplace.name',
+    label: 'Marketplace name',
+  },
+  {
+    value: 'contract.id',
+    label: 'Contract ID',
+  },
+  {
+    value: 'contract.name',
+    label: 'Contract name',
+  },
+  {
+    value: 'billing.period.delta',
+    label: 'Billing period delta',
+  },
+  {
+    value: 'billing.period.uom',
+    label: 'Billing period uom',
+  },
+  {
+    value: 'parameter.value',
+    label: 'Parameter value',
+  },
+  {
+    value: 'items.id',
+    label: 'Product item IDs',
+  },
+];
+
+const SUBSCRIPTION_ATTR_TYPES = {
+  'billing.period.delta': 'decimal',
+};
+
+
+const createOutputRow = (parent, index, column, parameters, columnConfigs) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  parent.appendChild(item);
+
+  const columnConfig = columnConfigs?.[column.name];
+
+  const sourceSelect = document.createElement('select');
+  sourceSelect.id = `source-select-${index}`;
+  sourceSelect.classList.add('output-column-source');
+
+  AVAILABLE_SUBSCRIPTION_ATTRS.forEach(optionData => {
+    const option = document.createElement('option');
+    option.value = optionData.value;
+    option.innerHTML = optionData.label;
+
+    sourceSelect.appendChild(option);
+  });
+  if (columnConfig) {
+    sourceSelect.value = columnConfig.attribute;
+  }
+
+  const paramNameSelect = document.createElement('select');
+  paramNameSelect.id = `source-param-select-${index}`;
+
+  parameters.forEach(param => {
+    const paramOption = document.createElement('option');
+    paramOption.value = param.name;
+    paramOption.text = param.name;
+    paramNameSelect.appendChild(paramOption);
+  });
+  if (columnConfig?.parameter_name) {
+    paramNameSelect.value = columnConfig.parameter_name;
+  }
+
+  buildOutputColumnInput({
+    column,
+    index,
+    parent: item,
+    additionalInputs: [sourceSelect, paramNameSelect],
+    showType: false,
+  });
+
+  const handleSourceSelectChange = () => {
+    if (sourceSelect.value === 'parameter.value') {
+      paramNameSelect.style.display = 'block';
+      paramNameSelect.style.maxWidth = 'calc(28% - 10px)';
+      sourceSelect.style.maxWidth = 'calc(25% - 10px)';
+    } else {
+      paramNameSelect.style.display = 'none';
+      sourceSelect.style.maxWidth = null;
+    }
+  };
+
+  handleSourceSelectChange();
+  sourceSelect.addEventListener('change', handleSourceSelectChange);
+};
 
 const lookupSubscription = (app) => {
   if (!app) return;
 
   let columns = [];
+  let parameters = [];
 
   app.listen('config', async (config) => {
     const {
+      columns: { output: outputColumns },
       context: { available_columns: availableColumns, stream },
       settings,
     } = config;
+    const outputConfigs = settings?.output_config;
+    let rowIndex = 0;
 
     const hasProduct = 'product' in stream.context;
     columns = availableColumns;
@@ -349,7 +589,7 @@ const lookupSubscription = (app) => {
     });
 
     if (hasProduct === true) {
-      const parameters = await getLookupSubscriptionParameters(stream.context.product.id);
+      parameters = await getLookupSubscriptionParameters(stream.context.product.id);
       parameters.forEach((element) => {
         const option = document.createElement('option');
         option.value = element.id;
@@ -362,7 +602,6 @@ const lookupSubscription = (app) => {
       document.getElementById('criteria').value = settings.lookup_type;
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
-      document.getElementById('prefix').value = settings.prefix;
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('not_found_leave_empty').checked = true;
       } else {
@@ -392,12 +631,26 @@ const lookupSubscription = (app) => {
         document.getElementById('param_name_group').style.display = 'none';
       }
     });
+
+    const outputColumnsElement = document.getElementById('output-columns');
+
+    if (outputColumns.length > 0) {
+      outputColumns.forEach((outputColumn, index) => {
+        rowIndex = index;
+        createOutputRow(outputColumnsElement, rowIndex, outputColumn, parameters, outputConfigs);
+      });
+    } else {
+      createOutputRow(outputColumnsElement, rowIndex, undefined, parameters);
+    }
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createOutputRow(outputColumnsElement, rowIndex, undefined, parameters);
+    });
   });
 
   app.listen('save', async () => {
     const criteria = document.getElementById('criteria').value;
     const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
     let parameter = {};
     if (document.getElementById('criteria').value === 'params__value') {
       const select = document.getElementById('parameter');
@@ -409,28 +662,50 @@ const lookupSubscription = (app) => {
     const actionIfNotFound = document.querySelector('input[name="if_not_found"]:checked').value;
     const actionIfMultiple = document.querySelector('input[name="if_multiple"]:checked').value;
 
+    const outputs = document.getElementsByClassName('output-column-container');
+    const outputColumnsData = [];
+    const outputColumnsConfig = {};
+
+    for (let i = 0; i < outputs.length; i += 1) {
+      const index = outputs[i].id;
+      const sourceSelect = document.getElementById(`source-select-${index}`);
+      const colSource = sourceSelect.value;
+      let colName = getDataFromOutputColumnInput(index).name;
+      const columnConfig = {
+        attribute: colSource,
+      };
+
+      if (colSource === 'parameter.value') {
+        const paramName = document.getElementById(`source-param-select-${index}`).value;
+        columnConfig.parameter_name = paramName;
+      }
+
+      if (!colName) {
+        colName = sourceSelect.options[sourceSelect.selectedIndex].label;
+        if (columnConfig.parameter_name) {
+          colName += ` ${columnConfig.parameter_name}`;
+        }
+      }
+
+      outputColumnsData.push({
+        name: colName,
+        type: SUBSCRIPTION_ATTR_TYPES[columnConfig.attribute] || 'string',
+      });
+      outputColumnsConfig[colName] = columnConfig;
+    }
+
     const data = {
       settings: {
         lookup_type: criteria,
         from: column.name,
         parameter,
-        prefix,
         action_if_not_found: actionIfNotFound,
         action_if_multiple: actionIfMultiple,
+        output_config: outputColumnsConfig,
       },
       columns: {
         input: [column],
-        output: [
-          'product.id',
-          'product.name',
-          'marketplace.id',
-          'marketplace.name',
-          'vendor.id',
-          'vendor.name',
-          'subscription.id',
-          'subscription.external_id',
-          'subscription.status',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        output: outputColumnsData,
       },
     };
 

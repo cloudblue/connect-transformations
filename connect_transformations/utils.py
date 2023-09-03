@@ -107,3 +107,13 @@ def deep_convert_type(original, type_to_convert, converter):
     elif isinstance(original, list):
         return [deep_convert_type(v, type_to_convert, converter) for v in original]
     return original
+
+
+def deep_itemgetter(obj, attr_name):
+    value = obj
+    for attr in attr_name.split('.'):
+        try:
+            value = value[attr]
+        except KeyError:
+            return
+    return value

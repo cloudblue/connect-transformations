@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from connect_transformations.utils import cast_value_to_type, deep_convert_type
+from connect_transformations.utils import cast_value_to_type, deep_convert_type, deep_itemgetter
 
 
 @pytest.mark.parametrize(
@@ -91,3 +91,24 @@ def test_cast_to_datetime(value, expected):
 def test_deep_convert_type(value, expected):
     result = deep_convert_type(value, datetime, str)
     assert result == expected
+
+
+@pytest.mark.parametrize('item, result', (
+    ('a', 1),
+    ('deep.b', 2),
+    ('deep.deeper.c', 3),
+    ('not_exists', None),
+    ('deep.not_exists', None),
+))
+def test_deep_itemgetter(item, result):
+    obj = {
+        'a': 1,
+        'deep': {
+            'b': 2,
+            'deeper': {
+                'c': 3,
+            },
+        },
+    }
+
+    assert deep_itemgetter(obj, item) == result

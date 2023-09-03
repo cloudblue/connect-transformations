@@ -32,33 +32,31 @@ All rights reserved.
                 <select class="input" id="column"></select>
             </div>
             <div class="input-group">
-                <label class="label" for="prefix">Prefix</label>
-                <input class="input" id="prefix" type="text" placeholder="Prefix" />
-            </div>
-            <div class="input-group">
-                <p class="radio-buttons">Choose what to do if a subscription is not found:</p>
+                <p class="radio-buttons label">Choose what to do if a subscription is not found:</p>
                 <div class="radio-buttons input">
                     <input type="radio" id="not_found_leave_empty" name="if_not_found" value="leave_empty" />
-                    <label class="label" for="not_found_leave_empty">Leave the row empty</label>
+                    <label for="not_found_leave_empty">Leave empty</label>
                     <input type="radio" id="not_found_fail" name="if_not_found" value="fail" />
-                    <label class="label" for="not_found_fail">Transformation will fail</label>
+                    <label for="not_found_fail">Fail</label>
                 </div>
             </div>
             <div class="input-group">
-                <p class="radio-buttons">Choose what to do if multiple subscriptions are found:</p>
-                <div class="radio-buttons input radio-buttons-vertical">
-                    <div>
-                        <input type="radio" id="multiple_use_most_actual" name="if_multiple" value="use_most_actual" />
-                        <label class="label" for="multiple_use_most_actual">Use the most recent subscription</label>
-                    </div>
-                    <div>
-                        <input type="radio" id="multiple_leave_empty" name="if_multiple" value="leave_empty" />
-                        <label class="label" for="multiple_leave_empty">Leave the row empty</label>
-                    </div>
-                    <div>
-                        <input type="radio" id="multiple_fail" name="if_multiple" value="fail" />
-                        <label class="label" for="multiple_fail">Transformation will fail</label>
-                    </div>
+                <p class="radio-buttons label">Choose what to do if multiple subscriptions are found:</p>
+                <div class="radio-buttons input">
+                    <input type="radio" id="multiple_use_most_actual" name="if_multiple" value="use_most_actual" />
+                    <label for="multiple_use_most_actual">Use the most recent</label>
+                    <input type="radio" id="multiple_leave_empty" name="if_multiple" value="leave_empty" />
+                    <label for="multiple_leave_empty">Leave empty</label>
+                    <input type="radio" id="multiple_fail" name="if_multiple" value="fail" />
+                    <label for="multiple_fail">Fail</label>
+                </div>
+            </div>
+            <div class="output">
+                <label>Output columns:</label>
+                <div id="output-columns">
+                </div>
+                <div class="button-container">
+                    <button id="add" class="button">ADD</button>
                 </div>
             </div>
         </div>

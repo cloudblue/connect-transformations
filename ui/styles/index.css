@@ -217,6 +217,10 @@ select {
     justify-content: space-between;
 }
 
+.output-column-name {
+    flex-grow: 1;
+}
+
 .output-column-container > * {
     flex-shrink: 0;
 }

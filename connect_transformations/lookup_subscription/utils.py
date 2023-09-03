@@ -10,8 +10,6 @@ from connect_transformations.utils import (
 )
 
 
-PREFIX_MAX_LENGTH = 12
-
 SUBSCRIPTION_LOOKUP = {
     'external_id': 'CloudBlue Subscription External ID',
     'id': 'CloudBlue Subscription ID',
@@ -32,12 +30,11 @@ def validate_lookup_subscription(data):
     if (
         does_not_contain_required_keys(
             data['settings'],
-            ['lookup_type', 'from', 'prefix', 'action_if_not_found', 'action_if_multiple'],
-        ) or not isinstance(data['settings']['prefix'], str)
-        or data['settings']['prefix'] == ''
+            ['lookup_type', 'from', 'action_if_not_found', 'action_if_multiple', 'output_config'],
+        )
     ):
         return build_error_response(
-            'The settings must have `lookup_type`, `from`, `prefix`, '
+            'The settings must have `lookup_type`, `from`, `output_config`, '
             '`action_if_not_found` and `action_if_multiple` fields',
         )
 
@@ -78,15 +75,21 @@ def validate_lookup_subscription(data):
             ' that does not exist on columns.input',
         )
 
-    if len(data['settings']['prefix']) > PREFIX_MAX_LENGTH:
-        return build_error_response(
-            f'The settings `prefix` max length is {PREFIX_MAX_LENGTH}',
-        )
+    output_columns = data['columns']['output']
+    output_columns_config = data['settings']['output_config']
+
+    for out_column in output_columns:
+        column_name = out_column['name']
+        column_config = output_columns_config.get(column_name)
+        if not column_config:
+            return build_error_response(
+                'The settings `output_config` does not contain '
+                f'settings for the column {column_name}.',
+            )
 
     overview = 'Criteria = "' + SUBSCRIPTION_LOOKUP[data['settings']['lookup_type']] + '"\n'
     if data['settings']['lookup_type'] == 'params__value':
         overview += 'Parameter Name = "' + data['settings']['parameter']['name'] + '"\n'
-    overview += 'Prefix = "' + data['settings']['prefix'] + '"\n'
     overview += (
         'If not found = '
         + data['settings']['action_if_not_found'].replace('_', ' ').capitalize()
