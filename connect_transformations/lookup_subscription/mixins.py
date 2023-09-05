@@ -83,9 +83,10 @@ class LookupSubscriptionTransformationMixin:
             self.extract_row_from_subscription(subscription, output_columns),
         )
 
-    @staticmethod
-    def extract_row_from_subscription(subscription, output_columns):
+    def extract_row_from_subscription(self, subscription, output_columns):
         row = {}
+
+        item_attrs = []
 
         for col_name, col_config in output_columns.items():
             value = None
@@ -96,14 +97,32 @@ class LookupSubscriptionTransformationMixin:
                     if param_data['name'] == param_name:
                         value = param_data['value']
                         break
-            elif attr == 'items.id':
-                value = SEPARATOR.join(i['id'] for i in subscription['items'])
+            elif attr.startswith('items.'):
+                item_attr = attr.split('.')[-1]
+                item_attrs.append((col_name, item_attr))
+                value = ''
             else:
                 value = deep_itemgetter(subscription, attr)
 
             row[col_name] = value
 
+        if item_attrs:
+            self.extract_item_attrs_from_sutbscription(item_attrs, row, subscription)
+
         return row
+
+    @staticmethod
+    def extract_item_attrs_from_sutbscription(item_attrs, row, subscription):
+        for item in subscription['items']:
+            if (
+                item.get('item_type') == 'reservation'
+                and item.get('quantity') == 0
+            ):
+                continue
+
+            for col_name, item_attr in item_attrs:
+                item_value = str(item.get(item_attr, ''))
+                row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
 
     async def get_subscription(self, lookup):
         k = ''
