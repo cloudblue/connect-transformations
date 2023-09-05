@@ -2,11 +2,9 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 608:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-
-// UNUSED EXPORTS: createManualOutputRow, manual
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -73,92 +71,107 @@ const getDeleteButton = (index) => {
 };
 
 
-const buildOutputColumnInput = (parent, column, index, deletable) => {
+const buildOutputColumnInput = ({
+  parent,
+  column,
+  index,
+  additionalInputs,
+  showName = true,
+  showType = true,
+  showDelete = true,
+}) => {
   const container = document.createElement('div');
   container.id = index;
   container.classList.add('output-column-container');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.id = `name-${container.id}`;
-  nameInput.placeholder = 'Column name';
-  nameInput.value = column?.name || '';
-  container.appendChild(nameInput);
-
-  const typeSelect = document.createElement('select');
-  typeSelect.style.flexGrow = '1';
-  typeSelect.id = `type-${container.id}`;
-  typeSelect.innerHTML = `
-    <option value="string" selected>String</option>
-    <option value="integer">Integer</option>
-    <option value="decimal">Decimal</option>
-    <option value="boolean">Boolean</option>
-    <option value="datetime">Datetime</option>
-  `;
-  typeSelect.value = column?.type || 'string';
-  container.appendChild(typeSelect);
-
-  const precisionSelect = document.createElement('select');
-  precisionSelect.id = `precision-${container.id}`;
-  typeSelect.style.flexShrink = '100';
-  precisionSelect.innerHTML = `
-    <option value="auto" selected>Auto</option>
-    <option value="1">1 decimal</option>
-    <option value="2">2 decimals</option>
-    <option value="3">3 decimals</option>
-    <option value="4">4 decimals</option>
-    <option value="5">5 decimals</option>
-    <option value="6">6 decimals</option>
-    <option value="7">7 decimals</option>
-    <option value="8">8 decimals</option>
-  `;
-
-  if (column?.type === 'decimal') {
-    precisionSelect.style.display = 'block';
-    precisionSelect.value = column.constraints?.precision || 'auto';
-  } else {
-    precisionSelect.style.display = 'none';
-    precisionSelect.value = null;
-  }
-
-  container.appendChild(precisionSelect);
-
-  const deleteButton = document.createElement('button');
-  deleteButton.id = `delete-${container.id}`;
-  deleteButton.classList.add('button', 'delete-button');
-  deleteButton.innerHTML = 'DELETE';
-  container.appendChild(deleteButton);
-
-  if (!deletable) {
-    deleteButton.style.display = 'none';
-  }
-
   parent.appendChild(container);
 
-  typeSelect.addEventListener('change', () => {
-    if (typeSelect.value === 'decimal') {
+  if (showName) {
+    const nameInput = document.createElement('input');
+    nameInput.classList.add('output-column-name');
+    nameInput.type = 'text';
+    nameInput.id = `name-${container.id}`;
+    nameInput.placeholder = 'Column name';
+    nameInput.value = column?.name || '';
+    container.appendChild(nameInput);
+  }
+
+  if (showType) {
+    const typeSelect = document.createElement('select');
+    typeSelect.classList.add('output-column-type');
+    typeSelect.style.flexGrow = '1';
+    typeSelect.id = `type-${container.id}`;
+    typeSelect.innerHTML = `
+      <option value="string" selected>String</option>
+      <option value="integer">Integer</option>
+      <option value="decimal">Decimal</option>
+      <option value="boolean">Boolean</option>
+      <option value="datetime">Datetime</option>
+    `;
+    typeSelect.value = column?.type || 'string';
+    container.appendChild(typeSelect);
+
+    const precisionSelect = document.createElement('select');
+    precisionSelect.classList.add('output-column-precision');
+    precisionSelect.id = `precision-${container.id}`;
+    typeSelect.style.flexShrink = '100';
+    precisionSelect.innerHTML = `
+      <option value="auto" selected>Auto</option>
+      <option value="1">1 decimal</option>
+      <option value="2">2 decimals</option>
+      <option value="3">3 decimals</option>
+      <option value="4">4 decimals</option>
+      <option value="5">5 decimals</option>
+      <option value="6">6 decimals</option>
+      <option value="7">7 decimals</option>
+      <option value="8">8 decimals</option>
+    `;
+
+    if (column?.type === 'decimal') {
       precisionSelect.style.display = 'block';
-      precisionSelect.value = 'auto';
+      precisionSelect.value = column.constraints?.precision || 'auto';
     } else {
       precisionSelect.style.display = 'none';
       precisionSelect.value = null;
     }
-  });
 
-  deleteButton.addEventListener('click', () => {
-    parent.remove();
+    container.appendChild(precisionSelect);
+
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'decimal') {
+        precisionSelect.style.display = 'block';
+        precisionSelect.value = 'auto';
+      } else {
+        precisionSelect.style.display = 'none';
+        precisionSelect.value = null;
+      }
+    });
+  }
+
+  additionalInputs?.forEach(customInput => container.appendChild(customInput));
+
+  if (showDelete) {
+    const deleteButton = document.createElement('button');
+    deleteButton.id = `delete-${container.id}`;
+    deleteButton.classList.add('button', 'delete-button', 'output-column-delete');
+    deleteButton.innerHTML = 'DELETE';
+    container.appendChild(deleteButton);
+
+    deleteButton?.addEventListener('click', () => {
+      parent.remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    });
+
     const buttons = document.getElementsByClassName('delete-button');
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
-  });
-
-  const buttons = document.getElementsByClassName('delete-button');
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
+    for (let i = 0; i < buttons.length; i += 1) {
+      if (buttons.length === 1) {
+        buttons[i].disabled = true;
+      } else {
+        buttons[i].disabled = false;
+      }
     }
   }
 };
@@ -275,21 +288,31 @@ const getContextVariables = (stream) => {
 
 
 const getDataFromOutputColumnInput = (index) => {
-  const data = {
-    name: document.getElementById(`name-${index}`).value,
-    type: document.getElementById(`type-${index}`).value,
-    constraints: {},
-  };
+  const data = {};
 
-  const precision = document.getElementById(`precision-${index}`).value;
-  if (data.type === 'decimal' && precision !== 'auto') {
-    data.constraints.precision = precision;
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
   }
 
   return data;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -303,127 +326,267 @@ All rights reserved.
 
 
 
-const createManualOutputRow = (parent, index, column) => {
+const cleanCopyRows = parent => {
+  parent.innerHTML = '';
+};
+
+
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${getColumnLabel(column)}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
   parent.appendChild(item);
-  buildOutputColumnInput(item, column, index, true);
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
-const manual = (app) => {
-  if (!app) {
-    return;
-  }
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
 
-  hideComponent('app');
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const cleanField = elem => {
+  elem.setAttribute('disabled', '');
+  elem.value = '';
+};
+
+const airtable = (app) => {
+  if (!app) return;
   hideComponent('loader');
+  showComponent('app');
 
-  let availableColumns;
-  let rowIndex = 0;
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const baseSelect = document.getElementById('base-select');
+  const content = document.getElementById('content');
+  const tableSelect = document.getElementById('table-select');
+  const keyInput = document.getElementById('key-input');
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
 
-  const descriptionElement = document.getElementById('description-text');
-  const settingsElement = document.getElementById('settings-text');
-
-  app.listen('config', (config) => {
+  app.listen('config', async (config) => {
     const {
-      columns: { input: inputColumns, output: outputColumns },
-      context: { available_columns }, // eslint-disable-line camelcase
-      overview,
+      context: { available_columns: availableColumns },
+      columns: { output: outputColumns },
       settings,
     } = config;
 
-    availableColumns = available_columns; // eslint-disable-line camelcase
+    let airtableBases;
+    let rowIndex = 0;
 
-    descriptionElement.value = overview || '';
-    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
+    keyInput.addEventListener('input', async () => {
+      cleanField(baseSelect);
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
 
-    const inputColumnsEditElement = document.getElementById('edit-input-columns');
-    availableColumns.forEach((column) => {
-      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
-      const inputColumnRow = document.createElement('tr');
-      inputColumnRow.innerHTML = `
-        <td>${column.id.slice(-3)}</td>
-        <td>${column.name}</td>
-        <td>${column.type}</td>
-        <td>${column.description ? column.description : '-'}</td>
-        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
-      `;
-      inputColumnsEditElement.appendChild(inputColumnRow);
-    });
-
-    const outputColumnsElement = document.getElementById('output-columns');
-
-    if (outputColumns.length > 0) {
-      outputColumns.forEach((outputColumn, index) => {
-        rowIndex = index;
-        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
-      });
-    } else {
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    }
-
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createManualOutputRow(outputColumnsElement, rowIndex);
-    });
-
-    descriptionElement.addEventListener('keyup', () => {
-      const maxLength = 2000;
-      const currentLength = descriptionElement.value.length;
-      const descriptionLabel = document.getElementById('description-label');
-      const errorHint = document.getElementById('description-text-hint');
-      const descriptionCounter = document.getElementById('description-text-counter');
-
-      descriptionCounter.innerHTML = `${currentLength} / ${maxLength}`;
-      app.emit('overview-changed', descriptionElement.value);
-
-      if (currentLength > Number(maxLength)) {
-        descriptionLabel.classList.add('error--text');
-        descriptionCounter.classList.add('error--text');
-        descriptionElement.classList.add('error--input');
-        errorHint.classList.remove('text-hidden');
-      } else {
-        descriptionLabel.classList.remove('error--text');
-        descriptionCounter.classList.remove('error--text');
-        descriptionElement.classList.remove('error--input');
-        errorHint.classList.add('text-hidden');
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
       }
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
     });
 
-    hideComponent('loader');
-    showComponent('app');
+    baseSelect.addEventListener('change', async () => {
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
+    });
+
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+    });
+
+    if (settings) {
+      showComponent('loader');
+      apiKey = settings.api_key;
+      baseId = settings.base_id;
+      tableId = settings.table_id;
+
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        tables = await getAirtableTables(apiKey, settings.base_id);
+
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
+      }
+
+      const currentTable = tables.find(x => x.id === settings.table_id);
+      airtableColumns = currentTable.columns;
+
+      createOptions('base-select', airtableBases);
+      createOptions('table-select', tables);
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+
+      keyInput.value = settings.api_key;
+      baseSelect.value = settings.base_id;
+      tableSelect.value = settings.table_id;
+
+      mapInputColumn = availableColumns
+        .find((column) => column.name === settings.map_by.input_column);
+      inputColumnSelect.value = mapInputColumn.id;
+
+      mapAirtableColumn = airtableColumns
+        .find((column) => column.name === settings.map_by.airtable_column);
+      airtableFieldSelect.value = mapAirtableColumn.id;
+
+      removeDisabled('base-select');
+      removeDisabled('table-select');
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+      removeDisabled('add');
+
+      settings.mapping.forEach((mapping, i) => {
+        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
+        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
+        rowIndex = i;
+        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
+      });
+      hideComponent('loader');
+    }
   });
 
-  app.listen('save', () => {
+  app.listen('save', async () => {
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      app.emit('validation-error', 'Please complete all the fields');
+
+      return;
+    }
+
     const data = {
-      settings: {},
+      settings: {
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
+      },
       columns: {
-        input: [],
+        input: [mapInputColumn],
         output: [],
       },
-      overview: '',
     };
 
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
+      const outputColumn = {
+        name: outputName,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
+      data.columns.output.push(outputColumn);
+    }
+
     try {
-      data.overview = descriptionElement.value;
-      data.settings = JSON.parse(settingsElement.value);
-      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
-      inputColumns.forEach((inputColumn) => {
-        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
-        data.columns.input.push(availableColumn);
-      });
-
-      const outputs = document.getElementsByClassName('output-column-container');
-      for (let i = 0; i < outputs.length; i += 1) {
-        const index = outputs[i].id;
-        data.columns.output.push(getDataFromOutputColumnInput(index));
+      overview = await validate('airtable_lookup', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
-
-      app.emit('save', {
-        data,
-        status: 'ok',
-      });
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       app.emit('validation-error', e);
     }
@@ -431,7 +594,7 @@ const manual = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(airtable);
 
 
 /***/ })
@@ -523,7 +686,7 @@ const manual = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -573,7 +736,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(608)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

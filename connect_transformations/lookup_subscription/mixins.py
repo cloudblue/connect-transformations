@@ -11,11 +11,12 @@ from connect.eaas.core.inject.asynchronous import get_installation_client
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi import Depends
 
+from connect_transformations.constants import SEPARATOR
 from connect_transformations.lookup_subscription.exceptions import SubscriptionLookupError
 from connect_transformations.lookup_subscription.models import Configuration, SubscriptionParameter
 from connect_transformations.lookup_subscription.utils import validate_lookup_subscription
 from connect_transformations.models import Error, ValidationResult
-from connect_transformations.utils import is_input_column_nullable
+from connect_transformations.utils import deep_itemgetter, is_input_column_nullable
 
 
 SUBSCRIPTIONS_ACTIVE_STATUSES = ('active', 'terminating')
@@ -37,8 +38,9 @@ class LookupSubscriptionTransformationMixin:
     ):
         lookup_type = self.settings['lookup_type']
         from_column = self.settings['from']
-        prefix = self.settings['prefix']
+        prefix = self.settings.get('prefix', '')
         parameter = self.settings.get('parameter', {}).get('name', None)
+        output_columns = self.settings.get('output_config')
         value = row[from_column]
 
         if is_input_column_nullable(
@@ -60,17 +62,48 @@ class LookupSubscriptionTransformationMixin:
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
 
-        return RowTransformationResponse.done({
-            f'{prefix}.product.id': subscription['product']['id'],
-            f'{prefix}.product.name': subscription['product']['name'],
-            f'{prefix}.marketplace.id': subscription['marketplace']['id'],
-            f'{prefix}.marketplace.name': subscription['marketplace']['name'],
-            f'{prefix}.vendor.id': subscription['connection']['vendor']['id'],
-            f'{prefix}.vendor.name': subscription['connection']['vendor']['name'],
-            f'{prefix}.subscription.id': subscription['id'],
-            f'{prefix}.subscription.external_id': subscription['external_id'],
-            f'{prefix}.subscription.status': subscription['status'],
-        }) if subscription else RowTransformationResponse.skip()
+        if not subscription:
+            return RowTransformationResponse.skip()
+
+        # backward compatibility
+        if not output_columns:
+            return RowTransformationResponse.done({
+                f'{prefix}.product.id': subscription['product']['id'],
+                f'{prefix}.product.name': subscription['product']['name'],
+                f'{prefix}.marketplace.id': subscription['marketplace']['id'],
+                f'{prefix}.marketplace.name': subscription['marketplace']['name'],
+                f'{prefix}.vendor.id': subscription['connection']['vendor']['id'],
+                f'{prefix}.vendor.name': subscription['connection']['vendor']['name'],
+                f'{prefix}.subscription.id': subscription['id'],
+                f'{prefix}.subscription.external_id': subscription['external_id'],
+                f'{prefix}.subscription.status': subscription['status'],
+            })
+
+        return RowTransformationResponse.done(
+            self.extract_row_from_subscription(subscription, output_columns),
+        )
+
+    @staticmethod
+    def extract_row_from_subscription(subscription, output_columns):
+        row = {}
+
+        for col_name, col_config in output_columns.items():
+            value = None
+            attr = col_config['attribute']
+            if attr == 'parameter.value':
+                param_name = col_config['parameter_name']
+                for param_data in subscription['params']:
+                    if param_data['name'] == param_name:
+                        value = param_data['value']
+                        break
+            elif attr == 'items.id':
+                value = SEPARATOR.join(i['id'] for i in subscription['items'])
+            else:
+                value = deep_itemgetter(subscription, attr)
+
+            row[col_name] = value
+
+        return row
 
     async def get_subscription(self, lookup):
         k = ''

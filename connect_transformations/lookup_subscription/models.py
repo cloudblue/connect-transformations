@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel
 
@@ -15,13 +15,18 @@ class Parameter(BaseModel):
     name: Optional[str]
 
 
+class OutputConfig(BaseModel):
+    attribute: Optional[str]
+    parameter: Optional[str]
+
+
 class Settings(BaseModel):
     lookup_type: Optional[str]
     from_: Optional[str]
-    prefix: Optional[str]
     action_if_not_found: Optional[str]
     action_if_multiple: Optional[str]
     parameter: Optional[Parameter]
+    output_config: Optional[Dict[str, OutputConfig]]
 
     class Config:
         fields = {

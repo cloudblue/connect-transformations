@@ -36,12 +36,17 @@ function buildGroups(groups) {
   const parent = document.getElementById('output');
   parent.innerHTML = '';
 
-  Object.keys(groups).forEach(groupKey => {
-    const groupValue = groups[groupKey];
+  Object.keys(groups).forEach(index => {
+    const column = groups[index];
     const item = document.createElement('div');
     item.classList.add('list-wrapper');
     parent.appendChild(item);
-    buildOutputColumnInput(item, groupValue, groupKey, false);
+    buildOutputColumnInput({
+      column,
+      index,
+      parent: item,
+      showDelete: false,
+    });
   });
 }
 

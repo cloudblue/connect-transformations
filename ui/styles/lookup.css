@@ -1,9 +1,6 @@
-.input-group {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-    align-items: center;
-    width: 466px;
+.list-wrapper {
+    margin: 8px auto;
+    width: 100%;
 }
 
 .input {
@@ -17,7 +14,6 @@ input.input {
 }
 
 .label {
-    font-weight: bold;
     text-align: left;
     font-size: 14px;
     line-height: 20px;
@@ -36,4 +32,13 @@ input[type="radio"] {
 .radio-buttons-vertical {
     display: flex;
     flex-direction: column;
+}
+
+.output-column-name {
+    width: 30%;
+    flex-grow: 0;
+}
+
+.output-column-source {
+    flex-grow: 1;
 }

@@ -22,7 +22,11 @@ export const createManualOutputRow = (parent, index, column) => {
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
   parent.appendChild(item);
-  buildOutputColumnInput(item, column, index, true);
+  buildOutputColumnInput({
+    column,
+    index,
+    parent: item,
+  });
 };
 
 export const manual = (app) => {
