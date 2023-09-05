@@ -172,6 +172,22 @@ const AVAILABLE_SUBSCRIPTION_ATTRS = [
     value: 'items.id',
     label: 'Product item IDs',
   },
+  {
+    value: 'items.global_id',
+    label: 'Product item global IDs',
+  },
+  {
+    value: 'items.mpn',
+    label: 'Product item MPNs',
+  },
+  {
+    value: 'items.item_type',
+    label: 'Product item types',
+  },
+  {
+    value: 'items.quantity',
+    label: 'Product item quantities',
+  },
 ];
 
 const SUBSCRIPTION_ATTR_TYPES = {

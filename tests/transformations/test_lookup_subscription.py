@@ -38,9 +38,10 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
             {'id': 'PAR-112', 'name': 'Param2', 'value': '113'},
         ],
         'items': [
-            {'id': 'i1'},
-            {'id': 'i2'},
-            {'id': 'i3'},
+            {'id': 'i1', 'mpn': 'm1', 'item_type': 'reservation', 'quantity': 11},
+            {'id': 'i2', 'mpn': 'm2', 'item_type': 'reservation', 'quantity': 0},
+            {'id': 'i3', 'mpn': 'm3', 'item_type': 'payasyougo', 'quantity': 0},
+            {'id': 'i4', 'mpn': 'm4', 'item_type': 'reservation', 'quantity': 12},
         ],
     }])
 
@@ -60,7 +61,10 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
                     'deeper': {'attribute': 'events.created.at'},
                     'param val': {'attribute': 'parameter.value', 'parameter_name': 'Param1'},
                     'param_not_exist': {'attribute': 'parameter.value', 'parameter_name': 'no'},
-                    'items': {'attribute': 'items.id'},
+                    'item ids': {'attribute': 'items.id'},
+                    'item mpns': {'attribute': 'items.mpn'},
+                    'item types': {'attribute': 'items.item_type'},
+                    'item quantities': {'attribute': 'items.quantity'},
                 },
             },
             'columns': {
@@ -85,7 +89,10 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
         'deeper': '2022-01-01 11:23:23',
         'param val': '111',
         'param_not_exist': None,
-        'items': 'i1; i2; i3',
+        'item ids': 'i1;i3;i4',
+        'item mpns': 'm1;m3;m4',
+        'item types': 'reservation;payasyougo;reservation',
+        'item quantities': '11;0;12',
     }
 
 
