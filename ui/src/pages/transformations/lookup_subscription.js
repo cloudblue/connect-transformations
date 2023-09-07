@@ -266,7 +266,7 @@ const lookupSubscription = (app) => {
       context: { available_columns: availableColumns, stream },
       settings,
     } = config;
-    const outputConfigs = settings.output_config;
+    const outputConfigs = settings?.output_config;
     let rowIndex = 0;
 
     const hasProduct = 'product' in stream.context;
