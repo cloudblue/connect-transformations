@@ -5,13 +5,13 @@
 #
 from typing import Dict
 
-from connect.client import AsyncConnectClient
+from connect.client import AsyncConnectClient, ClientError
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.inject.asynchronous import get_installation_client
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi import Depends
 
-from connect_transformations.constants import SEPARATOR
+from connect_transformations.constants import MAX_API_CALL_CONNECTION_ERROR_RETRIES, SEPARATOR
 from connect_transformations.lookup_subscription.exceptions import SubscriptionLookupError
 from connect_transformations.lookup_subscription.models import Configuration, SubscriptionParameter
 from connect_transformations.lookup_subscription.utils import validate_lookup_subscription
@@ -133,7 +133,14 @@ class LookupSubscriptionTransformationMixin:
         except KeyError:
             pass
 
-        result = await self.retrieve_subscription(lookup)
+        for attempts_left in range(MAX_API_CALL_CONNECTION_ERROR_RETRIES, -1, -1):
+            try:
+                result = await self.retrieve_subscription(lookup)
+                break
+            except ClientError:
+                if not attempts_left:
+                    raise
+                continue
 
         await self.acache_put(k, result)
         return result

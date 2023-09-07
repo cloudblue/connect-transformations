@@ -4,6 +4,7 @@
 # All rights reserved.
 #
 import pytest
+from connect.client import ClientError
 from connect.eaas.core.enums import ResultType
 
 from connect_transformations.transformations import StandardTransformationsApplication
@@ -94,6 +95,98 @@ async def test_lookup_subscription(mocker, async_connect_client, async_client_mo
         'item types': 'reservation;payasyougo;reservation',
         'item quantities': '11;0;12',
     }
+
+
+@pytest.mark.asyncio
+async def test_lookup_subscription_retry(mocker, async_connect_client, async_client_mocker_factory):
+    attempt = 0
+
+    def retrieve_mock(*args):
+        nonlocal attempt
+        attempt += 1
+
+        if attempt < 3:
+            raise ClientError()
+
+        return {
+            'product': {'id': 'product.id', 'name': 'product.name'},
+            'marketplace': {'id': 'marketplace.id', 'name': 'marketplace.name'},
+            'connection': {'vendor': {'id': 'vendor.id', 'name': 'vendor.name'}},
+            'id': 'subscription.id',
+            'external_id': 'subscription.external_id',
+            'status': 'active',
+            'events': {
+                'created': {'at': '2022-01-01 11:23:23'},
+            },
+            'params': [
+                {'id': 'PAR-111', 'name': 'Param1', 'value': '111'},
+                {'id': 'PAR-112', 'name': 'Param2', 'value': '113'},
+            ],
+            'items': [
+                {'id': 'i1', 'mpn': 'm1', 'item_type': 'reservation', 'quantity': 11},
+                {'id': 'i2', 'mpn': 'm2', 'item_type': 'reservation', 'quantity': 0},
+                {'id': 'i3', 'mpn': 'm3', 'item_type': 'payasyougo', 'quantity': 0},
+                {'id': 'i4', 'mpn': 'm4', 'item_type': 'reservation', 'quantity': 12},
+            ],
+        }
+
+    retrieve_m = mocker.patch(
+        'connect_transformations.lookup_subscription.mixins.'
+        'LookupSubscriptionTransformationMixin.retrieve_subscription',
+        side_effect=retrieve_mock,
+    )
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'lookup_type': 'id',
+                'from': 'ColumnA',
+                'action_if_not_found': 'leave_empty',
+                'action_if_multiple': 'use_most_actual',
+                'output_config': {
+                    'attr': {'attribute': 'id'},
+                    'nested': {'attribute': 'product.id'},
+                    'deeper': {'attribute': 'events.created.at'},
+                    'param val': {'attribute': 'parameter.value', 'parameter_name': 'Param1'},
+                    'param_not_exist': {'attribute': 'parameter.value', 'parameter_name': 'no'},
+                    'item ids': {'attribute': 'items.id'},
+                    'item mpns': {'attribute': 'items.mpn'},
+                    'item types': {'attribute': 'items.item_type'},
+                    'item quantities': {'attribute': 'items.quantity'},
+                },
+            },
+            'columns': {
+                'input': [{'name': 'ColumnA', 'nullable': False}],
+                'output': [
+                    {'name': 'attr'},
+                    {'name': 'nested'},
+                    {'name': 'deeper'},
+                    {'name': 'param val'},
+                    {'param_not_exist': None},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_subscription({
+        'ColumnA': 'SubscriptionID',
+    })
+    assert response.status == ResultType.SUCCESS, response.output
+    assert response.transformed_row == {
+        'attr': 'subscription.id',
+        'nested': 'product.id',
+        'deeper': '2022-01-01 11:23:23',
+        'param val': '111',
+        'param_not_exist': None,
+        'item ids': 'i1;i3;i4',
+        'item mpns': 'm1;m3;m4',
+        'item types': 'reservation;payasyougo;reservation',
+        'item quantities': '11;0;12',
+    }
+
+    assert retrieve_m.call_count == 3
 
 
 @pytest.mark.asyncio
