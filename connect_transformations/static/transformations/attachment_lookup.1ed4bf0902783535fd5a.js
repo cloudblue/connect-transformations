@@ -2,9 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 616:
+/***/ 33:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
+
+// UNUSED EXPORTS: createLookupRow, createMappingRow, fillSelect, getRequiredValue, lookupSpreadsheet
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -192,7 +194,7 @@ const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, 
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -312,7 +314,7 @@ const getDataFromOutputColumnInput = (index) => {
   return data;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -326,12 +328,35 @@ All rights reserved.
 
 
 
-const cleanCopyRows = parent => {
-  parent.innerHTML = '';
+
+const getRequiredValue = (id, errorMessage) => {
+  const { value } = document.getElementById(id);
+  if (!value) {
+    throw new Error(errorMessage);
+  }
+
+  return value;
+};
+
+const fillSelect = (options, id, value) => {
+  const select = document.getElementById(id);
+  if (value) {
+    select.value = value;
+  }
+  select.innerHTML = '';
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.text = getColumnLabel(item);
+    if (item.id === value) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
 };
 
 
-const createCopyRow = (parent, index, options, input, output) => {
+const createLookupRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
@@ -342,14 +367,14 @@ const createCopyRow = (parent, index, options, input, output) => {
             ${getColumnLabel(column)}
           </option>`).join(' ')}
       </select>
-      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
-      <button id="delete-${index}" class="button delete-button">DELETE</button>
+      <input type="text" placeholder="Attachment Field name" style="width: 35%;" ${output ? `value="${output}"` : ''} />
+      <button id="delete-lk-${index}" style="display: initial; width: 20%" class="button delete-button">DELETE</button>
     `;
   parent.appendChild(item);
 
-  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+  document.getElementById(`delete-lk-${index}`).addEventListener('click', () => {
     if (document.getElementsByClassName('list-wrapper').length === 1) {
-      showError('You need to have at least one row');
+      showError('You need to have at least one lookup');
     } else {
       document.getElementById(`wrapper-${index}`).remove();
       const buttons = document.getElementsByClassName('delete-button');
@@ -368,233 +393,186 @@ const createCopyRow = (parent, index, options, input, output) => {
   }
 };
 
-const createOptions = (selectId, options) => {
-  const select = document.getElementById(selectId);
-  select.innerHTML = `
-        <option disabled selected value>Please select an option</option>
-        ${options.map((column) => `
-          <option value="${column.id}">
-            ${column.name}
-          </option>`).join(' ')}
-    `;
+
+const createMappingRow = (index, from, to) => {
+  let lastRowIndex = 0;
+  // remove existing ADD button and add REMOVE button to last col of the row
+  const addButton = document.getElementById('add-button');
+  if (addButton) {
+    // get data-row-index from the ADD button and add delete button to this row
+    lastRowIndex = addButton.getAttribute('data-row-index');
+    addButton.remove();
+    document
+      .getElementById(`row-${lastRowIndex}`)
+      .children[3]
+      .appendChild(getDeleteButton(lastRowIndex));
+  }
+
+  const row = document.createElement('div');
+  row.classList.add('row');
+  row.id = `row-${index}`;
+  row.innerHTML = `
+    <div class="col button-col">
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Input column" value="${from || ''}" />
+    </div>
+    <div class="col">
+      <input type="text" placeholder="Output column" value="${to || ''}" />
+    </div>
+    <div class="col button-col">
+    </div>`;
+  row.children[0].appendChild(getAddButton(index));
+  document.getElementById('mapping').appendChild(row);
+
+  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
+  if (deleteButton) {
+    deleteButton.addEventListener('click', () => {
+      document.getElementById(`row-${lastRowIndex}`).remove();
+      // replace delete button with add button if there is only one row left
+      if (document.getElementsByClassName('row').length === 1) {
+        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
+      }
+    });
+  }
+  document.getElementById('add-button').addEventListener('click', () => {
+    createMappingRow(index + 1);
+  });
 };
 
-const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
-
-const cleanField = elem => {
-  elem.setAttribute('disabled', '');
-  elem.value = '';
-};
-
-const airtable = (app) => {
+const lookupSpreadsheet = (app) => {
   if (!app) return;
-  hideComponent('loader');
-  showComponent('app');
 
-  let airtableColumns = [];
-  let apiKey;
-  let baseId;
-  let tableId;
-  let tables;
-  let mapInputColumn;
-  let mapAirtableColumn;
-  const baseSelect = document.getElementById('base-select');
-  const content = document.getElementById('content');
-  const tableSelect = document.getElementById('table-select');
-  const keyInput = document.getElementById('key-input');
-  const inputColumnSelect = document.getElementById('input-column-select');
-  const airtableFieldSelect = document.getElementById('field-select');
-  const addButton = document.getElementById('add');
+  let attachments = [];
+  let columns = [];
+  let rowIndex = 0;
 
   app.listen('config', async (config) => {
-    const {
-      context: { available_columns: availableColumns },
-      columns: { output: outputColumns },
-      settings,
-    } = config;
+    try {
+      const {
+        context: {
+          stream: { id: streamId },
+          available_columns: availableColumns,
+        },
+        columns: { input: inputColumns },
+        settings,
+      } = config;
 
-    let airtableBases;
-    let rowIndex = 0;
+      attachments = await getAttachments(streamId);
+      columns = availableColumns;
 
-    keyInput.addEventListener('input', async () => {
-      cleanField(baseSelect);
-      cleanField(tableSelect);
-      cleanField(inputColumnSelect);
-      cleanField(airtableFieldSelect);
-      cleanCopyRows(content);
-      apiKey = keyInput.value;
-      if (apiKey.length < 50) return;
+      const content = document.getElementById('lookup');
 
-      try {
-        airtableBases = await getAirtableBases(apiKey);
-        if (airtableBases.error) {
-          throw new Error(airtableBases.error);
+      if (settings) {
+        const {
+          file,
+          sheet,
+          map_by: mapBy,
+          mapping,
+        } = settings;
+
+        mapBy.forEach((item, i) => {
+          const inputColumn = inputColumns.find((col) => col.name === item.input_column);
+          const outputColumn = item.attachment_column;
+          rowIndex = i;
+          createLookupRow(content, rowIndex, columns, inputColumn, outputColumn);
+        });
+
+        const attachmentFound = attachments.find((item) => item.file === file);
+        let fileId = null;
+        if (attachmentFound == null) {
+          const fileName = file.split('/').pop();
+          app.emit('validation-error', `The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
+        } else {
+          fileId = attachmentFound.id;
         }
-        hideError();
-      } catch (e) {
-        app.emit('validation-error', e);
+        fillSelect(attachments, 'attachment', fileId);
+        document.getElementById('sheet').value = sheet;
+        mapping.forEach((item, index) => {
+          createMappingRow(index, item.from, item.to);
+        });
+      } else {
+        fillSelect(attachments, 'attachment');
+        createMappingRow(0);
+        createLookupRow(content, rowIndex, columns);
       }
 
-      createOptions('base-select', airtableBases);
-      removeDisabled('base-select');
-    });
-
-    baseSelect.addEventListener('change', async () => {
-      cleanField(tableSelect);
-      cleanField(inputColumnSelect);
-      cleanField(airtableFieldSelect);
-      cleanCopyRows(content);
-
-      baseId = baseSelect.value;
-      tables = await getAirtableTables(apiKey, baseId);
-      hideError();
-
-      createOptions('table-select', tables);
-      removeDisabled('table-select');
-    });
-
-    tableSelect.addEventListener('change', () => {
-      tableId = tableSelect.value;
-      const currentTable = tables.find(x => x.id === tableId);
-      airtableColumns = currentTable.columns;
-      hideError();
-
-      createOptions('field-select', airtableColumns);
-      createOptions('input-column-select', availableColumns);
-      removeDisabled('field-select');
-      removeDisabled('input-column-select');
-    });
-
-    inputColumnSelect.addEventListener('change', () => {
-      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
-      if (mapAirtableColumn) removeDisabled('add');
-      hideError();
-    });
-
-    airtableFieldSelect.addEventListener('change', () => {
-      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
-      if (mapInputColumn) removeDisabled('add');
-      hideError();
-    });
-
-    addButton.addEventListener('click', () => {
-      rowIndex += 1;
-      createCopyRow(content, rowIndex, airtableColumns);
-    });
-
-    if (settings) {
-      showComponent('loader');
-      apiKey = settings.api_key;
-      baseId = settings.base_id;
-      tableId = settings.table_id;
-
-      try {
-        airtableBases = await getAirtableBases(apiKey);
-        tables = await getAirtableTables(apiKey, settings.base_id);
-
-        if (airtableBases.error) {
-          throw new Error(airtableBases.error);
-        }
-        hideError();
-      } catch (e) {
-        app.emit('validation-error', e);
-      }
-
-      const currentTable = tables.find(x => x.id === settings.table_id);
-      airtableColumns = currentTable.columns;
-
-      createOptions('base-select', airtableBases);
-      createOptions('table-select', tables);
-      createOptions('field-select', airtableColumns);
-      createOptions('input-column-select', availableColumns);
-
-      keyInput.value = settings.api_key;
-      baseSelect.value = settings.base_id;
-      tableSelect.value = settings.table_id;
-
-      mapInputColumn = availableColumns
-        .find((column) => column.name === settings.map_by.input_column);
-      inputColumnSelect.value = mapInputColumn.id;
-
-      mapAirtableColumn = airtableColumns
-        .find((column) => column.name === settings.map_by.airtable_column);
-      airtableFieldSelect.value = mapAirtableColumn.id;
-
-      removeDisabled('base-select');
-      removeDisabled('table-select');
-      removeDisabled('field-select');
-      removeDisabled('input-column-select');
-      removeDisabled('add');
-
-      settings.mapping.forEach((mapping, i) => {
-        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
-        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
-        rowIndex = i;
-        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
+      document.getElementById('add-lookup-button').addEventListener('click', () => {
+        rowIndex += 1;
+        createLookupRow(content, rowIndex, columns);
       });
+    } catch (error) {
+      app.emit('validation-error', error);
+    } finally {
       hideComponent('loader');
+      showComponent('app');
     }
   });
 
   app.listen('save', async () => {
-    let overview = '';
-    if (!mapInputColumn || !mapAirtableColumn) {
-      app.emit('validation-error', 'Please complete all the fields');
-
-      return;
-    }
-
-    const data = {
-      settings: {
-        api_key: apiKey,
-        base_id: baseId,
-        table_id: tableId,
-        map_by: {
-          input_column: mapInputColumn.name,
-          airtable_column: mapAirtableColumn.name,
-        },
-        mapping: [],
-      },
-      columns: {
-        input: [mapInputColumn],
-        output: [],
-      },
-    };
-
-    const form = document.getElementsByClassName('list-wrapper');
-    // eslint-disable-next-line no-restricted-syntax
-    for (const line of form) {
-      const inputId = line.getElementsByTagName('select')[0].value;
-      const outputName = line.getElementsByTagName('input')[0].value;
-
-      const inputColumn = airtableColumns.find((column) => column.id === inputId);
-
-      const outputColumn = {
-        name: outputName,
-        description: '',
-      };
-      const setting = {
-        from: inputColumn.name,
-        to: outputName,
-      };
-      data.settings.mapping.push(setting);
-      data.columns.output.push(outputColumn);
-    }
+    hideError();
 
     try {
-      overview = await validate('airtable_lookup', data);
+      const fileId = getRequiredValue('attachment', 'Please select attachment');
+      const { file } = attachments.find((item) => item.id === fileId);
+      const sheet = document.getElementById('sheet').value;
+
+      const inputColumns = [];
+      const mapBy = [];
+      const lookups = document.querySelectorAll('#lookup .list-wrapper');
+      lookups.forEach((lookup) => {
+        const inputId = lookup.children[0].value;
+        const attchName = lookup.children[1].value;
+        const inputColumn = columns.find((column) => column.id === inputId);
+        if (inputId && attchName) {
+          mapBy.push({ input_column: inputColumn.name, attachment_column: attchName });
+          inputColumns.push(inputColumn);
+        } else {
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const outputColumns = [];
+      const mapping = [];
+      const rows = document.querySelectorAll('#mapping .row');
+      rows.forEach((row) => {
+        const from = row.children[1].children[0].value;
+        const to = row.children[2].children[0].value;
+        if (from && to) {
+          mapping.push({ from, to });
+          outputColumns.push({
+            name: to,
+          });
+        } else {
+          throw new Error('Please fill all mapping rows');
+        }
+      });
+
+      const data = {
+        settings: {
+          file,
+          sheet,
+          map_by: mapBy,
+          mapping,
+        },
+        columns: {
+          input: inputColumns,
+          output: outputColumns,
+        },
+      };
+
+      const overview = await validate('attachment_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (e) {
-      app.emit('validation-error', e);
+    } catch (error) {
+      app.emit('validation-error', error);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ })
-  .then(airtable);
+(0,dist/* default */.ZP)({ }).then(lookupSpreadsheet);
 
 
 /***/ })
@@ -686,7 +664,7 @@ const airtable = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			18: 0
+/******/ 			264: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -736,7 +714,7 @@ const airtable = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

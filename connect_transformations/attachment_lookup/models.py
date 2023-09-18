@@ -19,7 +19,7 @@ class MapBy(BaseModel):
 class Settings(BaseModel):
     file: Optional[str]
     sheet: Optional[str]
-    map_by: MapBy
+    map_by: List[MapBy]
     mapping: List[Mapping]
 
 

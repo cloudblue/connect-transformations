@@ -2,14 +2,148 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 33:
+/***/ 491:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createMappingRow, fillSelect, getRequiredValue, loockupSpreadsheet
-
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
+
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {};
+
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
+  }
+
+  return data;
+};
+
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -178,143 +312,7 @@ const buildOutputColumnInput = ({
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable */
-const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable and the base id is the id of the base */
-const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getColumnLabel = (column) => {
-  const colIdParts = column.id.split('-');
-  const colIdSuffix = colIdParts[colIdParts.length - 1];
-
-  return `${column.name} (C${colIdSuffix})`;
-};
-
-const flattenObj = (ob, prefix) => {
-  const result = {};
-
-  Object.keys(ob).forEach((i) => {
-    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
-      const temp = flattenObj(ob[i], '');
-      Object.keys(temp).forEach((j) => {
-        result[`${prefix}${i}.${j}`] = temp[j];
-      });
-    } else {
-      result[i] = ob[i];
-    }
-  });
-
-  return result;
-};
-
-const getContextVariables = (stream) => {
-  const variables = Object.keys(flattenObj(stream.context, 'context.'));
-  if (stream.context?.pricelist) {
-    variables.push('context.pricelist_version.id');
-    variables.push('context.pricelist_version.start_at');
-  }
-
-  if (stream.type === 'billing') {
-    variables.push('context.period.start');
-    variables.push('context.period.end');
-  }
-
-  return variables;
-};
-
-
-const getDataFromOutputColumnInput = (index) => {
-  const data = {};
-
-  const nameInput = document.getElementById(`name-${index}`);
-  if (nameInput) {
-    data.name = nameInput.value;
-  }
-
-  const typeInput = document.getElementById(`type-${index}`);
-  if (typeInput) {
-    data.type = typeInput.value;
-  }
-
-  const precisionInput = document.getElementById(`precision-${index}`);
-  if (
-    data.type === 'decimal'
-    && precisionInput
-    && precisionInput.value !== 'auto'
-  ) {
-    data.constraints = { precision: precisionInput.value };
-  }
-
-  return data;
-};
-
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/attachment_lookup.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -328,193 +326,234 @@ All rights reserved.
 
 
 
+const currencyConversionFormMainHTML = index => `
+   <form name="convertCurrency-${index}" class="convert-currency">
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="input-column">Input Column</label>
+              <select name="inputColumn" id="input-column-${index}"></select>
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="from-currency">From Currency</label>
+              <select name="fromCurrency" id="from-currency-${index}"></select>
+          </div>
+      </div>
+  
+      <div class="convert-currency__input-group">
+          <div class="convert-currency__column convert-currency__input">
+              <label for="output-column">Output Column</label>
+              <input name="outputColumn" id="output-column-${index}" type="text">
+          </div>
+  
+          <div class="convert-currency__input">
+              <label for="to-currency">To Currency</label>
+              <select name="toCurrency" id="to-currency-${index}"></select>
+          </div>
+      </div>
+  </form>
+  
+  <button id="delete-${index}" class="button form-delete-button">DELETE</button>
+`;
 
-const getRequiredValue = (id, errorMessage) => {
-  const { value } = document.getElementById(id);
-  if (!value) {
-    throw new Error(errorMessage);
-  }
+const createCurrencyColumnOptions = (elem, currencies, selectedOption, disabledOption) => {
+  elem.innerHTML = '';
 
-  return value;
-};
-
-const fillSelect = (options, id, value) => {
-  const select = document.getElementById(id);
-  if (value) {
-    select.value = value;
-  }
-  select.innerHTML = '';
-  options.forEach((item) => {
+  currencies.forEach(currency => {
     const option = document.createElement('option');
-    option.value = item.id;
-    option.text = getColumnLabel(item);
-    if (item.id === value) {
-      option.selected = true;
+    const isSelected = selectedOption && currency.code === selectedOption;
+    const isDisabled = disabledOption && currency.code === disabledOption;
+
+    option.value = currency.code;
+    option.text = `${currency.code} • ${currency.description}`;
+    option.selected = isSelected;
+    option.disabled = isDisabled;
+
+    elem.appendChild(option);
+  });
+};
+
+const createCurrencyConversionForm = (parent, index, columns, currencies, settings) => {
+  const item = document.createElement('div');
+  item.classList.add('form-wrapper');
+  item.id = `wrapper-${index}`;
+  item.style.width = '100%';
+  item.innerHTML = currencyConversionFormMainHTML(index);
+
+  parent.appendChild(item);
+
+  const inputColumnSelect = document.getElementById(`input-column-${index}`);
+
+  columns.forEach(column => {
+    const isSelected = settings && settings.from.column === column.id;
+    const colLabel = getColumnLabel(column);
+    const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
+
+    inputColumnSelect.innerHTML += option;
+  });
+
+  let selectedFromCurrency;
+  let selectedToCurrency;
+
+  if (settings) {
+    const {
+      from: { currency: inputCurrency },
+      to: { column: outputCol, currency: outputCurrency },
+    } = settings;
+
+    const outputColumnInput = document.getElementById(`output-column-${index}`);
+
+    outputColumnInput.value = outputCol;
+
+    selectedFromCurrency = inputCurrency;
+    selectedToCurrency = outputCurrency;
+  } else {
+    selectedFromCurrency = currencies[0].code;
+    selectedToCurrency = currencies[1].code;
+  }
+
+  const fromCurrency = document.getElementById(`from-currency-${index}`);
+  const toCurrency = document.getElementById(`to-currency-${index}`);
+
+  createCurrencyColumnOptions(fromCurrency, currencies, selectedFromCurrency, selectedToCurrency);
+  createCurrencyColumnOptions(toCurrency, currencies, selectedToCurrency, selectedFromCurrency);
+
+  fromCurrency.addEventListener('change', () => {
+    createCurrencyColumnOptions(toCurrency, currencies, toCurrency.value, fromCurrency.value);
+  });
+
+  toCurrency.addEventListener('change', () => {
+    createCurrencyColumnOptions(fromCurrency, currencies, fromCurrency.value, toCurrency.value);
+  });
+
+  // handle delete button
+
+  const buttons = document.getElementsByClassName('form-delete-button');
+
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
     }
-    select.appendChild(option);
+  }
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    document.getElementById(`wrapper-${index}`).remove();
+
+    if (buttons.length === 1) {
+      buttons[0].disabled = true;
+    }
   });
 };
 
-const createMappingRow = (index, from, to) => {
-  let lastRowIndex = 0;
-  // remove existing ADD button and add REMOVE button to last col of the row
-  const addButton = document.getElementById('add-button');
-  if (addButton) {
-    // get data-row-index from the ADD button and add delete button to this row
-    lastRowIndex = addButton.getAttribute('data-row-index');
-    addButton.remove();
-    document
-      .getElementById(`row-${lastRowIndex}`)
-      .children[3]
-      .appendChild(getDeleteButton(lastRowIndex));
+
+const convert = (app) => {
+  if (!app) {
+    return;
   }
 
-  const row = document.createElement('div');
-  row.classList.add('row');
-  row.id = `row-${index}`;
-  row.innerHTML = `
-    <div class="col button-col">
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Input column" value="${from || ''}" />
-    </div>
-    <div class="col">
-      <input type="text" placeholder="Output column" value="${to || ''}" />
-    </div>
-    <div class="col button-col">
-    </div>`;
-  row.children[0].appendChild(getAddButton(index));
-  document.getElementById('mapping').appendChild(row);
-
-  const deleteButton = document.getElementById(`delete-${lastRowIndex}`);
-  if (deleteButton) {
-    deleteButton.addEventListener('click', () => {
-      document.getElementById(`row-${lastRowIndex}`).remove();
-      // replace delete button with add button if there is only one row left
-      if (document.getElementsByClassName('row').length === 1) {
-        document.getElementsByClassName('row')[0].children[0].appendChild(getAddButton(lastRowIndex));
-      }
-    });
-  }
-  document.getElementById('add-button').addEventListener('click', () => {
-    createMappingRow(index + 1);
-  });
-};
-
-const loockupSpreadsheet = (app) => {
-  if (!app) return;
-
-  let attachments = [];
+  let formIndex = 0;
   let columns = [];
+  let currencies = {};
+  let settings;
 
-  app.listen('config', async (config) => {
-    try {
-      const {
-        context: {
-          stream: { id: streamId },
-          available_columns: availableColumns,
-        },
-        settings,
-      } = config;
+  app.listen('config', async config => {
+    settings = config.settings;
+    columns = config.context.available_columns;
+    currencies = await getCurrencies();
 
-      attachments = await getAttachments(streamId);
-      columns = availableColumns;
+    const content = document.getElementById('content');
 
-      if (settings) {
-        const {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumnName,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        } = settings;
-
-        const inputColumn = columns.find((item) => item.name === inputColumnName);
-        fillSelect(columns, 'input-column', inputColumn.id);
-        const attachmentFound = attachments.find((item) => item.file === file);
-        let fileId = null;
-        if (attachmentFound == null) {
-          const fileName = file.split('/').pop();
-          app.emit('validation-error', `The attached file ${fileName} cannot be found, It might be deleted. Please choose another one.`);
-        } else {
-          fileId = attachmentFound.id;
-        }
-        fillSelect(attachments, 'attachment', fileId);
-        document.getElementById('attachment-column').value = attachmentColumn;
-        document.getElementById('sheet').value = sheet;
-        mapping.forEach((item, index) => {
-          createMappingRow(index, item.from, item.to);
-        });
-      } else {
-        fillSelect(columns, 'input-column');
-        fillSelect(attachments, 'attachment');
-        createMappingRow(0);
+    if (!settings) {
+      createCurrencyConversionForm(content, formIndex, columns, currencies);
+    } else {
+      if (!Array.isArray(settings)) {
+        settings = [settings];
       }
-    } catch (error) {
-      app.emit('validation-error', error);
-    } finally {
-      hideComponent('loader');
-      showComponent('app');
+      settings.forEach((setting, index) => {
+        formIndex = index;
+        createCurrencyConversionForm(content, formIndex, columns, currencies, setting);
+      });
     }
+
+    hideComponent('loader');
+    showComponent('app');
+
+    document.getElementById('add').addEventListener('click', () => {
+      formIndex += 1;
+      createCurrencyConversionForm(content, formIndex, columns, currencies);
+    });
   });
 
   app.listen('save', async () => {
-    hideError();
+    const data = {
+      settings: [],
+      columns: {
+        input: [],
+        output: [],
+      },
+    };
 
-    try {
-      const fileId = getRequiredValue('attachment', 'Please select attachment');
-      const { file } = attachments.find((item) => item.id === fileId);
-      const sheet = document.getElementById('sheet').value;
-      const inputColumnId = getRequiredValue('input-column', 'Please select input column');
-      const inputColumn = columns.find((item) => item.id === inputColumnId);
-      const attachmentColumn = getRequiredValue('attachment-column', 'Please select attachment column');
+    const filledForms = document.forms;
 
-      const outputColumns = [];
-      const mapping = [];
-      const rows = document.querySelectorAll('#mapping .row');
-      rows.forEach((row) => {
-        const from = row.children[1].children[0].value;
-        const to = row.children[2].children[0].value;
-        if (from && to) {
-          mapping.push({ from, to });
-          outputColumns.push({
-            name: to,
-          });
-        } else {
-          throw new Error('Please fill all mapping rows');
-        }
-      });
+    // eslint-disable-next-line no-restricted-syntax
+    for (const currentForm of filledForms) {
+      const formElements = currentForm.elements;
 
-      const data = {
-        settings: {
-          file,
-          sheet,
-          map_by: {
-            input_column: inputColumn.name,
-            attachment_column: attachmentColumn,
-          },
-          mapping,
-        },
-        columns: {
-          input: [inputColumn],
-          output: outputColumns,
-        },
+      const inputColumnValue = formElements.inputColumn.value;
+      const inputColumn = columns.find(column => column.id === inputColumnValue);
+
+      const outputColumnValue = formElements.outputColumn.value;
+
+      if (outputColumnValue === '' || outputColumnValue === null) {
+        app.emit('validation-error', 'Output column name is required.');
+
+        return;
+      }
+
+      const outputColumn = {
+        name: outputColumnValue,
+        type: 'decimal',
+        description: '',
       };
 
-      const overview = await validate('attachment_lookup', data);
+      const currencyFromValue = formElements.fromCurrency.value;
+      const currencyToValue = formElements.toCurrency.value;
+
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+      data.settings.push({
+        from: {
+          currency: currencyFromValue,
+          column: inputColumnValue,
+        },
+        to: {
+          currency: currencyToValue,
+          column: outputColumn.name,
+        },
+      });
+    }
+
+    try {
+      const overview = await validate('currency_conversion', data);
+
       if (overview.error) {
         throw new Error(overview.error);
       }
-      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
-    } catch (error) {
-      app.emit('validation-error', error);
+      app.emit('save', {
+        data: { ...data, ...overview },
+        status: 'ok',
+      });
+    } catch (e) {
+      app.emit('validation-error', e);
     }
   });
 };
 
-(0,dist/* default */.ZP)({ }).then(loockupSpreadsheet);
+(0,dist/* default */.ZP)({ })
+  .then(convert);
 
 
 /***/ })
@@ -606,7 +645,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			264: 0
+/******/ 			759: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -656,7 +695,7 @@ const loockupSpreadsheet = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(33)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

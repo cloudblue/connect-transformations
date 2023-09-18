@@ -2,11 +2,11 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 608:
+/***/ 414:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createManualOutputRow, manual
+// UNUSED EXPORTS: copy, createCopyRow
 
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
@@ -194,7 +194,7 @@ const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, 
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ const getDataFromOutputColumnInput = (index) => {
   return data;
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/manual.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/copy.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -327,140 +327,122 @@ All rights reserved.
 
 
 
-
-const createManualOutputRow = (parent, index, column) => {
+const createCopyRow = (parent, index, options, input, output) => {
   const item = document.createElement('div');
   item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${getColumnLabel(column)}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
   parent.appendChild(item);
-  buildOutputColumnInput({
-    column,
-    index,
-    parent: item,
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
+    } else {
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
+    }
   });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
 };
 
-const manual = (app) => {
-  if (!app) {
-    return;
-  }
+const copy = (app) => {
+  if (!app) return;
 
-  hideComponent('app');
   hideComponent('loader');
+  showComponent('app');
 
-  let availableColumns;
   let rowIndex = 0;
-
-  const descriptionElement = document.getElementById('description-text');
-  const settingsElement = document.getElementById('settings-text');
+  let columns = [];
 
   app.listen('config', (config) => {
     const {
+      context: { available_columns: availableColumns },
       columns: { input: inputColumns, output: outputColumns },
-      context: { available_columns }, // eslint-disable-line camelcase
-      overview,
       settings,
     } = config;
 
-    availableColumns = available_columns; // eslint-disable-line camelcase
+    columns = availableColumns;
 
-    descriptionElement.value = overview || '';
-    settingsElement.value = settings ? JSON.stringify(settings) : '{}';
-
-    const inputColumnsEditElement = document.getElementById('edit-input-columns');
-    availableColumns.forEach((column) => {
-      const checked = inputColumns.some((inputColumn) => inputColumn.id === column.id);
-      const inputColumnRow = document.createElement('tr');
-      inputColumnRow.innerHTML = `
-        <td>${column.id.slice(-3)}</td>
-        <td>${column.name}</td>
-        <td>${column.type}</td>
-        <td>${column.description ? column.description : '-'}</td>
-        <td><input id="${column.id}" type="checkbox" ${checked ? 'checked' : ''} /></td>
-      `;
-      inputColumnsEditElement.appendChild(inputColumnRow);
-    });
-
-    const outputColumnsElement = document.getElementById('output-columns');
-
-    if (outputColumns.length > 0) {
-      outputColumns.forEach((outputColumn, index) => {
-        rowIndex = index;
-        createManualOutputRow(outputColumnsElement, rowIndex, outputColumn);
-      });
+    const content = document.getElementById('content');
+    if (!settings) {
+      createCopyRow(content, rowIndex, columns);
     } else {
-      createManualOutputRow(outputColumnsElement, rowIndex);
+      settings.forEach((setting, i) => {
+        const inputColumn = inputColumns.find((column) => column.name === setting.from);
+        const outputColumn = outputColumns.find((column) => column.name === setting.to);
+        rowIndex = i;
+        createCopyRow(content, rowIndex, columns, inputColumn, outputColumn);
+      });
     }
-
     document.getElementById('add').addEventListener('click', () => {
       rowIndex += 1;
-      createManualOutputRow(outputColumnsElement, rowIndex);
+      createCopyRow(content, rowIndex, columns);
     });
-
-    descriptionElement.addEventListener('keyup', () => {
-      const maxLength = 2000;
-      const currentLength = descriptionElement.value.length;
-      const descriptionLabel = document.getElementById('description-label');
-      const errorHint = document.getElementById('description-text-hint');
-      const descriptionCounter = document.getElementById('description-text-counter');
-
-      descriptionCounter.innerHTML = `${currentLength} / ${maxLength}`;
-      app.emit('overview-changed', descriptionElement.value);
-
-      if (currentLength > Number(maxLength)) {
-        descriptionLabel.classList.add('error--text');
-        descriptionCounter.classList.add('error--text');
-        descriptionElement.classList.add('error--input');
-        errorHint.classList.remove('text-hidden');
-      } else {
-        descriptionLabel.classList.remove('error--text');
-        descriptionCounter.classList.remove('error--text');
-        descriptionElement.classList.remove('error--input');
-        errorHint.classList.add('text-hidden');
-      }
-    });
-
-    hideComponent('loader');
-    showComponent('app');
   });
 
-  app.listen('save', () => {
+  app.listen('save', async () => {
     const data = {
-      settings: {},
+      settings: [],
       columns: {
         input: [],
         output: [],
       },
-      overview: '',
     };
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = columns.find((column) => column.id === inputId);
+      const outputColumn = {
+        name: outputName,
+        type: inputColumn.type,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.push(setting);
+      data.columns.input.push(inputColumn);
+      data.columns.output.push(outputColumn);
+    }
 
     try {
-      data.overview = descriptionElement.value;
-      data.settings = JSON.parse(settingsElement.value);
-      const inputColumns = document.querySelectorAll('#edit-input-columns-table input[type="checkbox"]:checked');
-      inputColumns.forEach((inputColumn) => {
-        const availableColumn = availableColumns.find((column) => column.id === inputColumn.id);
-        data.columns.input.push(availableColumn);
-      });
-
-      const outputs = document.getElementsByClassName('output-column-container');
-      for (let i = 0; i < outputs.length; i += 1) {
-        const index = outputs[i].id;
-        data.columns.output.push(getDataFromOutputColumnInput(index));
+      const overview = await validate('copy_columns', data);
+      if (overview.error) {
+        throw new Error(overview.error);
       }
-
-      app.emit('save', {
-        data,
-        status: 'ok',
-      });
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       app.emit('validation-error', e);
     }
   });
 };
 
+
 (0,dist/* default */.ZP)({ })
-  .then(manual);
+  .then(copy);
 
 
 /***/ })
@@ -552,7 +534,7 @@ const manual = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			577: 0
+/******/ 			61: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -602,7 +584,7 @@ const manual = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(608)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(414)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

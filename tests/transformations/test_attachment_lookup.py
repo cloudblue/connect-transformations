@@ -25,10 +25,12 @@ def test_attachment_lookup(mocker, connect_client, responses):
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -70,10 +72,12 @@ def test_attachment_lookup_no_sheet(mocker, connect_client, responses):
         'transformation': {
             'settings': {
                 'file': '/path/to/MFL-123-123',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -122,10 +126,12 @@ def test_attachment_lookup_api_error(mocker, connect_client, responses):
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -165,10 +171,12 @@ def test_attachment_lookup_invalid_sheet(mocker, connect_client, responses):
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Daaaata',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -208,10 +216,12 @@ def test_attachment_lookup_empty(mocker, connect_client, responses):
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -250,10 +260,12 @@ def test_attachment_lookup_map_not_found(mocker, connect_client, responses):
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',
@@ -296,10 +308,12 @@ def test_attachment_lookup_map_invalid_attachment_columns(
             'settings': {
                 'file': '/path/to/MFL-123-123',
                 'sheet': 'Data',
-                'map_by': {
-                    'input_column': 'id',
-                    'attachment_column': 'id',
-                },
+                'map_by': [
+                    {
+                        'input_column': 'id',
+                        'attachment_column': 'id',
+                    },
+                ],
                 'mapping': [
                     {
                         'from': 'price',

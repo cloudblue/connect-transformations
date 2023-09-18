@@ -3,7 +3,7 @@
 # Copyright (c) 2023, CloudBlue LLC
 # All rights reserved.
 #
-from typing import Dict
+from typing import Dict, List
 
 from connect.client import AsyncConnectClient, ClientError
 from connect.eaas.core.decorators import router, transformation
@@ -203,6 +203,10 @@ class LookupSubscriptionWebAppMixin:
     @router.get(
         '/lookup_subscription/parameters',
         summary='Return the subscription available parameters names',
+        response_model=List[SubscriptionParameter],
+        responses={
+            400: {'model': Error},
+        },
     )
     async def get_parameters(
         self,

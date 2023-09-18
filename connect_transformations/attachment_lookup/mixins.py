@@ -30,7 +30,7 @@ class AttachmentLookupTransformationMixin:
             self.excel_attachments_data = {}
 
             settings = self.transformation_request['transformation']['settings']
-            map_by = settings['map_by']['attachment_column']
+            map_by = [item['attachment_column'] for item in settings['map_by']]
             sheet = settings.get('sheet')
             mapping = [col['from'] for col in settings['mapping']]
 
@@ -54,10 +54,11 @@ class AttachmentLookupTransformationMixin:
                         lookup_columns = {
                             cell.value: cell.column - 1
                             for cell in row
-                            if cell.value == map_by or cell.value in mapping
+                            if cell.value in map_by or cell.value in mapping
                         }
                     else:
-                        self.excel_attachments_data[row[lookup_columns[map_by]].value] = {
+                        key = ', '.join([str(row[lookup_columns[item]].value) for item in map_by])
+                        self.excel_attachments_data[key] = {
                             col: row[lookup_columns[col]].value for col in mapping
                         }
             except ClientError as e:
@@ -75,7 +76,7 @@ class AttachmentLookupTransformationMixin:
         name='Lookup data from Excel file attached to stream',
         description=(
             'This transformation function allows you to populate data'
-            ' from the attached Excel file by matching input column values'
+            ' from the attached Excel file by matching input columns values'
             ' with the attached table values.'
         ),
         edit_dialog_ui='/static/transformations/attachment_lookup.html',
@@ -89,16 +90,18 @@ class AttachmentLookupTransformationMixin:
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
         trfn_settings = self.transformation_request['transformation']['settings']
-        map_by = trfn_settings['map_by']
-        input_column = self.transformation_request['transformation']['columns']['input']
+        map_by_from = [item['input_column'] for item in trfn_settings['map_by']]
+        input_columns = self.transformation_request['transformation']['columns']['input']
 
-        if is_input_column_nullable(
-            input_column,
-            map_by['input_column'],
-        ) and not row[map_by['input_column']]:
-            return RowTransformationResponse.skip()
+        for item in map_by_from:
+            if is_input_column_nullable(
+                input_columns,
+                item,
+            ) and not row[item]:
+                return RowTransformationResponse.skip()
 
-        attachment_row = self.excel_attachments_data.get(row[map_by['input_column']])
+        key = ', '.join([str(row[item]) for item in map_by_from])
+        attachment_row = self.excel_attachments_data.get(key)
         if not attachment_row:
             return RowTransformationResponse.skip()
 
