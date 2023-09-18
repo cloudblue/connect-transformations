@@ -1,372 +1,13 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 410:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-function whitespace (s) {
-    return /\S/.test(s)
-  }
-  
-  exports.START = exports.END = -1
-  
-  var start = exports.start = function (text, i, bound) {
-    var s = i, S = -1
-    while(s >= 0 && bound(text[s])) S = s--
-    return exports.START = S
-  }
-  
-  var end = exports.end = function (text, i, bound) {
-    var s = i, S = -1
-    while(s < text.length && bound(text[s])) S = ++s
-    return exports.END = S
-  }
-  
-  var word = exports.word = function (text, i, bound) {
-    bound = bound || whitespace
-    return text.substring(start(text, i, bound), end(text, i, bound))
-  }
-  
-  exports.replace = function replace (value, text, i, bound) {
-    bound = bound || whitespace
-  
-    var w = word(text, i, bound)
-    if(!w) return text
-  
-    return (
-      text.substring(0, exports.START)
-    + value
-    + text.substring(exports.END)
-    )
-  }
-  
-
-/***/ }),
-
-/***/ 243:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-
-var h = __webpack_require__(789)
-var wordBoundary = /\s/
-var bounds = __webpack_require__(410)
-
-var TextareaCaretPosition = __webpack_require__(969)
-
-var Suggester = __webpack_require__(225)
-
-module.exports = function(el, choices, options) {
-  var tcp = new TextareaCaretPosition(el)
-
-  var suggest = Suggester(choices)
-
-  options = options || {}
-
-  var stringify = options.stringify || String
-
-  var box = {
-    input: el,
-    choices: choices,
-    options: options,
-    active: false,
-    activate: activate,
-    deactivate: deactivate,
-    selection: 0,
-    filtered: [],
-
-    //get the current word
-    get: function (i) {
-      i = Number.isInteger(i) ? i : el.selectionStart - 1
-      return bounds.word(el.value, i)
-    },
-
-    //replace the current word
-    set: function (w, i) {
-      i = Number.isInteger(i) ? i : el.selectionStart - 1
-      el.value = bounds.replace(w, el.value + ' ', i)
-      el.selectionStart = el.selectionEnd = bounds.START + w.length + 1
-    },
-
-    select: function (n) {
-      this.selection = Math.max(0, Math.min(this.filtered.length, n))
-      this.update()
-    },
-    next: function () {
-      this.select(this.selection + 1)
-    },
-    prev: function () {
-      this.select(this.selection - 1)
-    },
-    suggest: function (cb) {
-      var choices, self = this
-      // extract current word
-      var word = this.get()
-      if(!word)
-        return this.deactivate(), cb()
-
-      // filter and order the list by the current word
-      this.selection = 0
-
-      var r = this.request = (this.request || 0) + 1
-      suggest(word, function (err, choices) {
-        if(err) return console.error(err)
-        if(r !== self.request) return cb()
-        if(choices) cb(null, self.filtered = choices)
-      })
-
-    },
-    reposition: function () {
-      self = this
-      if (self.filtered.length == 0)
-        return self.deactivate()
-
-      // create / update the element
-      if (self.active) {
-        self.update()
-      } else {
-        // calculate position
-        var pos = tcp.get(el.selectionStart, el.selectionEnd)
-
-        var bounds = el.getBoundingClientRect()
-        // setup
-        self.x = pos.left + bounds.left - el.scrollLeft
-        self.y = pos.top + bounds.top - el.scrollTop + 20
-        self.activate()
-      }
-    },
-    update: update,
-    complete: function (n) {
-      if(!isNaN(n)) this.select(n)
-      if (this.filtered.length) {
-        var choice = this.filtered[this.selection]
-        if (choice && choice.value) {
-          // update the text under the cursor to have the current selection's value          var v = el.value
-          this.set(stringify(choice.value))
-          // fire the suggestselect event
-          el.dispatchEvent(new CustomEvent('suggestselect', { detail: choice }))
-        }
-      }
-      this.deactivate()
-    },
-  }
-  el.addEventListener('input', oninput.bind(box))
-  el.addEventListener('keydown', onkeydown.bind(box))
-  el.addEventListener('blur', onblur.bind(box))
-  return box
-}
-
-function getItemIndex(e) {
-  for (var el = e.target; el && el != this; el = el.parentNode)
-    if (el._i != null)
-      return el._i
-}
-
-function onListMouseMove(e) {
-  this.isMouseActive = true
-}
-
-function onListMouseOver(e) {
-  // ignore mouseover triggered by list redrawn under the cursor
-  if (!this.isMouseActive) return
-
-  var i = getItemIndex(e)
-  if (i != null && i != this.selection)
-    this.select(i)
-}
-
-function onListMouseDown(e) {
-  var i = getItemIndex(e)
-  if (i != null) {
-    this.select(i)
-    this.complete()
-    // prevent blur
-    e.preventDefault()
-  }
-}
-
-function render(box) {
-  var cls = (box.options.cls) ? ('.'+box.options.cls) : ''
-  var style = { left: (box.x+'px'), position: 'fixed' }
-
-  // hang the menu above or below the cursor, wherever there is more room
-  if (box.y < window.innerHeight/2) {
-    style.top = box.y + 'px'
-  } else {
-    style.bottom = (window.innerHeight - box.y + 20) + 'px'
-  }
-
-  return h('.suggest-box'+cls, { style: style }, [
-    h('ul', {
-      onmousemove: onListMouseMove.bind(box),
-      onmouseover: onListMouseOver.bind(box),
-      onmousedown: onListMouseDown.bind(box)
-    }, renderOpts(box))
-  ])
-}
-
-function renderOpts(box) {
-  var fragment = document.createDocumentFragment()
-  for (var i=0; i < box.filtered.length; i++) {
-    var opt = box.filtered[i]
-    var tag = 'li'
-    if (i === box.selection) tag += '.selected'
-    if (opt.cls) tag += '.' + opt.cls
-    var title = null
-    var image = null
-    if(opt.showBoth){
-        title = h('strong', opt.title)
-        image = h('img', { src: opt.image })
-    } else title = opt.image ? h('img', { src: opt.image }) : h('strong', opt.title)
-    fragment.appendChild(h(tag, {_i: i}, image, ' ', [title, ' ', opt.subtitle && h('small', opt.subtitle)]))
-  }
-  return fragment
-}
-
-function activate() {
-  if (this.active)
-    return
-  this.active = true
-  this.el = render(this)
-  document.body.appendChild(this.el)
-  adjustPosition.call(this)
-}
-
-function update() {
-  if (!this.active)
-    return
-  var ul = this.el.querySelector('ul')
-  ul.innerHTML = ''
-  ul.appendChild(renderOpts(this))
-  adjustPosition.call(this)
-}
-
-function deactivate() {
-  if (!this.active)
-    return
-  this.el.parentNode.removeChild(this.el)
-  this.el = null
-  this.active = false
-}
-
-function oninput(e) {
-  var self = this
-  var word = this.suggest(function (_, suggestions) {
-    if(suggestions) self.reposition()
-  })
-}
-
-function onkeydown(e) {
-  if (this.active) {
-    // escape
-    if (e.keyCode == 27) this.deactivate()
-    // enter or tab
-
-    else if (e.keyCode == 13 || e.keyCode == 9) this.complete()
-    else return //ordinary key, fall back.
-
-    e.preventDefault() //movement key, as above.
-
-    this.isMouseActive = false
-  }
-}
-
-function onblur(e) {
-  this.deactivate()
-}
-
-function adjustPosition() {
-  // move the box left to fit in the viewport, if needed
-  var width = this.el.getBoundingClientRect().width
-  var rightOverflow = this.x + width - window.innerWidth
-  var rightAdjust = Math.min(this.x, Math.max(0, rightOverflow))
-  this.el.style.left = (this.x - rightAdjust) + 'px'
-}
-
-
-/***/ }),
-
-/***/ 225:
-/***/ ((module) => {
-
-
-function isObject (o) {
-    return o && 'object' === typeof o
-  }
-  
-  var isArray = Array.isArray
-  
-  function isFunction (f) {
-    return 'function' === typeof f
-  }
-  
-  function compare(a, b) {
-    return compareval(a.rank, b.rank) || compareval(a.title, b.title)
-  }
-  
-  function compareval(a, b) {
-    return a === b ? 0 : a < b ? -1 : 1
-  }
-  
-  function suggestWord (word, choices, cb) {
-    if(isArray(choices)) {
-      //remove any non word characters and make case insensitive.
-      var wordRe = new RegExp(word.replace(/\W/g, ''), 'i')
-      cb(null, choices.map(function (opt, i) {
-        var title = wordRe.exec(opt.title)
-        var subtitle = opt.subtitle ? wordRe.exec(opt.subtitle) : null
-        var rank = (title === null ? (subtitle&&subtitle.index) : (subtitle === null ? (title&&title.index) : Math.min(title.index, subtitle.index)))
-        if (rank !== null) {
-          opt.rank = rank
-          return opt
-        }
-      }).filter(Boolean).sort(compare).slice(0, 20))
-    }
-    else if(isFunction(choices)) choices(word, cb)
-  }
-  
-  module.exports = function (choices) {
-    if(isFunction(choices)) return choices
-  
-    else if(isObject(choices) && (choices.any || isArray(choices)))
-      return function (word, cb) {
-        suggestWord(word, choices.any || choices, cb)
-      }
-    else if(isObject(choices)) {
-      var _choices = choices
-      //legacy
-      return function (word, cb) {
-        if(!choices[word[0]]) return cb()
-        suggestWord(word.substring(1), choices[word[0]], cb)
-      }
-    }
-  }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-
-/***/ }),
-
-/***/ 506:
+/***/ 674:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
-"use strict";
 
-// UNUSED EXPORTS: createFormulaRow, formula
+// UNUSED EXPORTS: createGroupRows, splitColumn
 
-// EXTERNAL MODULE: ./ui/src/libs/index.js
-var libs = __webpack_require__(243);
-var libs_default = /*#__PURE__*/__webpack_require__.n(libs);
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
 ;// CONCATENATED MODULE: ./ui/src/utils.js
@@ -385,7 +26,7 @@ const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, 
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -673,7 +314,7 @@ const buildOutputColumnInput = ({
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/formula.js
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/split_columns.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -687,153 +328,142 @@ All rights reserved.
 
 
 
+function getCurrentGroups() {
+  const outputContainers = document.getElementsByClassName('output-column-container');
+  const currentGroups = {};
 
-let suggestor = {};
+  for (let i = 0; i < outputContainers.length; i += 1) {
+    const index = outputContainers[i].id;
+    currentGroups[index] = getDataFromOutputColumnInput(index);
+  }
 
-const createFormulaRow = (
-  parent,
-  index,
-  column,
-  formula,
-  ignore,
-) => {
-  const item = document.createElement('div');
-  item.classList.add('list-wrapper');
-  parent.appendChild(item);
-  buildOutputColumnInput({
-    column,
-    index,
-    parent: item,
+  return currentGroups;
+}
+
+function buildGroups(groups) {
+  const parent = document.getElementById('output');
+  parent.innerHTML = '';
+
+  Object.keys(groups).forEach(index => {
+    const column = groups[index];
+    const item = document.createElement('div');
+    item.classList.add('list-wrapper');
+    parent.appendChild(item);
+    buildOutputColumnInput({
+      column,
+      index,
+      parent: item,
+      showDelete: false,
+    });
   });
+}
 
-  const formulaInput = document.createElement('div');
-  formulaInput.classList.add('input-group', '_mt_12', '_mb_18');
-  formulaInput.innerHTML = `
-    <label class="label" for="formula-${index}">Formula:</label>
-    <textarea materialize id="formula-${index}" style="width: 100%;">${formula ? `${formula}` : ''}</textarea>
-    <input type="checkbox" id="ignore-${index}" name="ignore-errors-${index}"/>
-    <label for="ignore-formula-${index}">Ignore errors</label>
-  `;
-  item.appendChild(formulaInput);
-  libs_default()(document.getElementById(`formula-${index}`), suggestor);
-  document.getElementById(`ignore-${index}`).checked = ignore || false;
+const createGroupRows = async (app) => {
+  const groups = getCurrentGroups();
+  const pattern = document.getElementById('pattern').value;
+  app.emit('validation-error', '');
+  if (pattern) {
+    const body = { pattern, groups };
+    const response = await getGroups(body);
+    if (response.error) {
+      app.emit('validation-error', response.error);
+    } else {
+      buildGroups(response.groups);
+    }
+  } else {
+    app.emit('validation-error', 'The regular expression is empty');
+  }
 };
 
-const formula = (app) => {
+const splitColumn = (app) => {
   if (!app) return;
 
-  hideComponent('loader');
-  showComponent('app');
-
-  let rowIndex = 0;
-  let availableInputColumns = [];
-  let stream = null;
+  let columns = [];
 
   app.listen('config', (config) => {
     const {
-      context: { stream: currentStream, available_columns: availableColumns },
+      context: { available_columns: availableColumns },
       settings,
-      columns: { output: outputColumns },
     } = config;
 
-    availableInputColumns = availableColumns;
-    stream = currentStream;
-    const variables = getContextVariables(stream);
+    showComponent('loader');
+    hideComponent('app');
 
-    suggestor = {
-      '.': availableInputColumns.map(col => {
-        const colLabel = getColumnLabel(col);
+    columns = availableColumns;
 
-        return {
-          title: colLabel,
-          value: `."${colLabel}"`,
-        };
-      }),
-      $: variables.map(variable => ({
-        title: variable,
-        value: `$${variable}`,
-      })),
-    };
-
-    const content = document.getElementById('content');
-    if (settings && settings.expressions) {
-      settings.expressions.forEach((expression, i) => {
-        const column = outputColumns.find(col => col.name === expression.to);
-        rowIndex = i;
-        createFormulaRow(
-          content,
-          rowIndex,
-          column,
-          expression.formula,
-          expression.ignore_errors,
-        );
-      });
-    } else {
-      createFormulaRow(content, rowIndex);
-    }
-    document.getElementById('add').addEventListener('click', () => {
-      rowIndex += 1;
-      createFormulaRow(content, rowIndex);
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
     });
+
+    if (settings) {
+      document.getElementById('pattern').value = settings.regex.pattern;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+      buildGroups(settings.regex.groups);
+    }
+
+    document.getElementById('refresh').addEventListener('click', () => {
+      createGroupRows(app);
+    });
+    hideComponent('loader');
+    showComponent('app');
   });
 
   app.listen('save', async () => {
     const data = {
-      settings: { expressions: [] },
-      stream,
+      settings: {
+        regex: {
+          groups: {},
+        },
+      },
       columns: {
-        input: availableInputColumns,
+        input: [],
         output: [],
       },
+      overview: '',
     };
-    const form = document.getElementsByClassName('list-wrapper');
+    showComponent('loader');
+    hideComponent('app');
 
-    for (let index = 0; index < form.length; index += 1) {
-      const outputColumn = getDataFromOutputColumnInput(index);
-      const jqFormula = document.getElementById(`formula-${index}`).value;
-      const ignoreErrors = document.getElementById(`ignore-${index}`).checked;
-      const expression = {
-        to: outputColumn.name,
-        formula: jqFormula,
-        type: outputColumn.type,
-        ignore_errors: ignoreErrors,
-      };
-      data.settings.expressions.push(expression);
-      data.columns.output.push(outputColumn);
-    }
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    data.columns.input.push(inputColumn);
+
+    const groups = getCurrentGroups();
+
+    Object.entries(groups).forEach(([i, group]) => {
+      data.columns.output.push(group);
+      data.settings.regex.groups[i] = { name: group.name };
+    });
+
+    data.settings.from = inputColumn.name;
+    data.settings.regex.pattern = document.getElementById('pattern').value;
 
     try {
-      const overview = await validate('formula', data);
+      const overview = await validate('split_column', data);
       if (overview.error) {
         throw new Error(overview.error);
-      } else {
-        const inputColumns = await getJQInput({
-          expressions: data.settings.expressions,
-          columns: availableInputColumns,
-        });
-        if (inputColumns.error) {
-          throw new Error(inputColumns.error);
-        } else {
-          data.columns.input = inputColumns;
-        }
+      }
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
       }
       app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
+      hideComponent('loader');
+      showComponent('app');
+
       app.emit('validation-error', e);
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(formula);
+  .then(splitColumn);
 
-
-/***/ }),
-
-/***/ 525:
-/***/ (() => {
-
-/* (ignored) */
 
 /***/ })
 
@@ -899,18 +529,6 @@ const formula = (app) => {
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -936,7 +554,7 @@ const formula = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			2: 0
+/******/ 			158: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -986,7 +604,7 @@ const formula = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(506)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(674)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

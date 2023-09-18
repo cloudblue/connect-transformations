@@ -2,150 +2,12 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 179:
+/***/ 616:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
-// UNUSED EXPORTS: createOutputColumnForLookup, lookupProductItem
-
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable */
-const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable and the base id is the id of the base */
-const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getColumnLabel = (column) => {
-  const colIdParts = column.id.split('-');
-  const colIdSuffix = colIdParts[colIdParts.length - 1];
-
-  return `${column.name} (C${colIdSuffix})`;
-};
-
-const flattenObj = (ob, prefix) => {
-  const result = {};
-
-  Object.keys(ob).forEach((i) => {
-    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
-      const temp = flattenObj(ob[i], '');
-      Object.keys(temp).forEach((j) => {
-        result[`${prefix}${i}.${j}`] = temp[j];
-      });
-    } else {
-      result[i] = ob[i];
-    }
-  });
-
-  return result;
-};
-
-const getContextVariables = (stream) => {
-  const variables = Object.keys(flattenObj(stream.context, 'context.'));
-  if (stream.context?.pricelist) {
-    variables.push('context.pricelist_version.id');
-    variables.push('context.pricelist_version.start_at');
-  }
-
-  if (stream.type === 'billing') {
-    variables.push('context.period.start');
-    variables.push('context.period.end');
-  }
-
-  return variables;
-};
-
-
-const getDataFromOutputColumnInput = (index) => {
-  const data = {};
-
-  const nameInput = document.getElementById(`name-${index}`);
-  if (nameInput) {
-    data.name = nameInput.value;
-  }
-
-  const typeInput = document.getElementById(`type-${index}`);
-  if (typeInput) {
-    data.type = typeInput.value;
-  }
-
-  const precisionInput = document.getElementById(`precision-${index}`);
-  if (
-    data.type === 'decimal'
-    && precisionInput
-    && precisionInput.value !== 'auto'
-  ) {
-    data.constraints = { precision: precisionInput.value };
-  }
-
-  return data;
-};
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -314,7 +176,143 @@ const buildOutputColumnInput = ({
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/lookup_product_item.js
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
+
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {};
+
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
+  }
+
+  return data;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/airtable_lookup.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -328,147 +326,263 @@ All rights reserved.
 
 
 
-const createOutputColumnForLookup = (prefix, name) => ({
-  name: `${prefix}.${name}`,
-  type: 'string',
-  description: '',
-});
+const cleanCopyRows = parent => {
+  parent.innerHTML = '';
+};
 
-const lookupProductItem = (app) => {
-  if (!app) return;
 
-  let columns = [];
-  const toggleProductId = (value) => {
-    if (value === 'product_id') {
-      hideComponent('product_column_input');
-      showComponent('product_id_input');
+const createCopyRow = (parent, index, options, input, output) => {
+  const item = document.createElement('div');
+  item.classList.add('list-wrapper');
+  item.id = `wrapper-${index}`;
+  item.innerHTML = `
+      <select class="list" style="width: 35%;" ${input ? `value="${input.id}"` : ''}>
+        ${options.map((column) => `
+          <option value="${column.id}" ${input && input.id === column.id ? 'selected' : ''}>
+            ${getColumnLabel(column)}
+          </option>`).join(' ')}
+      </select>
+      <input type="text" placeholder="Copy column name" style="width: 35%;" ${output ? `value="${output.name}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
+  parent.appendChild(item);
+
+  document.getElementById(`delete-${index}`).addEventListener('click', () => {
+    if (document.getElementsByClassName('list-wrapper').length === 1) {
+      showError('You need to have at least one row');
     } else {
-      hideComponent('product_id_input');
-      showComponent('product_column_input');
+      document.getElementById(`wrapper-${index}`).remove();
+      const buttons = document.getElementsByClassName('delete-button');
+      if (buttons.length === 1) {
+        buttons[0].disabled = true;
+      }
     }
-  };
+  });
+  const buttons = document.getElementsByClassName('delete-button');
+  for (let i = 0; i < buttons.length; i += 1) {
+    if (buttons.length === 1) {
+      buttons[i].disabled = true;
+    } else {
+      buttons[i].disabled = false;
+    }
+  }
+};
 
-  app.listen('config', (config) => {
+const createOptions = (selectId, options) => {
+  const select = document.getElementById(selectId);
+  select.innerHTML = `
+        <option disabled selected value>Please select an option</option>
+        ${options.map((column) => `
+          <option value="${column.id}">
+            ${column.name}
+          </option>`).join(' ')}
+    `;
+};
+
+const removeDisabled = selector => document.getElementById(selector).removeAttribute('disabled');
+
+const cleanField = elem => {
+  elem.setAttribute('disabled', '');
+  elem.value = '';
+};
+
+const airtable = (app) => {
+  if (!app) return;
+  hideComponent('loader');
+  showComponent('app');
+
+  let airtableColumns = [];
+  let apiKey;
+  let baseId;
+  let tableId;
+  let tables;
+  let mapInputColumn;
+  let mapAirtableColumn;
+  const baseSelect = document.getElementById('base-select');
+  const content = document.getElementById('content');
+  const tableSelect = document.getElementById('table-select');
+  const keyInput = document.getElementById('key-input');
+  const inputColumnSelect = document.getElementById('input-column-select');
+  const airtableFieldSelect = document.getElementById('field-select');
+  const addButton = document.getElementById('add');
+
+  app.listen('config', async (config) => {
     const {
-      context: { available_columns: availableColumns, stream },
+      context: { available_columns: availableColumns },
+      columns: { output: outputColumns },
       settings,
     } = config;
 
-    const hasProduct = 'product' in stream.context;
-    columns = availableColumns;
-    const criteria = {
-      mpn: 'CloudBlue Item MPN',
-      id: 'CloudBlue Item ID',
-    };
+    let airtableBases;
+    let rowIndex = 0;
 
-    // defaults
-    document.getElementById('leave_empty').checked = true;
-    document.getElementById('by_product_id').checked = true;
-    hideComponent('product_column_input');
-    showComponent('product_id_input');
-    hideComponent('loader');
-    showComponent('app');
+    keyInput.addEventListener('input', async () => {
+      cleanField(baseSelect);
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
+      apiKey = keyInput.value;
+      if (apiKey.length < 50) return;
 
-    Object.keys(criteria).forEach((key) => {
-      const option = document.createElement('option');
-      option.value = key;
-      option.text = criteria[key];
-      document.getElementById('criteria').appendChild(option);
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
+      }
+
+      createOptions('base-select', airtableBases);
+      removeDisabled('base-select');
     });
 
-    availableColumns.forEach((column) => {
-      const option = document.createElement('option');
-      option.value = column.id;
-      option.text = getColumnLabel(column);
-      document.getElementById('column').appendChild(option);
+    baseSelect.addEventListener('change', async () => {
+      cleanField(tableSelect);
+      cleanField(inputColumnSelect);
+      cleanField(airtableFieldSelect);
+      cleanCopyRows(content);
 
-      const anotherOption = document.createElement('option');
-      anotherOption.value = column.id;
-      anotherOption.text = column.name;
-      document.getElementById('product_id_column').appendChild(anotherOption);
+      baseId = baseSelect.value;
+      tables = await getAirtableTables(apiKey, baseId);
+      hideError();
+
+      createOptions('table-select', tables);
+      removeDisabled('table-select');
     });
 
-    if (hasProduct === true) {
-      document.getElementById('product_id').value = stream.context.product.id;
-      hideComponent('product_id_input');
-      hideComponent('product_column_input');
-      hideComponent('product_id_radio_group');
-      hideComponent('no_product');
-    }
+    tableSelect.addEventListener('change', () => {
+      tableId = tableSelect.value;
+      const currentTable = tables.find(x => x.id === tableId);
+      airtableColumns = currentTable.columns;
+      hideError();
+
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+    });
+
+    inputColumnSelect.addEventListener('change', () => {
+      mapInputColumn = availableColumns.find((column) => column.id === inputColumnSelect.value);
+      if (mapAirtableColumn) removeDisabled('add');
+      hideError();
+    });
+
+    airtableFieldSelect.addEventListener('change', () => {
+      mapAirtableColumn = airtableColumns.find((column) => column.id === airtableFieldSelect.value);
+      if (mapInputColumn) removeDisabled('add');
+      hideError();
+    });
+
+    addButton.addEventListener('click', () => {
+      rowIndex += 1;
+      createCopyRow(content, rowIndex, airtableColumns);
+    });
 
     if (settings) {
-      document.getElementById('product_id').value = settings.product_id;
-      document.getElementById('criteria').value = settings.lookup_type;
-      document.getElementById('column').value = columns.find((c) => c.name === settings.from).id;
-      document.getElementById('product_id_column').value = columns.find((c) => c.name === settings.product_column).id;
-      document.getElementById('prefix').value = settings.prefix;
-      if (settings.action_if_not_found === 'leave_empty') {
-        document.getElementById('leave_empty').checked = true;
-      } else {
-        document.getElementById('fail').checked = true;
-      }
-      if (settings.product_lookup_mode === 'id') {
-        document.getElementById('by_product_id').checked = true;
-        hideComponent('product_column_input');
-        showComponent('product_id_input');
-      } else {
-        document.getElementById('by_product_column').checked = true;
-        hideComponent('product_id_input');
-        showComponent('product_column_input');
-      }
-    }
+      showComponent('loader');
+      apiKey = settings.api_key;
+      baseId = settings.base_id;
+      tableId = settings.table_id;
 
-    const radios = document.getElementsByName('product_id_radio');
-    for (let i = 0, max = radios.length; i < max; i += 1) {
-      radios[i].onclick = () => {
-        toggleProductId(radios[i].value);
-      };
+      try {
+        airtableBases = await getAirtableBases(apiKey);
+        tables = await getAirtableTables(apiKey, settings.base_id);
+
+        if (airtableBases.error) {
+          throw new Error(airtableBases.error);
+        }
+        hideError();
+      } catch (e) {
+        app.emit('validation-error', e);
+      }
+
+      const currentTable = tables.find(x => x.id === settings.table_id);
+      airtableColumns = currentTable.columns;
+
+      createOptions('base-select', airtableBases);
+      createOptions('table-select', tables);
+      createOptions('field-select', airtableColumns);
+      createOptions('input-column-select', availableColumns);
+
+      keyInput.value = settings.api_key;
+      baseSelect.value = settings.base_id;
+      tableSelect.value = settings.table_id;
+
+      mapInputColumn = availableColumns
+        .find((column) => column.name === settings.map_by.input_column);
+      inputColumnSelect.value = mapInputColumn.id;
+
+      mapAirtableColumn = airtableColumns
+        .find((column) => column.name === settings.map_by.airtable_column);
+      airtableFieldSelect.value = mapAirtableColumn.id;
+
+      removeDisabled('base-select');
+      removeDisabled('table-select');
+      removeDisabled('field-select');
+      removeDisabled('input-column-select');
+      removeDisabled('add');
+
+      settings.mapping.forEach((mapping, i) => {
+        const inputColumn = airtableColumns.find((column) => column.name === mapping.from);
+        const outputColumn = outputColumns.find((column) => column.name === mapping.to);
+        rowIndex = i;
+        createCopyRow(content, rowIndex, airtableColumns, inputColumn, outputColumn);
+      });
+      hideComponent('loader');
     }
   });
 
   app.listen('save', async () => {
-    const criteria = document.getElementById('criteria').value;
-    const columnId = document.getElementById('column').value;
-    const prefix = document.getElementById('prefix').value;
-    const column = columns.find((c) => c.id === columnId);
-    const actionIfNotFound = document.getElementById('leave_empty').checked ? 'leave_empty' : 'fail';
-    const productLookupMode = document.getElementById('by_product_id').checked ? 'id' : 'column';
-    const productId = document.getElementById('product_id').value;
-    const productColumnId = document.getElementById('product_id_column').value;
-    const productColumn = columns.find((c) => c.id === productColumnId);
+    let overview = '';
+    if (!mapInputColumn || !mapAirtableColumn) {
+      app.emit('validation-error', 'Please complete all the fields');
 
-    const input = [column];
-    if (productLookupMode === 'column') {
-      input.push(productColumn);
+      return;
     }
 
     const data = {
       settings: {
-        product_id: productId,
-        lookup_type: criteria,
-        from: column.name,
-        prefix,
-        action_if_not_found: actionIfNotFound,
-        product_column: productColumn?.name ?? '',
-        product_lookup_mode: productLookupMode,
+        api_key: apiKey,
+        base_id: baseId,
+        table_id: tableId,
+        map_by: {
+          input_column: mapInputColumn.name,
+          airtable_column: mapAirtableColumn.name,
+        },
+        mapping: [],
       },
       columns: {
-        input,
-        output: [
-          'product.id',
-          'product.name',
-          'item.id',
-          'item.name',
-          'item.unit',
-          'item.period',
-          'item.mpn',
-          'item.commitment',
-        ].map((name) => createOutputColumnForLookup(prefix, name)),
+        input: [mapInputColumn],
+        output: [],
       },
     };
 
+    const form = document.getElementsByClassName('list-wrapper');
+    // eslint-disable-next-line no-restricted-syntax
+    for (const line of form) {
+      const inputId = line.getElementsByTagName('select')[0].value;
+      const outputName = line.getElementsByTagName('input')[0].value;
+
+      const inputColumn = airtableColumns.find((column) => column.id === inputId);
+
+      const outputColumn = {
+        name: outputName,
+        description: '',
+      };
+      const setting = {
+        from: inputColumn.name,
+        to: outputName,
+      };
+      data.settings.mapping.push(setting);
+      data.columns.output.push(outputColumn);
+    }
+
     try {
-      const overview = await validate('lookup_product_item', data);
+      overview = await validate('airtable_lookup', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
@@ -480,7 +594,7 @@ const lookupProductItem = (app) => {
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(lookupProductItem);
+  .then(airtable);
 
 
 /***/ })
@@ -572,7 +686,7 @@ const lookupProductItem = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			784: 0
+/******/ 			18: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -622,7 +736,7 @@ const lookupProductItem = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(179)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(616)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

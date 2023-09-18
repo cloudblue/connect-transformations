@@ -13,7 +13,7 @@ export const validate = (functionName, data) => fetch(`/api/${functionName}/vali
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-export const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+export const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',

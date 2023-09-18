@@ -24,7 +24,7 @@ const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, 
   body: JSON.stringify(data),
 }).then((response) => response.json());
 
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',

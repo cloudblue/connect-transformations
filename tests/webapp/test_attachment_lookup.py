@@ -77,10 +77,12 @@ def test_validate_attachment_lookup_invalid_data(test_client_factory):
         'settings': {
             'file': '/path/to/file.xlsx',
             'sheet': 'Data',
-            'map_by': {
-                'input_column': 'id',
-                'attachment_column': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'input_column': 'id',
+                    'attachment_column': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',
@@ -106,10 +108,12 @@ def test_validate_attachment_lookup_invalid_settings(test_client_factory):
     data = {
         'settings': {
             'sheet': 'Data',
-            'map_by': {
-                'input_column': 'id',
-                'attachment_column': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'input_column': 'id',
+                    'attachment_column': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',
@@ -134,7 +138,7 @@ def test_validate_attachment_lookup_invalid_settings(test_client_factory):
     data = response.json()
     assert data['error'] == (
         'The settings must contain `file` and optional `sheet` '
-        'fields and dictionary `map_by` and list `mapping` fields.'
+        'fields and lists of `map_by` and `mapping` fields.'
     )
 
 
@@ -143,10 +147,12 @@ def test_validate_attachment_lookup_invalid_map_by(test_client_factory):
         'settings': {
             'file': '/path/to/file.xlsx',
             'sheet': 'Data',
-            'map_by': {
-                'from': 'id',
-                'to': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'from': 'id',
+                    'to': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',
@@ -170,7 +176,7 @@ def test_validate_attachment_lookup_invalid_map_by(test_client_factory):
     assert response.status_code == 400
     data = response.json()
     assert data['error'] == (
-        'The settings field `map_by` must contain '
+        'The settings field `map_by` must contain of dicts with '
         '`input_column` and `attachment_column` fields in it.'
     )
 
@@ -180,10 +186,12 @@ def test_validate_attachment_lookup_invalid_mapping(test_client_factory):
         'settings': {
             'file': '/path/to/file.xlsx',
             'sheet': 'Data',
-            'map_by': {
-                'input_column': 'id',
-                'attachment_column': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'input_column': 'id',
+                    'attachment_column': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',
@@ -217,10 +225,12 @@ def test_validate_attachment_lookup_not_existing_column(test_client_factory):
         'settings': {
             'file': '/path/to/file.xlsx',
             'sheet': 'Data',
-            'map_by': {
-                'input_column': 'idd',
-                'attachment_column': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'input_column': 'idd',
+                    'attachment_column': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',
@@ -254,10 +264,12 @@ def test_validate_attachment_lookup_ok(test_client_factory):
         'settings': {
             'file': '/path/to/file.xlsx',
             'sheet': 'Data',
-            'map_by': {
-                'input_column': 'id',
-                'attachment_column': 'customer_id',
-            },
+            'map_by': [
+                {
+                    'input_column': 'id',
+                    'attachment_column': 'customer_id',
+                },
+            ],
             'mapping': [
                 {
                     'from': 'sub_id',

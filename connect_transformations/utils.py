@@ -48,18 +48,24 @@ def cast_value_to_type(value, type, additional_parameters=None):
     return cast_fn(value, **additional_parameters) if value is not None else None
 
 
-def check_mapping(settings, columns):
+def check_mapping(settings, columns, multiple=False):
     available_columns = [c['name'] for c in columns['input']]
-    if settings['map_by']['input_column'] not in available_columns:
-        return JSONResponse(
-            status_code=400,
-            content={
-                'error': (
-                    'The settings contains invalid input column that '
-                    'does not exist on columns.input'
-                ),
-            },
-        )
+    if multiple:
+        input_columns = [item['input_column'] for item in settings['map_by']]
+    else:
+        input_columns = [settings['map_by']['input_column']]
+
+    for col in input_columns:
+        if col not in available_columns:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'error': (
+                        'The settings contains invalid input column that '
+                        'does not exist on columns.input'
+                    ),
+                },
+            )
 
     for mapping in settings['mapping']:
         if (

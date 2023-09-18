@@ -2,148 +2,14 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 491:
+/***/ 813:
 /***/ ((__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) => {
 
 
+// UNUSED EXPORTS: createAdditionalValue, filterRow
+
 // EXTERNAL MODULE: ./node_modules/@cloudblueconnect/connect-ui-toolkit/dist/index.js
 var dist = __webpack_require__(164);
-;// CONCATENATED MODULE: ./ui/src/utils.js
-
-/*
-Copyright (c) 2023, CloudBlue LLC
-All rights reserved.
-*/
-// API calls to the backend
-/* eslint-disable import/prefer-default-export */
-const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-const getLookupSubscriptionParameters = (productId) => fetch(`/api/lookup_subscription/parameters?product_id=${productId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
-
-/* The data should contain pattern (and optionally groups) keys.
-We expect the return groups key (with the new keys found in the regex) and the order
- (to display in order on the UI) */
-const getGroups = (data) => fetch('/api/split_column/extract_groups', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-
-/* The data should contain list of jq expressions and all input columns.
-We expect to return columns used in expressions */
-const getJQInput = (data) => fetch('/api/formula/extract_input', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify(data),
-}).then((response) => response.json());
-
-/* The data should contain list of attached files. */
-const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable */
-const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-/* The key is the api key from airtable and the base id is the id of the base */
-const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-}).then((response) => response.json());
-
-const getColumnLabel = (column) => {
-  const colIdParts = column.id.split('-');
-  const colIdSuffix = colIdParts[colIdParts.length - 1];
-
-  return `${column.name} (C${colIdSuffix})`;
-};
-
-const flattenObj = (ob, prefix) => {
-  const result = {};
-
-  Object.keys(ob).forEach((i) => {
-    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
-      const temp = flattenObj(ob[i], '');
-      Object.keys(temp).forEach((j) => {
-        result[`${prefix}${i}.${j}`] = temp[j];
-      });
-    } else {
-      result[i] = ob[i];
-    }
-  });
-
-  return result;
-};
-
-const getContextVariables = (stream) => {
-  const variables = Object.keys(flattenObj(stream.context, 'context.'));
-  if (stream.context?.pricelist) {
-    variables.push('context.pricelist_version.id');
-    variables.push('context.pricelist_version.start_at');
-  }
-
-  if (stream.type === 'billing') {
-    variables.push('context.period.start');
-    variables.push('context.period.end');
-  }
-
-  return variables;
-};
-
-
-const getDataFromOutputColumnInput = (index) => {
-  const data = {};
-
-  const nameInput = document.getElementById(`name-${index}`);
-  if (nameInput) {
-    data.name = nameInput.value;
-  }
-
-  const typeInput = document.getElementById(`type-${index}`);
-  if (typeInput) {
-    data.type = typeInput.value;
-  }
-
-  const precisionInput = document.getElementById(`precision-${index}`);
-  if (
-    data.type === 'decimal'
-    && precisionInput
-    && precisionInput.value !== 'auto'
-  ) {
-    data.constraints = { precision: precisionInput.value };
-  }
-
-  return data;
-};
-
 ;// CONCATENATED MODULE: ./ui/src/components.js
 /*
 Copyright (c) 2023, CloudBlue LLC
@@ -312,7 +178,143 @@ const buildOutputColumnInput = ({
   }
 };
 
-;// CONCATENATED MODULE: ./ui/src/pages/transformations/currency_conversion.js
+;// CONCATENATED MODULE: ./ui/src/utils.js
+
+/*
+Copyright (c) 2023, CloudBlue LLC
+All rights reserved.
+*/
+// API calls to the backend
+/* eslint-disable import/prefer-default-export */
+const validate = (functionName, data) => fetch(`/api/${functionName}/validate`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+const getLookupSubscriptionParameters = (productId, tfn = 'subscription') => fetch(`/api/lookup_${tfn}/parameters?product_id=${productId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getCurrencies = () => fetch('/api/currency_conversion/currencies').then(response => response.json());
+
+/* The data should contain pattern (and optionally groups) keys.
+We expect the return groups key (with the new keys found in the regex) and the order
+ (to display in order on the UI) */
+const getGroups = (data) => fetch('/api/split_column/extract_groups', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+
+/* The data should contain list of jq expressions and all input columns.
+We expect to return columns used in expressions */
+const getJQInput = (data) => fetch('/api/formula/extract_input', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(data),
+}).then((response) => response.json());
+
+/* The data should contain list of attached files. */
+const getAttachments = (streamId) => fetch(`/api/attachment_lookup/${streamId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable */
+const getAirtableBases = (key) => fetch(`/api/airtable_lookup/bases?api_key=${key}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+/* The key is the api key from airtable and the base id is the id of the base */
+const getAirtableTables = (key, baseId) => fetch(`/api/airtable_lookup/tables?api_key=${key}&base_id=${baseId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}).then((response) => response.json());
+
+const getColumnLabel = (column) => {
+  const colIdParts = column.id.split('-');
+  const colIdSuffix = colIdParts[colIdParts.length - 1];
+
+  return `${column.name} (C${colIdSuffix})`;
+};
+
+const flattenObj = (ob, prefix) => {
+  const result = {};
+
+  Object.keys(ob).forEach((i) => {
+    if ((typeof ob[i]) === 'object' && !Array.isArray(ob[i])) {
+      const temp = flattenObj(ob[i], '');
+      Object.keys(temp).forEach((j) => {
+        result[`${prefix}${i}.${j}`] = temp[j];
+      });
+    } else {
+      result[i] = ob[i];
+    }
+  });
+
+  return result;
+};
+
+const getContextVariables = (stream) => {
+  const variables = Object.keys(flattenObj(stream.context, 'context.'));
+  if (stream.context?.pricelist) {
+    variables.push('context.pricelist_version.id');
+    variables.push('context.pricelist_version.start_at');
+  }
+
+  if (stream.type === 'billing') {
+    variables.push('context.period.start');
+    variables.push('context.period.end');
+  }
+
+  return variables;
+};
+
+
+const getDataFromOutputColumnInput = (index) => {
+  const data = {};
+
+  const nameInput = document.getElementById(`name-${index}`);
+  if (nameInput) {
+    data.name = nameInput.value;
+  }
+
+  const typeInput = document.getElementById(`type-${index}`);
+  if (typeInput) {
+    data.type = typeInput.value;
+  }
+
+  const precisionInput = document.getElementById(`precision-${index}`);
+  if (
+    data.type === 'decimal'
+    && precisionInput
+    && precisionInput.value !== 'auto'
+  ) {
+    data.constraints = { precision: precisionInput.value };
+  }
+
+  return data;
+};
+
+;// CONCATENATED MODULE: ./ui/src/pages/transformations/filter_row.js
 /*
 Copyright (c) 2023, CloudBlue LLC
 All rights reserved.
@@ -326,234 +328,143 @@ All rights reserved.
 
 
 
-const currencyConversionFormMainHTML = index => `
-   <form name="convertCurrency-${index}" class="convert-currency">
-  
-      <div class="convert-currency__input-group">
-          <div class="convert-currency__column convert-currency__input">
-              <label for="input-column">Input Column</label>
-              <select name="inputColumn" id="input-column-${index}"></select>
-          </div>
-  
-          <div class="convert-currency__input">
-              <label for="from-currency">From Currency</label>
-              <select name="fromCurrency" id="from-currency-${index}"></select>
-          </div>
-      </div>
-  
-      <div class="convert-currency__input-group">
-          <div class="convert-currency__column convert-currency__input">
-              <label for="output-column">Output Column</label>
-              <input name="outputColumn" id="output-column-${index}" type="text">
-          </div>
-  
-          <div class="convert-currency__input">
-              <label for="to-currency">To Currency</label>
-              <select name="toCurrency" id="to-currency-${index}"></select>
-          </div>
-      </div>
-  </form>
-  
-  <button id="delete-${index}" class="button form-delete-button">DELETE</button>
-`;
-
-const createCurrencyColumnOptions = (elem, currencies, selectedOption, disabledOption) => {
-  elem.innerHTML = '';
-
-  currencies.forEach(currency => {
-    const option = document.createElement('option');
-    const isSelected = selectedOption && currency.code === selectedOption;
-    const isDisabled = disabledOption && currency.code === disabledOption;
-
-    option.value = currency.code;
-    option.text = `${currency.code} • ${currency.description}`;
-    option.selected = isSelected;
-    option.disabled = isDisabled;
-
-    elem.appendChild(option);
-  });
-};
-
-const createCurrencyConversionForm = (parent, index, columns, currencies, settings) => {
+const createAdditionalValue = (parent, index, value) => {
   const item = document.createElement('div');
-  item.classList.add('form-wrapper');
+  item.classList.add('list-wrapper');
   item.id = `wrapper-${index}`;
-  item.style.width = '100%';
-  item.innerHTML = currencyConversionFormMainHTML(index);
-
+  item.innerHTML = `
+      <input type="text" placeholder="Value" style="width: 50%;" ${value ? `value="${value}"` : ''} />
+      <button id="delete-${index}" class="button delete-button">DELETE</button>
+    `;
   parent.appendChild(item);
-
-  const inputColumnSelect = document.getElementById(`input-column-${index}`);
-
-  columns.forEach(column => {
-    const isSelected = settings && settings.from.column === column.id;
-    const colLabel = getColumnLabel(column);
-    const option = isSelected ? `<option value="${column.id}" selected>${colLabel}</option>` : `<option value="${column.id}">${colLabel}</option>`;
-
-    inputColumnSelect.innerHTML += option;
-  });
-
-  let selectedFromCurrency;
-  let selectedToCurrency;
-
-  if (settings) {
-    const {
-      from: { currency: inputCurrency },
-      to: { column: outputCol, currency: outputCurrency },
-    } = settings;
-
-    const outputColumnInput = document.getElementById(`output-column-${index}`);
-
-    outputColumnInput.value = outputCol;
-
-    selectedFromCurrency = inputCurrency;
-    selectedToCurrency = outputCurrency;
-  } else {
-    selectedFromCurrency = currencies[0].code;
-    selectedToCurrency = currencies[1].code;
-  }
-
-  const fromCurrency = document.getElementById(`from-currency-${index}`);
-  const toCurrency = document.getElementById(`to-currency-${index}`);
-
-  createCurrencyColumnOptions(fromCurrency, currencies, selectedFromCurrency, selectedToCurrency);
-  createCurrencyColumnOptions(toCurrency, currencies, selectedToCurrency, selectedFromCurrency);
-
-  fromCurrency.addEventListener('change', () => {
-    createCurrencyColumnOptions(toCurrency, currencies, toCurrency.value, fromCurrency.value);
-  });
-
-  toCurrency.addEventListener('change', () => {
-    createCurrencyColumnOptions(fromCurrency, currencies, fromCurrency.value, toCurrency.value);
-  });
-
-  // handle delete button
-
-  const buttons = document.getElementsByClassName('form-delete-button');
-
-  for (let i = 0; i < buttons.length; i += 1) {
-    if (buttons.length === 1) {
-      buttons[i].disabled = true;
-    } else {
-      buttons[i].disabled = false;
-    }
-  }
 
   document.getElementById(`delete-${index}`).addEventListener('click', () => {
     document.getElementById(`wrapper-${index}`).remove();
-
-    if (buttons.length === 1) {
-      buttons[0].disabled = true;
-    }
   });
 };
 
+const filterRow = (app) => {
+  if (!app) return;
 
-const convert = (app) => {
-  if (!app) {
-    return;
-  }
-
-  let formIndex = 0;
   let columns = [];
-  let currencies = {};
-  let settings;
+  let rowIndex = 0;
 
-  app.listen('config', async config => {
-    settings = config.settings;
-    columns = config.context.available_columns;
-    currencies = await getCurrencies();
+  hideComponent('loader');
+  showComponent('app');
+
+  app.listen('config', (config) => {
+    const {
+      context: { available_columns: availableColumns },
+      settings,
+    } = config;
+
+    showComponent('loader');
+    hideComponent('app');
+
+    columns = availableColumns;
 
     const content = document.getElementById('content');
 
-    if (!settings) {
-      createCurrencyConversionForm(content, formIndex, columns, currencies);
-    } else {
-      if (!Array.isArray(settings)) {
-        settings = [settings];
+    availableColumns.forEach((column) => {
+      const option = document.createElement('option');
+      option.value = column.id;
+      option.text = getColumnLabel(column);
+      document.getElementById('column').appendChild(option);
+    });
+
+    if (settings) {
+      document.getElementById('value').value = settings.value;
+      const columnId = columns.find((c) => c.name === settings.from).id;
+      document.getElementById('column').value = columnId;
+
+      if (settings.match_condition) {
+        document.getElementById('match').checked = true;
+      } else {
+        document.getElementById('mismatch').checked = true;
       }
-      settings.forEach((setting, index) => {
-        formIndex = index;
-        createCurrencyConversionForm(content, formIndex, columns, currencies, setting);
-      });
+
+      if (settings.additional_values) {
+        settings.additional_values.forEach((addVal, i) => {
+          rowIndex = i;
+          createAdditionalValue(content, rowIndex, addVal.value, i);
+        });
+      }
+    } else {
+      document.getElementById('match').checked = true;
     }
+
+    document.getElementById('add').addEventListener('click', () => {
+      rowIndex += 1;
+      createAdditionalValue(content, rowIndex);
+    });
 
     hideComponent('loader');
     showComponent('app');
-
-    document.getElementById('add').addEventListener('click', () => {
-      formIndex += 1;
-      createCurrencyConversionForm(content, formIndex, columns, currencies);
-    });
   });
 
   app.listen('save', async () => {
     const data = {
-      settings: [],
+      settings: {},
       columns: {
         input: [],
         output: [],
       },
+      overview: '',
     };
 
-    const filledForms = document.forms;
+    showComponent('loader');
+    hideComponent('app');
 
+    const inputSelector = document.getElementById('column');
+    const inputColumn = columns.find((column) => column.id === inputSelector.value);
+    const matchCondition = document.getElementById('match').checked;
+    data.columns.input.push(inputColumn);
+    data.columns.output.push(
+      {
+        name: `${inputColumn.name}_INSTRUCTIONS`,
+        type: 'string',
+        output: false,
+      },
+    );
+
+    const inputValue = document.getElementById('value');
+    data.settings = {
+      from: inputColumn.name,
+      value: inputValue.value,
+      match_condition: matchCondition,
+      additional_values: [],
+    };
+
+    const form = document.getElementsByClassName('list-wrapper');
     // eslint-disable-next-line no-restricted-syntax
-    for (const currentForm of filledForms) {
-      const formElements = currentForm.elements;
-
-      const inputColumnValue = formElements.inputColumn.value;
-      const inputColumn = columns.find(column => column.id === inputColumnValue);
-
-      const outputColumnValue = formElements.outputColumn.value;
-
-      if (outputColumnValue === '' || outputColumnValue === null) {
-        app.emit('validation-error', 'Output column name is required.');
-
-        return;
-      }
-
-      const outputColumn = {
-        name: outputColumnValue,
-        type: 'decimal',
-        description: '',
+    for (const line of form) {
+      const val = line.getElementsByTagName('input')[0].value;
+      const addVal = {
+        value: val,
       };
-
-      const currencyFromValue = formElements.fromCurrency.value;
-      const currencyToValue = formElements.toCurrency.value;
-
-      data.columns.input.push(inputColumn);
-      data.columns.output.push(outputColumn);
-      data.settings.push({
-        from: {
-          currency: currencyFromValue,
-          column: inputColumnValue,
-        },
-        to: {
-          currency: currencyToValue,
-          column: outputColumn.name,
-        },
-      });
+      data.settings.additional_values.push(addVal);
     }
 
     try {
-      const overview = await validate('currency_conversion', data);
-
+      const overview = await validate('filter_row', data);
       if (overview.error) {
         throw new Error(overview.error);
       }
-      app.emit('save', {
-        data: { ...data, ...overview },
-        status: 'ok',
-      });
+
+      if (data.columns.output.length === 0) {
+        throw new Error('No output columns defined');
+      }
+      app.emit('save', { data: { ...data, ...overview }, status: 'ok' });
     } catch (e) {
       app.emit('validation-error', e);
+      showComponent('app');
+      hideComponent('loader');
     }
   });
 };
 
 (0,dist/* default */.ZP)({ })
-  .then(convert);
+  .then(filterRow);
 
 
 /***/ })
@@ -645,7 +556,7 @@ const convert = (app) => {
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			759: 0
+/******/ 			429: 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -695,7 +606,7 @@ const convert = (app) => {
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(491)))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [216], () => (__webpack_require__(813)))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

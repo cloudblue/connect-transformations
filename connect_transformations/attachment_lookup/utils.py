@@ -22,30 +22,34 @@ def validate_attachment_lookup(data):
             data['settings'],
             ['file', 'map_by', 'mapping'],
         )
-        or not isinstance(data['settings']['map_by'], dict)
+        or not isinstance(data['settings']['map_by'], list)
         or not isinstance(data['settings']['mapping'], list)
     ):
         return build_error_response(
             'The settings must contain `file` and optional `sheet` '
-            'fields and dictionary `map_by` and list `mapping` fields.',
+            'fields and lists of `map_by` and `mapping` fields.',
         )
 
-    if does_not_contain_required_keys(
-        data['settings']['map_by'],
-        ['input_column', 'attachment_column'],
-    ):
-        return build_error_response(
-            'The settings field `map_by` must contain '
-            '`input_column` and `attachment_column` fields in it.',
-        )
+    for map in data['settings']['map_by']:
+        if does_not_contain_required_keys(
+            map,
+            ['input_column', 'attachment_column'],
+        ):
+            return build_error_response(
+                'The settings field `map_by` must contain of dicts with '
+                '`input_column` and `attachment_column` fields in it.',
+            )
 
-    mapping_error = check_mapping(data['settings'], data['columns'])
+    mapping_error = check_mapping(data['settings'], data['columns'], multiple=True)
     if mapping_error:
         return mapping_error
 
+    inp_cols = ', '.join([map_by['input_column'] for map_by in data["settings"]["map_by"]])
+    atc_cols = ', '.join([map_by['attachment_column'] for map_by in data["settings"]["map_by"]])
+    map_by = len(data["settings"]["map_by"])
     populate = len(data['settings']['mapping'])
-    overview = f'Match column "{data["settings"]["map_by"]["input_column"]}" with Attachment '
-    overview += f'field "{data["settings"]["map_by"]["attachment_column"]}" and populate '
+    overview = f'Match column{"s" if map_by > 1 else ""} "{inp_cols}" with Attachment '
+    overview += f'field{"s" if map_by > 1 else ""} "{atc_cols}" and populate '
     overview += f'{populate} column{"s" if populate > 1 else ""} with the matching data.'
 
     return {
