@@ -318,17 +318,26 @@ const lookupFFRequest = (app) => {
     }
 
     if (settings) {
-      document.getElementById('criteria').value = settings.asset_type;
-      const columnId = columns.find((c) => c.name === settings.asset_column).id;
-      document.getElementById('column').value = columnId;
+      if (settings.asset_type === null) {
+        document.getElementById('criteria').value = 'skip';
+        document.getElementById('subscription_column').style.display = 'none';
+      } else {
+        const columnId = columns.find((c) => c.name === settings.asset_column).id;
+        document.getElementById('criteria').value = settings.asset_type || 'skip';
+        document.getElementById('column').value = columnId;
+      }
 
       document.getElementById('parameter').value = settings.parameter.id;
       const parameterColId = columns.find((c) => c.name === settings.parameter_column).id;
       document.getElementById('parameter_column').value = parameterColId;
 
       document.getElementById('item').value = settings.item.id;
-      const itemId = columns.find((c) => c.name === settings.item_column).id;
-      document.getElementById('item_column').value = itemId;
+      if (['skip', 'all'].includes(settings.item.id)) {
+        document.getElementById('item_column_group').style.display = 'none';
+      } else {
+        const itemId = columns.find((c) => c.name === settings.item_column).id;
+        document.getElementById('item_column').value = itemId;
+      }
 
       if (settings.action_if_not_found === 'leave_empty') {
         document.getElementById('not_found_leave_empty').checked = true;
