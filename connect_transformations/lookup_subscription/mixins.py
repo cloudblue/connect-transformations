@@ -208,7 +208,7 @@ class LookupSubscriptionWebAppMixin:
             400: {'model': Error},
         },
     )
-    async def get_parameters(
+    async def get_subscription_parameters(
         self,
         product_id: str,
         client: AsyncConnectClient = Depends(get_installation_client),

@@ -448,7 +448,6 @@ async def test_get_subscription_parameters(
 
     client = test_client_factory(TransformationsWebApplication)
     response = client.get('/api/lookup_subscription/parameters?product_id=PRD-123-123')
-    print(response.text)
 
     assert response.status_code == 200
     data = response.json()

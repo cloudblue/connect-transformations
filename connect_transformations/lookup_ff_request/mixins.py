@@ -166,7 +166,7 @@ class LookupFFRequestWebAppMixin:
         '/lookup_ff_request/parameters',
         summary='Return available parameters names',
     )
-    async def get_parameters(
+    async def get_ff_parameters(
         self,
         product_id: str,
         client: AsyncConnectClient = Depends(get_installation_client),

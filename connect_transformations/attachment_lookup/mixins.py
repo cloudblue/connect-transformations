@@ -30,7 +30,7 @@ class AttachmentLookupTransformationMixin:
             self.excel_attachments_data = {}
 
             settings = self.transformation_request['transformation']['settings']
-            map_by = [item['attachment_column'] for item in settings['map_by']]
+            map_by = [item['attachment_column'] for item in self.map_by_settings]
             sheet = settings.get('sheet')
             mapping = [col['from'] for col in settings['mapping']]
 
@@ -90,7 +90,7 @@ class AttachmentLookupTransformationMixin:
         except Exception as e:
             return RowTransformationResponse.fail(output=str(e))
         trfn_settings = self.transformation_request['transformation']['settings']
-        map_by_from = [item['input_column'] for item in trfn_settings['map_by']]
+        map_by_from = [item['input_column'] for item in self.map_by_settings]
         input_columns = self.transformation_request['transformation']['columns']['input']
 
         for item in map_by_from:
@@ -109,6 +109,13 @@ class AttachmentLookupTransformationMixin:
             mapping['to']: attachment_row[mapping['from']]
             for mapping in trfn_settings['mapping']
         })
+
+    @property
+    def map_by_settings(self):
+        map_settings = self.transformation_request['transformation']['settings']['map_by']
+        if not isinstance(map_settings, list):
+            return [map_settings]
+        return map_settings
 
 
 class AttachmentLookupWebAppMixin:

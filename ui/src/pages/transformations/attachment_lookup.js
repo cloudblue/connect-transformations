@@ -165,7 +165,7 @@ export const lookupSpreadsheet = (app) => {
           mapping,
         } = settings;
 
-        mapBy.forEach((item, i) => {
+        (Array.isArray(mapBy) ? mapBy : [mapBy]).forEach((item, i) => {
           const inputColumn = inputColumns.find((col) => col.name === item.input_column);
           const outputColumn = item.attachment_column;
           rowIndex = i;

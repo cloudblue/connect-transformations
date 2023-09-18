@@ -56,6 +56,52 @@ def test_attachment_lookup(mocker, connect_client, responses):
     }
 
 
+def test_attachment_lookup_backward_compat(mocker, connect_client, responses):
+    connect_client.endpoint = 'https://cnct.example.org/public/v1'
+    with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
+        responses.add(
+            'GET',
+            f'{connect_client.endpoint}/path/to/MFL-123-123',
+            body=input_file.read(),
+        )
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = connect_client
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'file': '/path/to/MFL-123-123',
+                'sheet': 'Data',
+                'map_by': {
+                    'input_column': 'id',
+                    'attachment_column': 'id',
+                },
+                'mapping': [
+                    {
+                        'from': 'price',
+                        'to': 'Subscription price',
+                    },
+                    {
+                        'from': 'sub_id',
+                        'to': 'Subscription ID',
+                    },
+                ],
+            },
+            'columns': {
+                'input': [{'name': 'id', 'nullable': False}],
+            },
+        },
+    }
+
+    response = app.attachment_lookup({'id': 3})
+    assert response.status == ResultType.SUCCESS
+    assert response.transformed_row == {
+        'Subscription price': 102.14,
+        'Subscription ID': 'SUB-123-123-125',
+    }
+
+
 def test_attachment_lookup_no_sheet(mocker, connect_client, responses):
     connect_client.endpoint = 'https://cnct.example.org/public/v1'
     with open('tests/test_data/input_file_example.xlsx', 'rb') as input_file:
