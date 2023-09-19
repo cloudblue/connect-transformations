@@ -21,8 +21,10 @@ def validate_filter_row(data):
     if (
         does_not_contain_required_keys(
             settings,
-            ['from', 'value', 'match_condition', 'additional_values'],
-        ) or not isinstance(settings['value'], str)
+            ['from', 'match_condition', 'additional_values'],
+        )
+        or 'value' not in settings
+        or (not isinstance(settings['value'], str) and settings['value'] is not None)
         or not isinstance(settings['match_condition'], bool)
         or not isinstance(settings['additional_values'], list)
     ):
@@ -41,12 +43,11 @@ def validate_filter_row(data):
     for condition in settings['additional_values']:
         if (
             'value' not in condition
-            or not condition['value']
-            or not isinstance(condition['value'], str)
+            or (not isinstance(condition['value'], str) and condition['value'] is not None)
         ):
             return build_error_response(
                 'Each additional value in the settings must have '
-                'not empty `value` field and `operation` field '
+                'string or empty `value` field and `operation` field '
                 'equal to `or` or `and`',
             )
 

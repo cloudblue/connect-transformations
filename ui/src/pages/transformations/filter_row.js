@@ -62,7 +62,7 @@ export const filterRow = (app) => {
     });
 
     if (settings) {
-      document.getElementById('value').value = settings.value;
+      document.getElementById('value').value = settings.value || '';
       const columnId = columns.find((c) => c.name === settings.from).id;
       document.getElementById('column').value = columnId;
 
@@ -75,7 +75,7 @@ export const filterRow = (app) => {
       if (settings.additional_values) {
         settings.additional_values.forEach((addVal, i) => {
           rowIndex = i;
-          createAdditionalValue(content, rowIndex, addVal.value, i);
+          createAdditionalValue(content, rowIndex, addVal.value || '', i);
         });
       }
     } else {
@@ -116,10 +116,11 @@ export const filterRow = (app) => {
       },
     );
 
-    const inputValue = document.getElementById('value');
+    let inputValue = document.getElementById('value').value;
+    inputValue = inputValue === '' ? null : inputValue;
     data.settings = {
       from: inputColumn.name,
-      value: inputValue.value,
+      value: inputValue,
       match_condition: matchCondition,
       additional_values: [],
     };
@@ -129,7 +130,7 @@ export const filterRow = (app) => {
     for (const line of form) {
       const val = line.getElementsByTagName('input')[0].value;
       const addVal = {
-        value: val,
+        value: val === '' ? null : val,
       };
       data.settings.additional_values.push(addVal);
     }
