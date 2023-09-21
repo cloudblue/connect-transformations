@@ -174,7 +174,15 @@ const AVAILABLE_FF_REQUEST_ATTRS = [
   },
   {
     value: 'asset.items.quantity',
-    label: 'Product item quantities',
+    label: 'Product item quantity',
+  },
+  {
+    value: 'asset.items.old_quantity',
+    label: 'Product item previous quantity',
+  },
+  {
+    value: 'asset.items.quantity_delta',
+    label: 'Product item quantity delta',
   },
 ];
 
@@ -224,7 +232,7 @@ const createOutputRow = (parent, index, column, parameters, columnConfigs) => {
   });
 
   const handleSourceSelectChange = () => {
-    if (sourceSelect.value === 'parameter.value') {
+    if (sourceSelect.value === 'asset.parameter.value') {
       paramNameSelect.style.display = 'block';
       paramNameSelect.style.maxWidth = 'calc(28% - 10px)';
       sourceSelect.style.maxWidth = 'calc(25% - 10px)';
@@ -266,7 +274,6 @@ const lookupFFRequest = (app) => {
       global_id: 'Item Global ID',
       mpn: 'Item MPN',
       all: 'Include all',
-      skip: 'Skip items',
     };
 
     hideComponent('loader');
@@ -364,7 +371,7 @@ const lookupFFRequest = (app) => {
     });
 
     document.getElementById('item').addEventListener('change', () => {
-      if (['skip', 'all'].includes(document.getElementById('item').value)) {
+      if (document.getElementById('item').value === 'all') {
         document.getElementById('item_column_group').style.display = 'none';
       } else {
         document.getElementById('item_column_group').style.display = 'block';
@@ -421,7 +428,7 @@ const lookupFFRequest = (app) => {
         attribute: colSource,
       };
 
-      if (colSource === 'parameter.value') {
+      if (colSource === 'asset.parameter.value') {
         const paramName = document.getElementById(`source-param-select-${index}`).value;
         columnConfig.parameter_name = paramName;
       }

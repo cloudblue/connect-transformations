@@ -19,6 +19,11 @@ ASSET_LOOKUP = {
 NOT_FOUND_CHOICES = ['leave_empty', 'fail']
 MULTIPLE_CHOICES = ['leave_empty', 'fail', 'use_most_actual']
 
+FF_REQ_COMMON_FILTERS = {
+    'status': 'approved',
+}
+FF_REQ_SELECT = ['-activation_key', '-template']
+
 
 def validate_lookup_ff_request(data):  # noqa: CCR001
     data = data.dict(by_alias=True)
@@ -119,3 +124,23 @@ def validate_lookup_ff_request(data):  # noqa: CCR001
     return {
         'overview': overview,
     }
+
+
+def filter_requests_with_changes(requests):
+    """ FF requests without any changes can be produced during synchronization.
+        Exclude them.
+    """
+    filtered_requests = []
+    for request in requests:
+        changed = False
+        for item_data in request['asset']['items']:
+            if item_data['quantity'] != item_data['old_quantity']:
+                changed = True
+                break
+        if changed:
+            filtered_requests.append(request)
+
+    if not filtered_requests:
+        return requests[0]
+
+    return filtered_requests
