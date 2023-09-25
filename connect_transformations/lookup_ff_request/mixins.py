@@ -40,7 +40,7 @@ class LookupFFRequestTransformationMixin:
     ):
         output_columns = self.settings.get('output_config')
         value = row[self.settings['parameter_column']]
-        item_id = row[self.settings['item_column']]
+        item_id = row.get(self.settings['item_column'])
 
         if is_input_column_nullable(
             self.transformation_request['transformation']['columns']['input'],
@@ -53,7 +53,7 @@ class LookupFFRequestTransformationMixin:
             lookup[f'asset.{self.settings["asset_type"]}'] = row[self.settings['asset_column']]
 
         lookup['asset.params.name'] = self.settings['parameter']['name']
-        lookup['asset.params.value'] = row[self.settings['parameter_column']]
+        lookup['asset.params.value'] = value
 
         try:
             request = await self.get_request(lookup)
@@ -98,17 +98,10 @@ class LookupFFRequestTransformationMixin:
     def extract_item_attrs_from_request(self, item_attrs, row, request, item_id_value):
         item_id = self.settings['item']['id']
         for item in request['asset']['items']:
-            if item.get(item_id) != item_id_value and item_id != 'all':
-                continue
-
-            for col_name, item_attr in item_attrs:
-                if item_attr == 'quantity_delta':
-                    item_value = int(item['quantity']) - int(item['old_quantity'])
-                else:
-                    item_value = item.get(item_attr, '')
-
-                item_value = str(item_value)
-                row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
+            if item_id == 'all' or item.get(item_id) == item_id_value:
+                for col_name, item_attr in item_attrs:
+                    item_value = str(item.get(item_attr, ''))
+                    row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
 
     async def get_request(self, lookup):
         k = ''

@@ -37,8 +37,6 @@ def validate_lookup_ff_request(data):  # noqa: CCR001
             [
                 'parameter',
                 'parameter_column',
-                'item',
-                'item_column',
                 'action_if_not_found',
                 'action_if_multiple',
                 'output_config',
@@ -53,17 +51,17 @@ def validate_lookup_ff_request(data):  # noqa: CCR001
     values = ASSET_LOOKUP.keys()
     if data['settings'].get('asset_type') and data['settings'].get('asset_type') not in values:
         return build_error_response(
-            f'The settings `asset_type` allowed values {values}',
+            f'The settings `asset_type` allowed values {", ".join(values)}',
         )
 
     if data['settings']['action_if_not_found'] not in NOT_FOUND_CHOICES:
         return build_error_response(
-            f'The settings `action_if_not_found` allowed values {NOT_FOUND_CHOICES}',
+            f'The settings `action_if_not_found` allowed values {", ".join(NOT_FOUND_CHOICES)}',
         )
 
     if data['settings']['action_if_multiple'] not in MULTIPLE_CHOICES:
         return build_error_response(
-            f'The settings `action_if_multiple` allowed values {MULTIPLE_CHOICES}',
+            f'The settings `action_if_multiple` allowed values {", ".join(MULTIPLE_CHOICES)}',
         )
 
     if (
@@ -71,7 +69,7 @@ def validate_lookup_ff_request(data):  # noqa: CCR001
         or not isinstance(data['settings']['parameter'], dict)
         or does_not_contain_required_keys(data['settings']['parameter'], ['id', 'name'])
     ):
-        return build_error_response('The settings must have `item` with `id` and `name`')
+        return build_error_response('The settings must have `parameter` with `id` and `name`')
 
     if (
         does_not_contain_required_keys(data['settings'], ['item'])
