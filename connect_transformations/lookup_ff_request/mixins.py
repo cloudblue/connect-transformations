@@ -5,16 +5,21 @@
 #
 from typing import Dict
 
-from connect.client import AsyncConnectClient, ClientError
+from connect.client import AsyncConnectClient
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.inject.asynchronous import get_installation_client
 from connect.eaas.core.responses import RowTransformationResponse
 from fastapi import Depends
 
-from connect_transformations.constants import MAX_API_CALL_CONNECTION_ERROR_RETRIES, SEPARATOR
+from connect_transformations.constants import SEPARATOR
 from connect_transformations.lookup_ff_request.exceptions import FFRequestLookupError
 from connect_transformations.lookup_ff_request.models import Configuration, SubscriptionParameter
-from connect_transformations.lookup_ff_request.utils import validate_lookup_ff_request
+from connect_transformations.lookup_ff_request.utils import (
+    FF_REQ_COMMON_FILTERS,
+    FF_REQ_SELECT,
+    filter_requests_with_changes,
+    validate_lookup_ff_request,
+)
 from connect_transformations.models import Error, ValidationResult
 from connect_transformations.utils import deep_itemgetter, is_input_column_nullable
 
@@ -47,8 +52,8 @@ class LookupFFRequestTransformationMixin:
         if self.settings.get('asset_type'):
             lookup[f'asset.{self.settings["asset_type"]}'] = row[self.settings['asset_column']]
 
-        lookup['params.name'] = self.settings['parameter']['name']
-        lookup['params.value'] = row[self.settings['parameter_column']]
+        lookup['asset.params.name'] = self.settings['parameter']['name']
+        lookup['asset.params.value'] = row[self.settings['parameter_column']]
 
         try:
             request = await self.get_request(lookup)
@@ -71,8 +76,9 @@ class LookupFFRequestTransformationMixin:
             value = None
             attr = col_config['attribute']
             if attr == 'asset.parameter.value':
+                param_name = col_config['parameter_name']
                 for param_data in request['asset']['params']:
-                    if param_data['name'] == self.settings['parameter']['name']:
+                    if param_data['name'] == param_name:
                         value = param_data['value']
                         break
             elif attr.startswith('asset.items.'):
@@ -96,7 +102,12 @@ class LookupFFRequestTransformationMixin:
                 continue
 
             for col_name, item_attr in item_attrs:
-                item_value = str(item.get(item_attr, ''))
+                if item_attr == 'quantity_delta':
+                    item_value = int(item['quantity']) - int(item['old_quantity'])
+                else:
+                    item_value = item.get(item_attr, '')
+
+                item_value = str(item_value)
                 row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
 
     async def get_request(self, lookup):
@@ -108,24 +119,33 @@ class LookupFFRequestTransformationMixin:
         except KeyError:
             pass
 
-        for attempts_left in range(MAX_API_CALL_CONNECTION_ERROR_RETRIES, -1, -1):
-            try:
-                result = await self.retrieve_ff_requests(lookup)
-                break
-            except ClientError:
-                if not attempts_left:
-                    raise
-                continue
+        result = await self.retrieve_ff_requests(lookup)
 
         await self.acache_put(k, result)
         return result
 
     async def retrieve_ff_requests(self, lookup):
-        requests = self.installation_client.requests.filter(**lookup).order_by('-created')
+        batch_context = self.transformation_request['batch']['context']
+        period_end = batch_context.get('period', {}).get('end')
+        additional_filters = {}
+        if period_end:
+            additional_filters['updated__lt'] = period_end
+
+        requests = self.installation_client.requests.filter(
+            **FF_REQ_COMMON_FILTERS,
+            **lookup,
+            **additional_filters,
+        ).select(
+            *FF_REQ_SELECT,
+        ).order_by('-updated')
+        requests = [r async for r in requests]
+
+        if len(requests) > 1:
+            requests = filter_requests_with_changes(requests)
 
         result = None
 
-        async for item in requests:
+        for item in requests:
             if result is None:
                 result = item
             elif self.settings.get('action_if_multiple') == 'leave_empty':

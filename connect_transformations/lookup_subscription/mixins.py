@@ -107,12 +107,12 @@ class LookupSubscriptionTransformationMixin:
             row[col_name] = value
 
         if item_attrs:
-            self.extract_item_attrs_from_sutbscription(item_attrs, row, subscription)
+            self.extract_item_attrs_from_subscription(item_attrs, row, subscription)
 
         return row
 
     @staticmethod
-    def extract_item_attrs_from_sutbscription(item_attrs, row, subscription):
+    def extract_item_attrs_from_subscription(item_attrs, row, subscription):
         for item in subscription['items']:
             if (
                 item.get('item_type') == 'reservation'
