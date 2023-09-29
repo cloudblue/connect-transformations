@@ -327,3 +327,286 @@ async def test_lookup_request_all_items(
         'Quantity': '11;0;12',
         'Old Quantity': '0;0;5',
     }
+
+
+@pytest.mark.asyncio
+async def test_lookup_ff_request_null_value(mocker):
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.transformation_request = {
+        'transformation': {
+            'settings': {
+                'parameter': {
+                    'id': 'PRM-ID',
+                    'name': 'param_a',
+                },
+                'parameter_column': 'Param A',
+                'item': {
+                    'id': 'all',
+                    'name': 'All',
+                },
+                'item_column': None,
+                'asset_type': None,
+                'asset_column': None,
+                'output_config': {
+                    'ff_id': {'attribute': 'id'},
+                },
+                'action_if_multiple': 'use_most_actual',
+                'action_if_not_found': 'leave_empty',
+            },
+            'columns': {
+                'input': [{'name': 'Param A', 'nullable': True}],
+                'output': [{'name': 'ff_id'}],
+            },
+        },
+    }
+    response = await app.lookup_ff_request({
+        'Param A': None,
+    })
+    assert response.status == ResultType.SKIP
+
+
+@pytest.mark.asyncio
+async def test_lookup_ff_request_not_found(
+    mocker, async_connect_client, async_client_mocker_factory,
+):
+    client = async_client_mocker_factory(base_url=async_connect_client.endpoint)
+    params = {'asset.params.name': 'param_a', 'asset.params.value': 'PAR-111'}
+    client.requests.filter(
+        **FF_REQ_COMMON_FILTERS,
+        **params,
+    ).select(
+        *FF_REQ_SELECT,
+    ).order_by('-updated').mock(return_value=[])
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'batch': {'context': {}},
+        'transformation': {
+            'settings': {
+                'parameter': {
+                    'id': 'PAR-ID',
+                    'name': 'param_a',
+                },
+                'parameter_column': 'Param A',
+                'item': {
+                    'id': 'all',
+                    'name': 'All',
+                },
+                'item_column': None,
+                'asset_type': None,
+                'asset_column': None,
+                'output_config': {
+                    'ff_id': {'attribute': 'id'},
+                },
+                'action_if_multiple': 'use_most_actual',
+                'action_if_not_found': 'fail',
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Param A', 'nullable': False},
+                ],
+                'output': [
+                    {'name': 'ff_id'},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_ff_request({
+        'Param A': 'PAR-111',
+    })
+    assert response.status == ResultType.FAIL
+    assert "No result found for the filter" in response.output
+
+
+@pytest.mark.asyncio
+async def test_lookup_ff_request_multiple_fail(
+    mocker, async_connect_client, async_client_mocker_factory,
+):
+    client = async_client_mocker_factory(base_url=async_connect_client.endpoint)
+    params = {'asset.params.name': 'param_a', 'asset.params.value': 'PAR-111'}
+    client.requests.filter(
+        **FF_REQ_COMMON_FILTERS,
+        **params,
+    ).select(
+        *FF_REQ_SELECT,
+    ).order_by('-updated').mock(return_value=[
+        {
+            'id': 'PR-0001',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+        {
+            'id': 'PR-0002',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+    ])
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'batch': {'context': {}},
+        'transformation': {
+            'settings': {
+                'parameter': {
+                    'id': 'PAR-ID',
+                    'name': 'param_a',
+                },
+                'parameter_column': 'Param A',
+                'item': {
+                    'id': 'all',
+                    'name': 'All',
+                },
+                'item_column': None,
+                'asset_type': None,
+                'asset_column': None,
+                'output_config': {
+                    'ff_id': {'attribute': 'id'},
+                },
+                'action_if_multiple': 'fail',
+                'action_if_not_found': 'leave_empty',
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Param A', 'nullable': False},
+                ],
+                'output': [
+                    {'name': 'ff_id'},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_ff_request({
+        'Param A': 'PAR-111',
+    })
+    assert response.status == ResultType.FAIL
+    assert 'Many results found for the filter' in response.output
+
+
+@pytest.mark.asyncio
+async def test_lookup_ff_request_multiple_latest(
+    mocker, async_connect_client, async_client_mocker_factory,
+):
+    client = async_client_mocker_factory(base_url=async_connect_client.endpoint)
+    params = {'asset.params.name': 'param_a', 'asset.params.value': 'PAR-111'}
+    client.requests.filter(
+        **FF_REQ_COMMON_FILTERS,
+        **params,
+    ).select(
+        *FF_REQ_SELECT,
+    ).order_by('-updated').mock(return_value=[
+        {
+            'id': 'PR-0001',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+        {
+            'id': 'PR-0002',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+    ])
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'batch': {'context': {}},
+        'transformation': {
+            'settings': {
+                'parameter': {
+                    'id': 'PAR-ID',
+                    'name': 'param_a',
+                },
+                'parameter_column': 'Param A',
+                'item': {
+                    'id': 'all',
+                    'name': 'All',
+                },
+                'item_column': None,
+                'asset_type': None,
+                'asset_column': None,
+                'output_config': {
+                    'ff_id': {'attribute': 'id'},
+                },
+                'action_if_multiple': 'use_most_actual',
+                'action_if_not_found': 'leave_empty',
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Param A', 'nullable': False},
+                ],
+                'output': [
+                    {'name': 'ff_id'},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_ff_request({
+        'Param A': 'PAR-111',
+    })
+    assert response.status == ResultType.SUCCESS, response.output
+    assert response.transformed_row == {'ff_id': 'PR-0001'}
+
+
+@pytest.mark.asyncio
+async def test_lookup_ff_request_multiple_skip(
+    mocker, async_connect_client, async_client_mocker_factory,
+):
+    client = async_client_mocker_factory(base_url=async_connect_client.endpoint)
+    params = {'asset.params.name': 'param_a', 'asset.params.value': 'PAR-111'}
+    client.requests.filter(
+        **FF_REQ_COMMON_FILTERS,
+        **params,
+    ).select(
+        *FF_REQ_SELECT,
+    ).order_by('-updated').mock(return_value=[
+        {
+            'id': 'PR-0001',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+        {
+            'id': 'PR-0002',
+            'asset': {'items': [{'quantity': 1, 'old_quantity': 10}]},
+        },
+    ])
+
+    m = mocker.MagicMock()
+    app = StandardTransformationsApplication(m, m, m)
+    app.installation_client = async_connect_client
+    app.transformation_request = {
+        'batch': {'context': {}},
+        'transformation': {
+            'settings': {
+                'parameter': {
+                    'id': 'PAR-ID',
+                    'name': 'param_a',
+                },
+                'parameter_column': 'Param A',
+                'item': {
+                    'id': 'all',
+                    'name': 'All',
+                },
+                'item_column': None,
+                'asset_type': None,
+                'asset_column': None,
+                'output_config': {
+                    'ff_id': {'attribute': 'id'},
+                },
+                'action_if_multiple': 'leave_empty',
+                'action_if_not_found': 'leave_empty',
+            },
+            'columns': {
+                'input': [
+                    {'name': 'Param A', 'nullable': False},
+                ],
+                'output': [
+                    {'name': 'ff_id'},
+                ],
+            },
+        },
+    }
+    response = await app.lookup_ff_request({
+        'Param A': 'PAR-111',
+    })
+    assert response.status == ResultType.SKIP
