@@ -124,21 +124,17 @@ class LookupFFRequestTransformationMixin:
         if period_end:
             additional_filters['updated__lt'] = period_end
 
-        requests = self.installation_client.requests.filter(
+        ff_reqs = self.installation_client.requests.filter(
             **FF_REQ_COMMON_FILTERS,
             **lookup,
             **additional_filters,
         ).select(
             *FF_REQ_SELECT,
         ).order_by('-updated')
-        requests = [r async for r in requests]
-
-        if len(requests) > 1:
-            requests = filter_requests_with_changes(requests)
 
         result = None
 
-        for item in requests:
+        async for item in filter_requests_with_changes(ff_reqs):
             if result is None:
                 result = item
             elif self.settings.get('action_if_multiple') == 'leave_empty':

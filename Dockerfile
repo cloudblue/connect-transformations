@@ -1,4 +1,4 @@
-FROM cloudblueconnect/connect-extension-runner:28.8
+FROM cloudblueconnect/connect-extension-runner:29.3
 
 RUN apt-get update && apt-get install -y sqlite3
 COPY pyproject.toml /install_temp/.
