@@ -24,18 +24,20 @@ class VATRateForEUCountryTransformationMixin:
             self.eu_vat_rates = {}
 
             try:
-                url = 'https://api.exchangerate.host/vat_rates'
-                response = requests.get(url)
+                url = 'https://api.apilayer.com/tax_data/rate_list'
+                response = requests.get(
+                    url,
+                    headers={'apikey': self.config['EXCHANGE_API_KEY']},
+                )
                 response.raise_for_status()
+
                 data = response.json()
-                if not data['success']:
-                    raise VATRateError(
-                        f'Unexpected response calling {url}',
-                    )
-                for key, rate in data['rates'].items():
-                    value = rate['standard_rate']
-                    self.eu_vat_rates[key] = value
-                    self.eu_vat_rates[rate['country_name']] = value
+                for rate in data['data']:
+                    if not rate['eu']:
+                        continue
+                    value = rate['standard_rate']['rate']
+                    self.eu_vat_rates[rate['country_code']] = int(value * 100)
+                    self.eu_vat_rates[rate['country_name']] = int(value * 100)
             except requests.RequestException as exc:
                 raise VATRateError(
                     f'An error occurred while requesting {url}: {exc}',
@@ -44,8 +46,8 @@ class VATRateForEUCountryTransformationMixin:
     @transformation(
         name='Get standard VAT rate for EU country',
         description=(
-            'This transformation function is performed, using the latest'
-            ' rates from the [Exchange rates API](https://exchangerate.host). '
+            'This transformation function is performed, using the latest rates from the '
+            '[Exchange rates API](https://apilayer.com/marketplace/exchangerates_data-api). '
             'The input value must be either a two-letter country code defined'
             ' in the ISO 3166-1 alpha-2 standard or country name. '
             'For example, ES or Spain.'

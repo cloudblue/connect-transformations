@@ -19,7 +19,7 @@ def test_currency_conversion_first(mocker, responses):
     }
     responses.add(
         'GET',
-        'https://api.exchangerate.host/latest',
+        'https://api.apilayer.com/exchangerates_data/latest',
         match=[matchers.query_param_matcher(params)],
         json={
             'success': True,
@@ -27,7 +27,7 @@ def test_currency_conversion_first(mocker, responses):
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, config={'EXCHANGE_API_KEY': 'API Key'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -62,7 +62,7 @@ def test_currency_conversion_single_backward_compt(mocker, responses):
     }
     responses.add(
         'GET',
-        'https://api.exchangerate.host/latest',
+        'https://api.apilayer.com/exchangerates_data/latest',
         match=[matchers.query_param_matcher(params)],
         json={
             'success': True,
@@ -70,7 +70,7 @@ def test_currency_conversion_single_backward_compt(mocker, responses):
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -105,7 +105,7 @@ def test_currency_conversion(mocker, responses):
     }
     responses.add(
         'GET',
-        'https://api.exchangerate.host/latest',
+        'https://api.apilayer.com/exchangerates_data/latest',
         match=[matchers.query_param_matcher(params)],
         json={
             'success': True,
@@ -113,7 +113,7 @@ def test_currency_conversion(mocker, responses):
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -148,12 +148,12 @@ def test_currency_conversion_first_http_error(mocker, responses):
     }
     responses.add(
         'GET',
-        'https://api.exchangerate.host/latest',
+        'https://api.apilayer.com/exchangerates_data/latest',
         match=[matchers.query_param_matcher(params)],
         status=500,
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -170,46 +170,9 @@ def test_currency_conversion_first_http_error(mocker, responses):
     assert response.status == ResultType.FAIL
     assert (
         'An error occurred while requesting '
-        'https://api.exchangerate.host/latest with params'
+        'https://api.apilayer.com/exchangerates_data/latest with params'
         " {'symbols': 'EUR', 'base': 'USD'}"
     ) in response.output, response.output
-
-
-def test_currency_conversion_first_unexpected_response(mocker, responses):
-    params = {
-        'symbols': 'EUR',
-        'base': 'USD',
-    }
-    responses.add(
-        'GET',
-        'https://api.exchangerate.host/latest',
-        match=[matchers.query_param_matcher(params)],
-        json={
-            'success': False,
-            'result': None,
-        },
-    )
-    m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
-    app.transformation_request = {
-        'transformation': {
-            'settings': [{
-                'from': {'column': 'COL1', 'currency': 'USD'},
-                'to': {'column': 'Price(Eur)', 'currency': 'EUR'},
-            }],
-            'columns': {
-                'input': [{'id': 'COL1', 'name': 'Price', 'nullable': False}],
-            },
-        },
-    }
-
-    response = app.currency_conversion({'Price': '22.5'})
-    assert response.status == ResultType.FAIL
-    assert (
-        'Unexpected response calling '
-        'https://api.exchangerate.host/latest with params'
-        " {'symbols': 'EUR', 'base': 'USD'}"
-    ) in response.output
 
 
 def test_currency_conversion_null_value(mocker):

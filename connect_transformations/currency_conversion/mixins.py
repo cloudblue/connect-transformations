@@ -9,7 +9,9 @@ from typing import List
 
 import httpx
 from connect.eaas.core.decorators import router, transformation
+from connect.eaas.core.inject.common import get_config
 from connect.eaas.core.responses import RowTransformationResponse
+from fastapi import Depends
 
 from connect_transformations.currency_conversion.models import Configuration, Currency
 from connect_transformations.currency_conversion.utils import (
@@ -31,7 +33,11 @@ class CurrencyConverterTransformationMixin:
         if key not in self._currency_rates:
             with self.lock():
                 if key not in self._currency_rates:
-                    self._currency_rates[key] = load_currency_rate(currency_from, currency_to)
+                    self._currency_rates[key] = load_currency_rate(
+                        currency_from,
+                        currency_to,
+                        self.config.get('EXCHANGE_API_KEY'),
+                    )
 
         return self._currency_rates[key]
 
@@ -43,8 +49,8 @@ class CurrencyConverterTransformationMixin:
     @transformation(
         name='Convert currency',
         description=(
-            'This transformation function allows you to convert currency rates,'
-            ' using the [Exchange rates API](https://exchangerate.host).'
+            'This transformation function allows you to convert currency rates, using the '
+            '[Exchange rates API](https://apilayer.com/marketplace/exchangerates_data-api).'
         ),
         edit_dialog_ui='/static/transformations/currency_conversion.html',
     )
@@ -104,25 +110,32 @@ class CurrencyConversionWebAppMixin:
             400: {'model': Error},
         },
     )
-    async def get_available_currencies(self):
+    async def get_available_currencies(
+        self,
+        config: dict = Depends(get_config),
+    ):
         try:
-            url = 'https://api.exchangerate.host/symbols'
+            print(config)
+            url = 'https://api.apilayer.com/exchangerates_data/symbols'
             async with httpx.AsyncClient(
                 transport=httpx.AsyncHTTPTransport(retries=3),
             ) as client:
-                response = await client.get(url)
+                response = await client.get(
+                    url,
+                    headers={'apikey': config['EXCHANGE_API_KEY']},
+                )
             data = response.json()
             if response.status_code != 200 or not data['success']:
                 return []
             currencies = []
-            for key in data['symbols'].keys():
-                element = data['symbols'][key]
+            for key in data['symbols']:
                 currencies.append(
                     Currency(
-                        code=element['code'],
-                        description=element['description'],
+                        code=key,
+                        description=data['symbols'][key],
                     ),
                 )
             return currencies
-        except Exception:
+        except Exception as e:
+            print(e)
             return []
