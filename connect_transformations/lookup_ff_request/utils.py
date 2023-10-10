@@ -124,21 +124,24 @@ def validate_lookup_ff_request(data):  # noqa: CCR001
     }
 
 
-def filter_requests_with_changes(requests):
+async def filter_requests_with_changes(requests):
     """ FF requests without any changes can be produced during synchronization.
         Exclude them.
     """
-    filtered_requests = []
-    for request in requests:
+    has_non_empty = False
+    first_request = None
+
+    async for request in requests:
+        if not first_request:
+            first_request = request
         changed = False
         for item_data in request['asset']['items']:
             if item_data['quantity'] != item_data['old_quantity']:
                 changed = True
                 break
         if changed:
-            filtered_requests.append(request)
+            has_non_empty = True
+            yield request
 
-    if not filtered_requests:
-        return requests[0]
-
-    return filtered_requests
+    if (not has_non_empty) and first_request:
+        yield first_request
