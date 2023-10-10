@@ -115,7 +115,6 @@ class CurrencyConversionWebAppMixin:
         config: dict = Depends(get_config),
     ):
         try:
-            print(config)
             url = 'https://api.apilayer.com/exchangerates_data/symbols'
             async with httpx.AsyncClient(
                 transport=httpx.AsyncHTTPTransport(retries=3),
@@ -136,6 +135,5 @@ class CurrencyConversionWebAppMixin:
                     ),
                 )
             return currencies
-        except Exception as e:
-            print(e)
+        except Exception:
             return []
