@@ -149,17 +149,20 @@ def test_get_available_rates(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.exchangerate.host/symbols',
+        url='https://api.apilayer.com/exchangerates_data/symbols',
         json={
             'symbols': {
-                'EUR': {'code': 'EUR', 'description': 'Euro'},
-                'USD': {'code': 'USD', 'description': "United States Dollar's"},
+                'EUR': 'Euro',
+                'USD': 'United States Dollar',
             },
             'success': True,
         },
     )
     client = test_client_factory(TransformationsWebApplication)
-    response = client.get('/api/currency_conversion/currencies')
+    response = client.get(
+        '/api/currency_conversion/currencies',
+        config={'EXCHANGE_API_KEY': 'API Key'},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -170,7 +173,7 @@ def test_get_available_rates(
         },
         {
             'code': 'USD',
-            'description': "United States Dollar's",
+            'description': 'United States Dollar',
         },
     ]
 
@@ -181,14 +184,17 @@ def test_get_available_rates_invalid_response(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.exchangerate.host/symbols',
+        url='https://api.apilayer.com/exchangerates_data/symbols',
         json={
             'symbols': {},
             'success': False,
         },
     )
     client = test_client_factory(TransformationsWebApplication)
-    response = client.get('/api/currency_conversion/currencies')
+    response = client.get(
+        '/api/currency_conversion/currencies',
+        config={'EXCHANGE_API_KEY': 'API Key'},
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -201,11 +207,14 @@ def test_get_available_rates_invalid_status_code(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.exchangerate.host/symbols',
+        url='https://api.apilayer.com/exchangerates_data/symbols',
         status_code=400,
     )
     client = test_client_factory(TransformationsWebApplication)
-    response = client.get('/api/currency_conversion/currencies')
+    response = client.get(
+        '/api/currency_conversion/currencies',
+        config={'EXCHANGE_API_KEY': 'API Key'},
+    )
 
     assert response.status_code == 200
     data = response.json()

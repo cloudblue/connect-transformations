@@ -37,7 +37,6 @@ def validate_formula(data):  # noqa: CCR001
         has_invalid_basic_structure(data)
         or does_not_contain_required_keys(data['columns'], ['output'])
     ):
-        print('error')
         return build_error_response('Invalid input data')
 
     if (

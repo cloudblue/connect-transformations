@@ -13,29 +13,62 @@ from connect_transformations.transformations import StandardTransformationsAppli
 def test_vat_rate_first(mocker, responses):
     responses.add(
         'GET',
-        'https://api.exchangerate.host/vat_rates',
+        'https://api.apilayer.com/tax_data/rate_list',
         json={
-            'success': True,
-            'rates': {
-                'FR': {
-                    'country_name': 'France',
-                    'standard_rate': 20,
-                    'reduced_rates': [5.5, 10],
-                    'super_reduced_rates': [2.1],
-                    'parking_rates': [],
+            'data': [
+                {
+                    'country_code': 'AU',
+                    'country_name': 'Australia',
+                    'eu': False,
+                    'other_rates': [],
+                    'standard_rate': {
+                        'class': 'standard',
+                        'description': '',
+                        'rate': 0.1,
+                        'types': None,
+                    },
+                    'success': True,
                 },
-                'ES': {
+                {
+                    'country_code': 'ES',
                     'country_name': 'Spain',
-                    'standard_rate': 21,
-                    'reduced_rates': [10],
-                    'super_reduced_rates': [4],
-                    'parking_rates': [],
+                    'eu': True,
+                    'other_rates': [],
+                    'standard_rate': {
+                        'class': 'standard',
+                        'description': '',
+                        'rate': 0.21,
+                        'types': None,
+                    },
+                    'success': True,
                 },
-            },
+                {
+                    'country_code': 'AT',
+                    'country_name': 'Austria',
+                    'eu': True,
+                    'other_rates': [
+                        {
+                            'class': 'reduced',
+                            'rate': 0.13,
+                        },
+                        {
+                            'class': 'zero',
+                            'rate': 0,
+                        },
+                    ],
+                    'standard_rate': {
+                        'class': 'standard',
+                        'description': '',
+                        'rate': 0.2,
+                        'types': None,
+                    },
+                    'success': True,
+                },
+            ],
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'ApiKey'})
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -61,7 +94,7 @@ def test_vat_rate_first(mocker, responses):
 
     response = app.get_vat_rate(
         {
-            'Country': 'FR',
+            'Country': 'Austria',
         },
     )
     assert response.status == ResultType.SUCCESS
@@ -106,12 +139,12 @@ def test_var_rate(mocker):
 def test_var_rate_first_http_error(mocker, responses):
     responses.add(
         'GET',
-        'https://api.exchangerate.host/vat_rates',
+        'https://api.apilayer.com/tax_data/rate_list',
         status=500,
     )
 
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'ApiKey'})
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -129,39 +162,7 @@ def test_var_rate_first_http_error(mocker, responses):
     assert response.status == ResultType.FAIL
     assert (
         'An error occurred while requesting '
-        'https://api.exchangerate.host/vat_rates'
-    ) in response.output
-
-
-def test_var_rate_first_unexpected_response(mocker, responses):
-    responses.add(
-        'GET',
-        'https://api.exchangerate.host/vat_rates',
-        json={
-            'success': False,
-            'result': None,
-        },
-    )
-    m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, m)
-    app.transformation_request = {
-        'transformation': {
-            'settings': {
-                'from': 'Country',
-                'to': 'VAT',
-                'action_if_not_found': 'leave_empty',
-            },
-            'columns': {
-                'input': [{'name': 'Country', 'nullable': False}],
-            },
-        },
-    }
-
-    response = app.get_vat_rate({'Country': 'ES'})
-    assert response.status == ResultType.FAIL
-    assert (
-        'Unexpected response calling '
-        'https://api.exchangerate.host/vat_rates'
+        'https://api.apilayer.com/tax_data/rate_list'
     ) in response.output
 
 

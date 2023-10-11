@@ -75,9 +75,9 @@ def validate_currency_conversion(data):
     }
 
 
-def load_currency_rate(currency_from, currency_to):
+def load_currency_rate(currency_from, currency_to, api_key):
     try:
-        url = 'https://api.exchangerate.host/latest'
+        url = 'https://api.apilayer.com/exchangerates_data/latest'
         params = {
             'symbols': currency_to,
             'base': currency_from,
@@ -86,6 +86,7 @@ def load_currency_rate(currency_from, currency_to):
         response = requests.get(
             url,
             params=params,
+            headers={'apikey': api_key},
         )
         response.raise_for_status()
         data = response.json()
