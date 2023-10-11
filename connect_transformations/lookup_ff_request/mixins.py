@@ -98,10 +98,23 @@ class LookupFFRequestTransformationMixin:
     def extract_item_attrs_from_request(self, item_attrs, row, request, item_id_value):
         item_id = self.settings['item']['id']
         for item in request['asset']['items']:
-            if item_id == 'all' or item.get(item_id) == item_id_value:
-                for col_name, item_attr in item_attrs:
+            if item['quantity'] == item['old_quantity'] == 0:
+                continue
+
+            if not (item_id == 'all' or item.get(item_id) == item_id_value):
+                continue
+
+            for col_name, item_attr in item_attrs:
+                if item_attr == 'quantity_delta':
+                    item_value = str(self.get_item_quantity_delta(item))
+                else:
                     item_value = str(item.get(item_attr, ''))
-                    row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
+                row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
+
+    def get_item_quantity_delta(self, item):
+        if item['quantity'] == 'unlimited':
+            return 'unknown'
+        return int(item['quantity']) - int(item['old_quantity'])
 
     async def get_request(self, lookup):
         k = ''
