@@ -260,7 +260,8 @@ async def test_lookup_request_all_items(
                 'items': [
                     {'id': 'i1', 'mpn': 'm1', 'quantity': 11, 'old_quantity': 0},
                     {'id': 'i2', 'mpn': 'm2', 'quantity': 0, 'old_quantity': 0},
-                    {'id': 'i3', 'mpn': 'm3', 'quantity': 12, 'old_quantity': 5},
+                    {'id': 'i3', 'mpn': 'm3', 'quantity': 5, 'old_quantity': 12},
+                    {'id': 'i4', 'mpn': 'm3', 'quantity': 'unlimited', 'old_quantity': 0},
                 ],
             },
         },
@@ -300,6 +301,9 @@ async def test_lookup_request_all_items(
                     "Old Quantity": {
                         "attribute": "asset.items.old_quantity",
                     },
+                    "Quantity Delta": {
+                        "attribute": "asset.items.quantity_delta",
+                    },
                 },
                 "parameter_column": "ParamName",
                 "action_if_multiple": "fail",
@@ -324,8 +328,9 @@ async def test_lookup_request_all_items(
     assert response.transformed_row == {
         'A': 'ParamValue',
         'Status': 'approved',
-        'Quantity': '11;0;12',
-        'Old Quantity': '0;0;5',
+        'Quantity': '11;5;unlimited',
+        'Old Quantity': '0;12;0',
+        'Quantity Delta': '11;-7;unknown',
     }
 
 
