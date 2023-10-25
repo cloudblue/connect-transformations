@@ -13,6 +13,7 @@ from connect_transformations.currency_conversion.mixins import CurrencyConversio
 from connect_transformations.filter_row.mixins import FilterRowWebAppMixin
 from connect_transformations.formula.mixins import FormulaWebAppMixin
 from connect_transformations.handlers import CustomExceptionHandlers
+from connect_transformations.lookup_billing_request.mixins import LookupBillingRequestWebAppMixin
 from connect_transformations.lookup_ff_request.mixins import LookupFFRequestWebAppMixin
 from connect_transformations.lookup_product_items.mixins import LookupProductItemsWebAppMixin
 from connect_transformations.lookup_subscription.mixins import LookupSubscriptionWebAppMixin
@@ -30,6 +31,7 @@ class TransformationsWebApplication(
     CurrencyConversionWebAppMixin,
     FilterRowWebAppMixin,
     FormulaWebAppMixin,
+    LookupBillingRequestWebAppMixin,
     LookupFFRequestWebAppMixin,
     LookupSubscriptionWebAppMixin,
     SplitColumnWebAppMixin,
