@@ -480,6 +480,10 @@ const AVAILABLE_BILLING_REQUEST_ATTRS = [
     label: 'Product item quantity',
   },
   {
+    value: 'items.old_quantity',
+    label: 'Product item previous quantity',
+  },
+  {
     value: 'items.period',
     label: 'Product item period',
   },

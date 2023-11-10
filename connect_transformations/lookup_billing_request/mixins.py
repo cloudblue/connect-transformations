@@ -5,7 +5,7 @@
 #
 from typing import Dict
 
-from connect.client import AsyncConnectClient
+from connect.client import AsyncConnectClient, ClientError
 from connect.eaas.core.decorators import router, transformation
 from connect.eaas.core.inject.asynchronous import get_installation_client
 from connect.eaas.core.responses import RowTransformationResponse
@@ -64,13 +64,14 @@ class LookupBillingRequestTransformationMixin:
             return RowTransformationResponse.skip()
 
         return RowTransformationResponse.done(
-            self.extract_row_from_billing(request, output_columns, item_id),
+            await self.extract_row_from_billing(request, output_columns, item_id),
         )
 
-    def extract_row_from_billing(self, request, output_columns, item_id):
+    async def extract_row_from_billing(self, request, output_columns, item_id):
         row = {}
 
         item_attrs = []
+        asset = None
 
         for col_name, col_config in output_columns.items():
             value = None
@@ -82,6 +83,8 @@ class LookupBillingRequestTransformationMixin:
                         value = param_data['value']
                         break
             elif attr.startswith('items.'):
+                if attr == 'items.old_quantity':
+                    asset = await self.get_asset(request)
                 item_attr = attr.split('.')[-1]
                 item_attrs.append((col_name, item_attr))
                 value = ''
@@ -91,16 +94,28 @@ class LookupBillingRequestTransformationMixin:
             row[col_name] = value
 
         if item_attrs:
-            self.extract_item_attrs_from_billing(item_attrs, row, request, item_id)
+            self.extract_item_attrs_from_billing(item_attrs, row, request, item_id, asset)
 
         return row
 
-    def extract_item_attrs_from_billing(self, item_attrs, row, request, item_id_value):
+    def extract_item_attrs_from_billing(  # noqa: CCR001
+        self,
+        item_attrs,
+        row,
+        request,
+        item_id_value,
+        asset,
+    ):
         item_id = self.billing_settings['item']['id']
         for item in request['items']:
             if item_id == 'all' or item.get(item_id) == item_id_value:
                 for col_name, item_attr in item_attrs:
-                    item_value = str(item.get(item_attr, ''))
+                    if item_attr == 'old_quantity' and asset:
+                        items = [x for x in asset.get('items') if x['id'] == item['id']]
+                        asset_item = items[0] if item else {}
+                        item_value = str(asset_item.get(item_attr, ''))
+                    else:
+                        item_value = str(item.get(item_attr, ''))
                     row[col_name] += f'{SEPARATOR}{item_value}' if row[col_name] else item_value
 
     async def get_billing_request(self, lookup):
@@ -147,6 +162,35 @@ class LookupBillingRequestTransformationMixin:
 
         if self.billing_settings.get('action_if_not_found') == 'fail':
             raise BillingRequestLookupError(f'No result found for the filter {lookup}')
+
+    async def get_asset(self, billing_request):
+        k = 'billing-asset-'
+        k += f'{billing_request["asset"]["id"]}-{billing_request["events"]["created"]["at"]}'
+        try:
+            return self.cache_get(k)
+        except KeyError:
+            pass
+
+        result = await self.retrieve_asset_from_ff(billing_request)
+
+        await self.acache_put(k, result)
+        return result
+
+    async def retrieve_asset_from_ff(self, billing_request):
+        try:
+            request = await self.installation_client.requests.filter(
+                asset__id=billing_request['asset']['id'],
+                status='approved',
+                updated__lt=billing_request['events']['created']['at'],
+            ).select(
+                '-activation_key',
+                '-template',
+            ).order_by('-updated').first()
+        except ClientError:
+            return None
+
+        if request:
+            return request['asset']
 
     @property
     def billing_settings(self):

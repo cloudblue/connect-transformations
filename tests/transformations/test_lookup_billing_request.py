@@ -131,6 +131,33 @@ async def test_lookup_billing_request_wo_asset(
                 {'id': 'i2', 'mpn': 'm2', 'quantity': 0},
                 {'id': 'i3', 'mpn': 'm3', 'quantity': 12},
             ],
+            'events': {'created': {'at': '2023-11-10T23:59:59Z'}},
+        },
+    ])
+
+    client.requests.filter(
+        asset__id='AS-12311',
+        status='approved',
+        updated__lt='2023-11-10T23:59:59Z',
+    ).select(
+        '-activation_key',
+        '-template',
+    ).order_by('-updated').first().mock(return_value=[
+        {
+            'id': 'PR-123-123',
+            'type': 'change',
+            'asset': {
+                'id': 'AS-12311',
+                'params': [{
+                    'name': 'param_name',
+                    'value': 'ParamValue',
+                }],
+                'items': [
+                    {'id': 'i1', 'mpn': 'm1', 'quantity': 11, 'old_quantity': 10},
+                    {'id': 'i2', 'mpn': 'm2', 'quantity': 0, 'old_quantity': 0},
+                    {'id': 'i3', 'mpn': 'm3', 'quantity': 12, 'old_quantity': 5},
+                ],
+            },
         },
     ])
 
@@ -162,6 +189,9 @@ async def test_lookup_billing_request_wo_asset(
                     "Quantity": {
                         "attribute": "items.quantity",
                     },
+                    "Old Quantity": {
+                        "attribute": "items.old_quantity",
+                    },
                 },
                 "parameter_column": "ParamName",
                 "action_if_multiple": "fail",
@@ -186,6 +216,7 @@ async def test_lookup_billing_request_wo_asset(
     assert response.transformed_row == {
         'A': 'ParamValue',
         'Quantity': '12',
+        'Old Quantity': '5',
     }
 
 
