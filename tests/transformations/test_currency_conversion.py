@@ -16,18 +16,18 @@ def test_currency_conversion_first(mocker, responses):
     params = {
         'symbols': 'EUR',
         'base': 'USD',
+        'app_id': '1a2b3c4d5e6f',
     }
     responses.add(
         'GET',
-        'https://api.apilayer.com/exchangerates_data/latest',
+        'https://openexchangerates.org/api/latest.json',
         match=[matchers.query_param_matcher(params)],
         json={
-            'success': True,
             'rates': {'EUR': 0.92343},
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, config={'EXCHANGE_API_KEY': 'API Key'})
+    app = StandardTransformationsApplication(m, m, config={'EXCHANGE_API_KEY': '1a2b3c4d5e6f'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -59,18 +59,18 @@ def test_currency_conversion_single_backward_compt(mocker, responses):
     params = {
         'symbols': 'EUR',
         'base': 'USD',
+        'app_id': '1a2b3c4d5e6f',
     }
     responses.add(
         'GET',
-        'https://api.apilayer.com/exchangerates_data/latest',
+        'https://openexchangerates.org/api/latest.json',
         match=[matchers.query_param_matcher(params)],
         json={
-            'success': True,
             'rates': {'EUR': 0.92343},
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': '1a2b3c4d5e6f'})
     app.transformation_request = {
         'transformation': {
             'settings': {
@@ -102,10 +102,11 @@ def test_currency_conversion(mocker, responses):
     params = {
         'symbols': 'EUR',
         'base': 'USD',
+        'app_id': '1a2b3c4d5e6f',
     }
     responses.add(
         'GET',
-        'https://api.apilayer.com/exchangerates_data/latest',
+        'https://openexchangerates.org/api/latest.json',
         match=[matchers.query_param_matcher(params)],
         json={
             'success': True,
@@ -113,7 +114,7 @@ def test_currency_conversion(mocker, responses):
         },
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': '1a2b3c4d5e6f'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -145,15 +146,16 @@ def test_currency_conversion_first_http_error(mocker, responses):
     params = {
         'symbols': 'EUR',
         'base': 'USD',
+        'app_id': '1a2b3c4d5e6f',
     }
     responses.add(
         'GET',
-        'https://api.apilayer.com/exchangerates_data/latest',
+        'https://openexchangerates.org/api/latest.json',
         match=[matchers.query_param_matcher(params)],
         status=500,
     )
     m = mocker.MagicMock()
-    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': 'API Key'})
+    app = StandardTransformationsApplication(m, m, {'EXCHANGE_API_KEY': '1a2b3c4d5e6f'})
     app.transformation_request = {
         'transformation': {
             'settings': [{
@@ -170,9 +172,10 @@ def test_currency_conversion_first_http_error(mocker, responses):
     assert response.status == ResultType.FAIL
     assert (
         'An error occurred while requesting '
-        'https://api.apilayer.com/exchangerates_data/latest with params'
+        'https://openexchangerates.org/api/latest.json with params'
         " {'symbols': 'EUR', 'base': 'USD'}"
     ) in response.output, response.output
+    assert 'app_id' not in response.output
 
 
 def test_currency_conversion_null_value(mocker):

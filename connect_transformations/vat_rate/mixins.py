@@ -46,8 +46,8 @@ class VATRateForEUCountryTransformationMixin:
     @transformation(
         name='Get standard VAT rate for EU country',
         description=(
-            'This transformation function is performed, using the latest rates from the '
-            '[Exchange rates API](https://apilayer.com/marketplace/exchangerates_data-api). '
+            'This transformation function is performed, using the latest VAT rates from the '
+            '[Tax Data API](https://apilayer.com/marketplace/tax_data-api). '
             'The input value must be either a two-letter country code defined'
             ' in the ISO 3166-1 alpha-2 standard or country name. '
             'For example, ES or Spain.'

@@ -77,7 +77,7 @@ def validate_currency_conversion(data):
 
 def load_currency_rate(currency_from, currency_to, api_key):
     try:
-        url = 'https://api.apilayer.com/exchangerates_data/latest'
+        url = 'https://openexchangerates.org/api/latest.json'
         params = {
             'symbols': currency_to,
             'base': currency_from,
@@ -85,13 +85,12 @@ def load_currency_rate(currency_from, currency_to, api_key):
 
         response = requests.get(
             url,
-            params=params,
-            headers={'apikey': api_key},
+            params={**params, 'app_id': api_key},
         )
         response.raise_for_status()
         data = response.json()
 
-        if not data['success']:
+        if not data.get('rates'):
             raise CurrencyConversionError(
                 f'Unexpected response calling {url}'
                 f' with params {params}',
@@ -99,7 +98,8 @@ def load_currency_rate(currency_from, currency_to, api_key):
 
         return Decimal(data['rates'][currency_to])
     except requests.RequestException as exc:
+        safe_exc = str(exc).split('?', 1)[0]
         raise CurrencyConversionError(
             f'An error occurred while requesting {url} with '
-            f'params {params}: {exc}',
+            f'params {params}: {safe_exc}',
         )
