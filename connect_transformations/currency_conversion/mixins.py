@@ -50,7 +50,7 @@ class CurrencyConverterTransformationMixin:
         name='Convert currency',
         description=(
             'This transformation function allows you to convert currency rates, using the '
-            '[Exchange rates API](https://apilayer.com/marketplace/exchangerates_data-api).'
+            '[Open Exchange Rates API](https://openexchangerates.org).'
         ),
         edit_dialog_ui='/static/transformations/currency_conversion.html',
     )
@@ -115,23 +115,23 @@ class CurrencyConversionWebAppMixin:
         config: dict = Depends(get_config),
     ):
         try:
-            url = 'https://api.apilayer.com/exchangerates_data/symbols'
+            url = 'https://openexchangerates.org/api/currencies.json'
             async with httpx.AsyncClient(
                 transport=httpx.AsyncHTTPTransport(retries=3),
             ) as client:
                 response = await client.get(
                     url,
-                    headers={'apikey': config['EXCHANGE_API_KEY']},
+                    params={'app_id': config['EXCHANGE_API_KEY']},
                 )
             data = response.json()
-            if response.status_code != 200 or not data['success']:
+            if response.status_code != 200:
                 return []
             currencies = []
-            for key in data['symbols']:
+            for key in data:
                 currencies.append(
                     Currency(
                         code=key,
-                        description=data['symbols'][key],
+                        description=data[key],
                     ),
                 )
             return currencies

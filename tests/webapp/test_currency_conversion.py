@@ -149,19 +149,16 @@ def test_get_available_rates(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.apilayer.com/exchangerates_data/symbols',
+        url='https://openexchangerates.org/api/currencies.json?app_id=1a2b3c4d5e6f',
         json={
-            'symbols': {
-                'EUR': 'Euro',
-                'USD': 'United States Dollar',
-            },
-            'success': True,
+            'EUR': 'Euro',
+            'USD': 'United States Dollar',
         },
     )
     client = test_client_factory(TransformationsWebApplication)
     response = client.get(
         '/api/currency_conversion/currencies',
-        config={'EXCHANGE_API_KEY': 'API Key'},
+        config={'EXCHANGE_API_KEY': '1a2b3c4d5e6f'},
     )
 
     assert response.status_code == 200
@@ -184,16 +181,13 @@ def test_get_available_rates_invalid_response(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.apilayer.com/exchangerates_data/symbols',
-        json={
-            'symbols': {},
-            'success': False,
-        },
+        url='https://openexchangerates.org/api/currencies.json?app_id=1a2b3c4d5e6f',
+        json={},
     )
     client = test_client_factory(TransformationsWebApplication)
     response = client.get(
         '/api/currency_conversion/currencies',
-        config={'EXCHANGE_API_KEY': 'API Key'},
+        config={'EXCHANGE_API_KEY': '1a2b3c4d5e6f'},
     )
 
     assert response.status_code == 200
@@ -207,13 +201,13 @@ def test_get_available_rates_invalid_status_code(
 ):
     httpx_mock.add_response(
         method='GET',
-        url='https://api.apilayer.com/exchangerates_data/symbols',
+        url='https://openexchangerates.org/api/currencies.json?app_id=1a2b3c4d5e6f',
         status_code=400,
     )
     client = test_client_factory(TransformationsWebApplication)
     response = client.get(
         '/api/currency_conversion/currencies',
-        config={'EXCHANGE_API_KEY': 'API Key'},
+        config={'EXCHANGE_API_KEY': '1a2b3c4d5e6f'},
     )
 
     assert response.status_code == 200
