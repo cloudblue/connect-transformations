@@ -219,7 +219,7 @@ def test_formula_invalid_variable(mocker):
 
     response = app.formula({'Price without Tax': 100, 'Tax': 'twenty'})
     assert response.status == ResultType.FAIL
-    assert 'jq: error: $a is not defined at <top-level>, line 1:' in response.output
+    assert 'jq: error: $a is not defined at <top-level>, line 1' in response.output
 
 
 def test_formula_invalid_row_ignore_errors(mocker):
