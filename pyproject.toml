@@ -14,7 +14,7 @@ readme = "./README.md"
 "tfnapp" = "connect_transformations.transformations:StandardTransformationsApplication"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4"
+python = ">=3.10,<4"
 connect-eaas-core = ">=27.14,<29"
 cachetools = "^5.3.0"
 jq = "^1.4.1"
